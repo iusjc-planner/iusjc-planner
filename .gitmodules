@@ -1,8 +1,8 @@
 [submodule "documentation"]
 	path = documentation
 	url = git@github.com:iusjc-planner/documentation.git
-[submodule "infrastucture"]
-	path = infrastucture
+[submodule "infrastructure"]
+	path = infrastructure
 	url = git@github.com:iusjc-planner/infrastructure.git
 [submodule "iusjc-auth-service"]
 	path = services/iusjc-auth-service
