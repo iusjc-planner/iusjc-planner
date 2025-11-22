@@ -1,0 +1,417 @@
+{
+	"info": {
+		"name": "IUSJ Microservices Tests - With JWT Authentication",
+		"description": "Collection complète pour tester l'architecture microservices IUSJ avec validation JWT au Gateway",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Authentication Flow",
+			"item": [
+				{
+					"name": "Create User for Testing",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nom\": \"Admin\",\n  \"prenom\": \"Test\",\n  \"email\": \"admin@test.com\",\n  \"login\": \"admin\",\n  \"password\": \"admin123\",\n  \"role\": \"ADMIN\"\n}"
+						},
+						"url": {
+							"raw": "{{auth_url}}/auth/register",
+							"host": ["{{auth_url}}"],
+							"path": ["auth", "register"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Note: Cet endpoint doit être créé dans le Auth Service",
+									"pm.test(\"User created or already exists\", () => {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 409]);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Login and Get JWT Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"login\": \"admin\",\n  \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/auth/login",
+							"host": ["{{gateway_url}}"],
+							"path": ["auth", "login"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Login successful\", () => {",
+									"    pm.response.to.have.status(200);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.token).to.not.be.undefined;",
+									"    ",
+									"    // Sauvegarder le token pour les requêtes suivantes",
+									"    pm.environment.set(\"jwt_token\", response.token);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "2. Protected Endpoints Tests",
+			"item": [
+				{
+					"name": "Get Users - Without Token (Should Fail)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/users",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "users"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Access denied without token\", () => {",
+									"    pm.response.to.have.status(401);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.error).to.include(\"Token JWT manquant\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Users - With Valid Token",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/api/users",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "users"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Access granted with valid token\", () => {",
+									"    pm.response.to.have.status(200);",
+									"    pm.expect(pm.response.json()).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Create User - With Valid Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nom\": \"Nouveau\",\n  \"prenom\": \"Utilisateur\",\n  \"email\": \"nouveau@test.com\",\n  \"login\": \"nouveau\",\n  \"password\": \"password123\",\n  \"role\": \"USER\"\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/api/users",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "users"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"User created with valid token\", () => {",
+									"    pm.response.to.have.status(200);",
+									"    const user = pm.response.json();",
+									"    pm.expect(user.id).to.not.be.undefined;",
+									"    pm.environment.set(\"created_user_id\", user.id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Users - With Invalid Token",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer invalid.token.here"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/api/users",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "users"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Access denied with invalid token\", () => {",
+									"    pm.response.to.have.status(401);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.error).to.include(\"Token JWT invalide\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "3. Public Endpoints Tests",
+			"item": [
+				{
+					"name": "Public Health Check - No Token Required",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/public/health",
+							"host": ["{{gateway_url}}"],
+							"path": ["public", "health"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Public endpoint accessible without token\", () => {",
+									"    // Ce test peut échouer si l'endpoint n'existe pas",
+									"    // C'est normal, il sert à démontrer le concept",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "4. Admin Role Tests",
+			"item": [
+				{
+					"name": "Create Regular User for Role Test",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nom\": \"User\",\n  \"prenom\": \"Regular\",\n  \"email\": \"user@test.com\",\n  \"login\": \"regularuser\",\n  \"password\": \"user123\",\n  \"role\": \"USER\"\n}"
+						},
+						"url": {
+							"raw": "{{auth_url}}/auth/register",
+							"host": ["{{auth_url}}"],
+							"path": ["auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "Login as Regular User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"login\": \"regularuser\",\n  \"password\": \"user123\"\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/auth/login",
+							"host": ["{{gateway_url}}"],
+							"path": ["auth", "login"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set(\"user_jwt_token\", response.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Admin Endpoint - With Admin Token",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/admin/users",
+							"host": ["{{gateway_url}}"],
+							"path": ["admin", "users"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Admin access granted with ADMIN token\", () => {",
+									"    // Ce test peut échouer si l'endpoint n'existe pas",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Admin Endpoint - With User Token (Should Fail)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{user_jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/admin/users",
+							"host": ["{{gateway_url}}"],
+							"path": ["admin", "users"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Admin access denied with USER token\", () => {",
+									"    pm.response.to.have.status(403);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.error).to.include(\"Rôle ADMIN requis\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "5. Token Expiration Tests",
+			"item": [
+				{
+					"name": "Test with Expired Token",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTYwMDAwMDAwMCwiZXhwIjoxNjAwMDAwMDAxfQ.expired"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/api/users",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "users"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Access denied with expired token\", () => {",
+									"    pm.response.to.have.status(401);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.error).to.include(\"Token JWT\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}

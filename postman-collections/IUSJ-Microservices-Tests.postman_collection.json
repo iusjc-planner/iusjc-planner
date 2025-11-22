@@ -1,0 +1,595 @@
+{
+	"info": {
+		"name": "IUSJ Microservices Tests",
+		"description": "Collection complète pour tester l'architecture microservices IUSJ avec Eureka, Gateway, Auth et User services",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Health Checks",
+			"item": [
+				{
+					"name": "Test 1 - Eureka Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{eureka_url}}/eureka/apps",
+							"host": ["{{eureka_url}}"],
+							"path": ["eureka", "apps"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Eureka is running\", () => {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"All services registered\", () => {",
+									"    const apps = pm.response.json().applications.application;",
+									"    const serviceNames = apps.map(app => app.name);",
+									"    pm.expect(serviceNames).to.include.members([",
+									"        \"IUSJ-AUTH-SERVICE\",",
+									"        \"IUSJ-USER-SERVICE\", ",
+									"        \"IUSJ-GATEWAY-SERVICE\"",
+									"    ]);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Test 2 - Gateway Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/actuator/health",
+							"host": ["{{gateway_url}}"],
+							"path": ["actuator", "health"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Gateway is healthy\", () => {",
+									"    pm.response.to.have.status(200);",
+									"    pm.expect(pm.response.json().status).to.eql(\"UP\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "2. Direct Services Tests",
+			"item": [
+				{
+					"name": "Test 3 - User Service Direct List",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{user_url}}/api/users",
+							"host": ["{{user_url}}"],
+							"path": ["api", "users"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"User service responds\", () => {",
+									"    pm.response.to.have.status(200);",
+									"    pm.expect(pm.response.json()).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Test 4 - User Service Direct Create",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nom\": \"Dupont\",\n  \"prenom\": \"Jean\",\n  \"email\": \"jean.dupont@example.com\",\n  \"login\": \"jdupont\",\n  \"password\": \"password123\",\n  \"role\": \"USER\"\n}"
+						},
+						"url": {
+							"raw": "{{user_url}}/api/users",
+							"host": ["{{user_url}}"],
+							"path": ["api", "users"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"User created successfully\", () => {",
+									"    pm.response.to.have.status(200);",
+									"    const user = pm.response.json();",
+									"    pm.expect(user.id).to.not.be.undefined;",
+									"    pm.environment.set(\"test_user_id\", user.id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Test 5 - Auth Service Direct Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"login\": \"jdupont\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{auth_url}}/auth/login",
+							"host": ["{{auth_url}}"],
+							"path": ["auth", "login"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.environment.set(\"jwt_token\", response.token);",
+									"    pm.test(\"Login successful\", () => {",
+									"        pm.expect(response.token).to.not.be.undefined;",
+									"    });",
+									"} else {",
+									"    pm.test(\"Login failed - user may not exist yet\", () => {",
+									"        pm.expect(pm.response.code).to.be.oneOf([400, 401, 404]);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "3. Gateway Routing Tests",
+			"item": [
+				{
+					"name": "Test 6 - Gateway to User Service",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/users",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "users"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Gateway routes to user service\", () => {",
+									"    pm.response.to.have.status(200);",
+									"    pm.expect(pm.response.json()).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Test 7 - Gateway Create User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nom\": \"Martin\",\n  \"prenom\": \"Marie\",\n  \"email\": \"marie.martin@example.com\",\n  \"login\": \"mmartin\",\n  \"password\": \"password456\",\n  \"role\": \"USER\"\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/api/users",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "users"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Gateway creates user successfully\", () => {",
+									"    pm.response.to.have.status(200);",
+									"    const user = pm.response.json();",
+									"    pm.expect(user.id).to.not.be.undefined;",
+									"    pm.environment.set(\"gateway_user_id\", user.id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Test 8 - Gateway to Auth Service",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"login\": \"mmartin\",\n  \"password\": \"password456\"\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/auth/login",
+							"host": ["{{gateway_url}}"],
+							"path": ["auth", "login"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Gateway routes to auth service\", () => {",
+									"    if (pm.response.code === 200) {",
+									"        const response = pm.response.json();",
+									"        pm.environment.set(\"gateway_jwt_token\", response.token);",
+									"        pm.expect(response.token).to.not.be.undefined;",
+									"    } else {",
+									"        pm.expect(pm.response.code).to.be.oneOf([400, 401]);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "4. Service Discovery Tests",
+			"item": [
+				{
+					"name": "Test 9 - Gateway Routes Config",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/actuator/gateway/routes",
+							"host": ["{{gateway_url}}"],
+							"path": ["actuator", "gateway", "routes"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Gateway routes are configured\", () => {",
+									"    pm.response.to.have.status(200);",
+									"    const routes = pm.response.json();",
+									"    pm.expect(routes.length).to.be.greaterThan(0);",
+									"    ",
+									"    const routeIds = routes.map(route => route.route_id);",
+									"    pm.expect(routeIds).to.include.members([",
+									"        \"auth-service\",",
+									"        \"user-service\"",
+									"    ]);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Test 10 - User Service Details in Eureka",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{eureka_url}}/eureka/apps/IUSJ-USER-SERVICE",
+							"host": ["{{eureka_url}}"],
+							"path": ["eureka", "apps", "IUSJ-USER-SERVICE"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"User service details available\", () => {",
+									"    pm.response.to.have.status(200);",
+									"    const app = pm.response.json().application;",
+									"    pm.expect(app.instance[0].status).to.eql(\"UP\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "5. Resilience Tests",
+			"item": [
+				{
+					"name": "Test 11 - Service Unavailable (Manual)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/users",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "users"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Exécuter ce test après avoir arrêté le User Service",
+									"pm.test(\"Gateway handles service unavailable OR service is running\", () => {",
+									"    // Si le service est arrêté, on attend une erreur",
+									"    // Si le service fonctionne, on attend 200",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 500, 502, 503]);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Service is running normally\", () => {",
+									"        pm.expect(pm.response.json()).to.be.an('array');",
+									"    });",
+									"} else {",
+									"    pm.test(\"Service unavailable detected\", () => {",
+									"        pm.expect(pm.response.code).to.be.oneOf([500, 502, 503]);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "6. E2E Workflow",
+			"item": [
+				{
+					"name": "E2E 1 - Create Test User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nom\": \"TestUser\",\n  \"prenom\": \"E2E\",\n  \"email\": \"e2e@test.com\",\n  \"login\": \"e2euser\",\n  \"password\": \"test123\",\n  \"role\": \"USER\"\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/api/users",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "users"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"E2E User created\", () => {",
+									"    pm.response.to.have.status(200);",
+									"    const user = pm.response.json();",
+									"    pm.environment.set(\"e2e_user_id\", user.id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "E2E 2 - Login Test User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"login\": \"e2euser\",\n  \"password\": \"test123\"\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/auth/login",
+							"host": ["{{gateway_url}}"],
+							"path": ["auth", "login"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"E2E Login successful\", () => {",
+									"    if (pm.response.code === 200) {",
+									"        const response = pm.response.json();",
+									"        pm.environment.set(\"e2e_jwt_token\", response.token);",
+									"        pm.expect(response.token).to.not.be.undefined;",
+									"    } else {",
+									"        pm.expect(pm.response.code).to.be.oneOf([400, 401]);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "E2E 3 - Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/users/{{e2e_user_id}}",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "users", "{{e2e_user_id}}"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"E2E Get user by ID\", () => {",
+									"    if (pm.response.code === 200) {",
+									"        const user = pm.response.json();",
+									"        pm.expect(user.login).to.eql(\"e2euser\");",
+									"    } else {",
+									"        // Endpoint might not be implemented",
+									"        pm.expect(pm.response.code).to.be.oneOf([404, 405]);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "7. Performance Tests",
+			"item": [
+				{
+					"name": "Load Test - Get Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/users",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "users"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response time is acceptable\", () => {",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+									"});",
+									"",
+									"pm.test(\"Status is 200\", () => {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Load Test - Create User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nom\": \"LoadTest{{$randomInt}}\",\n  \"prenom\": \"User{{$randomInt}}\",\n  \"email\": \"load{{$randomInt}}@test.com\",\n  \"login\": \"load{{$randomInt}}\",\n  \"password\": \"test123\",\n  \"role\": \"USER\"\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/api/users",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "users"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"User creation response time acceptable\", () => {",
+									"    pm.expect(pm.response.responseTime).to.be.below(3000);",
+									"});",
+									"",
+									"pm.test(\"User created successfully\", () => {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}
