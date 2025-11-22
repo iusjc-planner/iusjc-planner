@@ -1,0 +1,33 @@
+[submodule "documentation"]
+	path = documentation
+	url = git@github.com:iusjc-planner/documentation.git
+[submodule "infrastucture"]
+	path = infrastucture
+	url = git@github.com:iusjc-planner/infrastructure.git
+[submodule "iusjc-auth-service"]
+	path = services/iusjc-auth-service
+	url = git@github.com:iusjc-planner/iusjc-auth-service.git
+[submodule "iusjc-eureka"]
+	path = services/iusjc-eureka
+	url = git@github.com:iusjc-planner/iusjc-eureka.git
+[submodule "iusjc-gateway"]
+	path = services/iusjc-gateway
+	url = git@github.com:iusjc-planner/iusjc-gateway.git
+[submodule "iusjc-integration-service"]
+	path = services/iusjc-integration-service
+	url = git@github.com:iusjc-planner/iusjc-integration-service.git
+[submodule "iusjc-notification-service"]
+	path = services/iusjc-notification-service
+	url = git@github.com:iusjc-planner/iusjc-notification-service.git
+[submodule "iusjc-reporting-service"]
+	path = services/iusjc-reporting-service
+	url = git@github.com:iusjc-planner/iusjc-reporting-service.git
+[submodule "iusjc-resource-service"]
+	path = services/iusjc-resource-service
+	url = git@github.com:iusjc-planner/iusjc-resource-service.git
+[submodule "iusjc-room-service"]
+	path = services/iusjc-room-service
+	url = git@github.com:iusjc-planner/iusjc-room-service.git
+[submodule "iusjc-user-service"]
+	path = services/iusjc-user-service
+	url = git@github.com:iusjc-planner/iusjc-user-service.git

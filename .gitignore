@@ -1,0 +1,65 @@
+###############################
+# IGNORER LES SUBMODULES
+###############################
+
+# Ne pas inclure les contenus internes des sous-modules
+services/*
+ui/*
+infrastructure/*
+documentation/*
+
+# Autoriser les dossiers mais pas les fichiers internes
+!services/
+!ui/
+!infrastructure/
+!documentation/
+
+###############################
+# FICHIERS TECHNIQUES GITHUB
+###############################
+.env
+*.env
+.env.*
+*.secret
+*.key
+*.pem
+
+###############################
+# FICHIERS INTELLIJ / IDE
+###############################
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+###############################
+# MAVEN / JAVA
+###############################
+target/
+out/
+*.class
+*.jar
+*.war
+
+###############################
+# LOGS & TEMP
+###############################
+*.log
+*.tmp
+*.cache
+*.DS_Store
+Thumbs.db
+
+###############################
+# DOCKER
+###############################
+*.bak
+*~backup.yml
+
+###############################
+# OS SPECIFIC
+###############################
+.DS_Store
+Thumbs.db
+ehthumbs.db
