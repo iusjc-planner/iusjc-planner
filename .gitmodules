@@ -31,3 +31,15 @@
 [submodule "iusjc-user-service"]
 	path = services/iusjc-user-service
 	url = git@github.com:iusjc-planner/iusjc-user-service.git
+[submodule "iusj-auth-service"]
+	path = iusj-auth-service
+	url = https://github.com/tenzo18/iusj-auth-service.git
+[submodule "iusj-gateway-service"]
+	path = iusj-gateway-service
+	url = https://github.com/tenzo18/iusj-gateway-service.git
+[submodule "iusj-eureka-service"]
+	path = iusj-eureka-service
+	url = https://github.com/tenzo18/iusj-eureka-service.git
+[submodule "iusj-user-service"]
+	path = iusj-user-service
+	url = https://github.com/tenzo18/iusj-user-service.git
