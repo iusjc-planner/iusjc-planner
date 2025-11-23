@@ -43,3 +43,6 @@
 [submodule "iusj-user-service"]
 	path = iusj-user-service
 	url = https://github.com/tenzo18/iusj-user-service.git
+[submodule "frontend"]
+	path = frontend
+	url = https://github.com/tenzo18/frontend.git
