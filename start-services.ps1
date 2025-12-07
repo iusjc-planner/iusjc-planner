@@ -22,7 +22,7 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd 'iusj-gateway-
 Start-Sleep -Seconds 15
 
 Write-Host "Demarrage du Frontend Angular..." -ForegroundColor Yellow
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd 'fontend'; npm start"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd 'frontend'; npm start"
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green

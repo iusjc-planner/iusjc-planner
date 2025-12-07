@@ -1,0 +1,476 @@
+name: IUSJ Planner CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Job 1: Tests et Build des microservices Spring Boot
+  backend-tests:
+    name: Backend Tests & Build
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        service: [iusj-eureka-service, iusj-gateway-service, iusj-auth-service, iusj-user-service]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Cache Maven dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+
+    - name: Run tests for ${{ matrix.service }}
+      run: |
+        cd ${{ matrix.service }}
+        ./mvnw clean test
+      continue-on-error: false
+
+    - name: Build ${{ matrix.service }}
+      run: |
+        cd ${{ matrix.service }}
+        ./mvnw clean package -DskipTests
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.service }}-jar
+        path: ${{ matrix.service }}/target/*.jar
+
+  # Job 2: Tests et Build du Frontend Angular
+  frontend-tests:
+    name: Frontend Tests & Build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install dependencies
+      run: |
+        cd frontend
+        npm ci
+
+    - name: Run linting
+      run: |
+        cd frontend
+        npm run lint
+      continue-on-error: true
+
+    - name: Run unit tests
+      run: |
+        cd frontend
+        npm run test:ci
+      continue-on-error: true
+
+    - name: Build frontend
+      run: |
+        cd frontend
+        npm run build:prod
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: frontend-dist
+        path: frontend/dist/
+
+  # Job 3: Analyse de sécurité avec CodeQL
+  security-analysis:
+    name: Security Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: java, javascript
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Build for analysis
+      run: |
+        for service in iusj-eureka-service iusj-gateway-service iusj-auth-service iusj-user-service; do
+          cd $service
+          ./mvnw clean compile -DskipTests
+          cd ..
+        done
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+
+  # Job 4: Build et Push des images Docker
+  docker-build:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+    if: github.ref == 'refs/heads/main'
+    
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        service: [iusj-eureka-service, iusj-gateway-service, iusj-auth-service, iusj-user-service]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: ${{ matrix.service }}-jar
+        path: ${{ matrix.service }}/target/
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.service }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Create Dockerfile for ${{ matrix.service }}
+      run: |
+        cat > ${{ matrix.service }}/Dockerfile << EOF
+        FROM openjdk:17-jre-slim
+        
+        WORKDIR /app
+        
+        # Copier le JAR
+        COPY target/*.jar app.jar
+        
+        # Créer un utilisateur non-root
+        RUN addgroup --system spring && adduser --system spring --ingroup spring
+        USER spring:spring
+        
+        # Exposer le port
+        EXPOSE 8080
+        
+        # Healthcheck
+        HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
+          CMD curl -f http://localhost:8080/actuator/health || exit 1
+        
+        # Lancer l'application
+        ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+        EOF
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ${{ matrix.service }}
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  # Job 5: Build et Push de l'image Frontend
+  frontend-docker:
+    name: Build & Push Frontend Docker Image
+    runs-on: ubuntu-latest
+    needs: [frontend-tests]
+    if: github.ref == 'refs/heads/main'
+    
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Download frontend artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: frontend-dist
+        path: frontend/dist/
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Create Dockerfile for Frontend
+      run: |
+        cat > frontend/Dockerfile << EOF
+        # Stage 1: Build
+        FROM node:18-alpine AS builder
+        
+        WORKDIR /app
+        COPY package*.json ./
+        RUN npm ci --only=production
+        
+        COPY . .
+        RUN npm run build:prod
+        
+        # Stage 2: Serve
+        FROM nginx:alpine
+        
+        # Copier la configuration Nginx
+        COPY nginx.conf /etc/nginx/nginx.conf
+        
+        # Copier les fichiers buildés
+        COPY --from=builder /app/dist/ /usr/share/nginx/html/
+        
+        # Créer un utilisateur non-root
+        RUN addgroup -g 1001 -S nginx && adduser -S nginx -u 1001
+        
+        EXPOSE 80
+        
+        # Healthcheck
+        HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+          CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
+        
+        CMD ["nginx", "-g", "daemon off;"]
+        EOF
+
+    - name: Create Nginx configuration
+      run: |
+        cat > frontend/nginx.conf << EOF
+        events {
+          worker_connections 1024;
+        }
+        
+        http {
+          include /etc/nginx/mime.types;
+          default_type application/octet-stream;
+          
+          sendfile on;
+          keepalive_timeout 65;
+          
+          server {
+            listen 80;
+            server_name localhost;
+            root /usr/share/nginx/html;
+            index index.html;
+            
+            # Gzip compression
+            gzip on;
+            gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+            
+            # Security headers
+            add_header X-Frame-Options DENY;
+            add_header X-Content-Type-Options nosniff;
+            add_header X-XSS-Protection "1; mode=block";
+            
+            # Angular routing
+            location / {
+              try_files \$uri \$uri/ /index.html;
+            }
+            
+            # API proxy
+            location /api/ {
+              proxy_pass http://gateway:8080/;
+              proxy_set_header Host \$host;
+              proxy_set_header X-Real-IP \$remote_addr;
+              proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto \$scheme;
+            }
+          }
+        }
+        EOF
+
+    - name: Build and push Frontend Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: frontend
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  # Job 6: Déploiement (optionnel)
+  deploy:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [docker-build, frontend-docker]
+    if: github.ref == 'refs/heads/main'
+    environment: staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Create docker-compose for deployment
+      run: |
+        cat > docker-compose.prod.yml << EOF
+        version: '3.8'
+        
+        services:
+          eureka:
+            image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/iusj-eureka-service:latest
+            ports:
+              - "8761:8761"
+            environment:
+              - SPRING_PROFILES_ACTIVE=prod
+            healthcheck:
+              test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+              interval: 30s
+              timeout: 10s
+              retries: 3
+        
+          gateway:
+            image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/iusj-gateway-service:latest
+            ports:
+              - "8080:8080"
+            depends_on:
+              - eureka
+            environment:
+              - SPRING_PROFILES_ACTIVE=prod
+              - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka
+            healthcheck:
+              test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+              interval: 30s
+              timeout: 10s
+              retries: 3
+        
+          auth-service:
+            image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/iusj-auth-service:latest
+            depends_on:
+              - eureka
+            environment:
+              - SPRING_PROFILES_ACTIVE=prod
+              - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka
+            healthcheck:
+              test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+              interval: 30s
+              timeout: 10s
+              retries: 3
+        
+          user-service:
+            image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/iusj-user-service:latest
+            depends_on:
+              - eureka
+            environment:
+              - SPRING_PROFILES_ACTIVE=prod
+              - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka
+            healthcheck:
+              test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+              interval: 30s
+              timeout: 10s
+              retries: 3
+        
+          frontend:
+            image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:latest
+            ports:
+              - "80:80"
+            depends_on:
+              - gateway
+            healthcheck:
+              test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+              interval: 30s
+              timeout: 10s
+              retries: 3
+        
+        networks:
+          default:
+            name: iusj-network
+        EOF
+
+    - name: Deploy notification
+      run: |
+        echo "🚀 Déploiement terminé avec succès!"
+        echo "📊 Images Docker créées et poussées vers le registry"
+        echo "🔗 Registry: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+
+  # Job 7: Notification
+  notify:
+    name: Notification
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests, security-analysis]
+    if: always()
+    
+    steps:
+    - name: Notify success
+      if: ${{ needs.backend-tests.result == 'success' && needs.frontend-tests.result == 'success' }}
+      run: |
+        echo "✅ Pipeline CI/CD terminé avec succès!"
+        echo "🔍 Tests backend: ${{ needs.backend-tests.result }}"
+        echo "🎨 Tests frontend: ${{ needs.frontend-tests.result }}"
+        echo "🔒 Analyse sécurité: ${{ needs.security-analysis.result }}"
+
+    - name: Notify failure
+      if: ${{ needs.backend-tests.result == 'failure' || needs.frontend-tests.result == 'failure' }}
+      run: |
+        echo "❌ Pipeline CI/CD échoué!"
+        echo "🔍 Tests backend: ${{ needs.backend-tests.result }}"
+        echo "🎨 Tests frontend: ${{ needs.frontend-tests.result }}"
+        echo "🔒 Analyse sécurité: ${{ needs.security-analysis.result }}"
+        exit 1

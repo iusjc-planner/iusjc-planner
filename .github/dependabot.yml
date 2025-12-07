@@ -1,0 +1,70 @@
+# Configuration Dependabot pour maintenir les dépendances à jour
+version: 2
+updates:
+  # Dépendances Maven pour les microservices
+  - package-ecosystem: "maven"
+    directory: "/iusj-eureka-service"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "tenzo18"
+    assignees:
+      - "tenzo18"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  - package-ecosystem: "maven"
+    directory: "/iusj-gateway-service"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "maven"
+    directory: "/iusj-auth-service"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "maven"
+    directory: "/iusj-user-service"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+
+  # Dépendances NPM pour le frontend
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "tenzo18"
+    assignees:
+      - "tenzo18"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  # Actions GitHub
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(ci)"
+      include: "scope"
+
+  # Dockerfile
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5

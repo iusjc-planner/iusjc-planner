@@ -1,0 +1,117 @@
+# Docker Compose pour les tests d'intégration CI/CD
+version: '3.8'
+
+services:
+  # Redis pour les tests
+  test-redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Service Eureka pour les tests
+  test-eureka:
+    build:
+      context: ./iusj-eureka-service
+      dockerfile: Dockerfile.test
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=test
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Gateway pour les tests
+  test-gateway:
+    build:
+      context: ./iusj-gateway-service
+      dockerfile: Dockerfile.test
+    ports:
+      - "8080:8080"
+    depends_on:
+      test-eureka:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=test
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://test-eureka:8761/eureka
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Service d'authentification pour les tests
+  test-auth:
+    build:
+      context: ./iusj-auth-service
+      dockerfile: Dockerfile.test
+    depends_on:
+      test-eureka:
+        condition: service_healthy
+      test-db:
+        condition: service_healthy
+      test-redis:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=test
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://test-eureka:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://test-db:5432/iusj_test
+      - SPRING_DATASOURCE_USERNAME=test_user
+      - SPRING_DATASOURCE_PASSWORD=test_password
+      - SPRING_REDIS_HOST=test-redis
+      - SPRING_REDIS_PORT=6379
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Service utilisateur pour les tests
+  test-user:
+    build:
+      context: ./iusj-user-service
+      dockerfile: Dockerfile.test
+    depends_on:
+      test-eureka:
+        condition: service_healthy
+      test-db:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=test
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://test-eureka:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://test-db:5432/iusj_test
+      - SPRING_DATASOURCE_USERNAME=test_user
+      - SPRING_DATASOURCE_PASSWORD=test_password
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Tests d'intégration
+  integration-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.integration-tests
+    depends_on:
+      test-gateway:
+        condition: service_healthy
+      test-auth:
+        condition: service_healthy
+      test-user:
+        condition: service_healthy
+    environment:
+      - API_BASE_URL=http://test-gateway:8080
+      - TEST_ENV=ci
+    volumes:
+      - ./test-results:/app/test-results
+
+volumes:
+  test_db_data:
