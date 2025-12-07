@@ -213,7 +213,7 @@ jobs:
         EOF
 
     - name: Build and push Docker image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         context: ${{ matrix.service }}
         push: true
@@ -347,7 +347,7 @@ jobs:
         EOF
 
     - name: Build and push Frontend Docker image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         context: frontend
         push: true
