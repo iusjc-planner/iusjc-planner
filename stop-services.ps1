@@ -5,6 +5,10 @@ Write-Host "  IUSJ Planner - Arret des services" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
+# Stocker le PID de la console actuelle pour la protéger
+$currentPID = $PID
+Write-Host "Console actuelle protegee (PID: $currentPID)" -ForegroundColor Cyan
+
 # Arreter les processus Java (Spring Boot)
 Write-Host "Arret des services Spring Boot..." -ForegroundColor Yellow
 $javaProcesses = Get-Process -Name "java" -ErrorAction SilentlyContinue
@@ -46,84 +50,171 @@ if ($nodeProcesses) {
 # Liberation des ports
 Write-Host "Verification des ports..." -ForegroundColor Yellow
 $ports = @(8761, 8080, 8081, 8082, 4200, 4201)
+$closedPorts = 0
 foreach ($port in $ports) {
     try {
         $connection = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
         if ($connection) {
             $processId = $connection.OwningProcess
-            Write-Host "  Liberation du port $port (PID: $processId)..." -ForegroundColor Gray
-            Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
+            # Ne pas fermer si c'est le processus actuel
+            if ($processId -ne $currentPID) {
+                Write-Host "  Liberation du port $port (PID: $processId)..." -ForegroundColor Gray
+                Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
+                $closedPorts++
+            }
         }
     } catch {
         # Ignorer les erreurs
     }
 }
-Write-Host "  Ports verifies et liberes" -ForegroundColor Green
+Write-Host "  $closedPorts port(s) liberes" -ForegroundColor Green
 
-# Fermeture des fenêtres de terminaux
-Write-Host "Fermeture des fenetres de terminaux..." -ForegroundColor Yellow
+# Fermeture sélective des consoles de services
+Write-Host "Fermeture des consoles de services..." -ForegroundColor Yellow
 try {
-    # Fermer les fenêtres PowerShell supplémentaires (sauf celle actuelle)
-    $currentPID = $PID
+    $closedWindows = 0
+
+    # Mots-clés pour identifier les consoles de services
+    $serviceKeywords = @("eureka", "auth-service", "user-service", "gateway", "mvn", "spring-boot", "ng serve", "angular", "iusj")
+    
+    # Fermer les PowerShell avec des titres de services (sauf la console actuelle)
     $powershellProcesses = Get-Process -Name "powershell" -ErrorAction SilentlyContinue | Where-Object { $_.Id -ne $currentPID }
-    if ($powershellProcesses) {
-        $count = 0
-        foreach ($process in $powershellProcesses) {
-            try {
-                # Vérifier si le processus a une fenêtre
-                if ($process.MainWindowTitle -ne "") {
-                    Write-Host "  Fermeture de la fenetre PowerShell (PID: $($process.Id))..." -ForegroundColor Gray
-                    Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
-                    $count++
-                }
-            } catch {
-                # Ignorer les erreurs
+    foreach ($process in $powershellProcesses) {
+        try {
+            $windowTitle = ""
+            if ($process.MainWindowTitle) {
+                $windowTitle = $process.MainWindowTitle.ToLower()
             }
-        }
-        if ($count -gt 0) {
-            Write-Host "  $count fenetre(s) PowerShell fermees" -ForegroundColor Green
+            
+            $isServiceWindow = $false
+            foreach ($keyword in $serviceKeywords) {
+                if ($windowTitle -like "*$keyword*") {
+                    $isServiceWindow = $true
+                    break
+                }
+            }
+            
+            if ($isServiceWindow) {
+                Write-Host "  Fermeture de la console PowerShell de service (PID: $($process.Id))..." -ForegroundColor Gray
+                Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+                $closedWindows++
+            }
+        } catch {
+            # Ignorer les erreurs
         }
     }
 
-    # Fermer les fenêtres CMD
+    # Fermer les CMD avec des titres de services
     $cmdProcesses = Get-Process -Name "cmd" -ErrorAction SilentlyContinue
-    if ($cmdProcesses) {
-        $count = 0
-        foreach ($process in $cmdProcesses) {
-            try {
-                # Vérifier si le processus a une fenêtre
-                if ($process.MainWindowTitle -ne "") {
-                    Write-Host "  Fermeture de la fenetre CMD (PID: $($process.Id))..." -ForegroundColor Gray
-                    Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
-                    $count++
-                }
-            } catch {
-                # Ignorer les erreurs
+    foreach ($process in $cmdProcesses) {
+        try {
+            $windowTitle = ""
+            if ($process.MainWindowTitle) {
+                $windowTitle = $process.MainWindowTitle.ToLower()
             }
-        }
-        if ($count -gt 0) {
-            Write-Host "  $count fenetre(s) CMD fermees" -ForegroundColor Green
+            
+            $isServiceWindow = $false
+            foreach ($keyword in $serviceKeywords) {
+                if ($windowTitle -like "*$keyword*") {
+                    $isServiceWindow = $true
+                    break
+                }
+            }
+            
+            if ($isServiceWindow) {
+                Write-Host "  Fermeture de la console CMD de service (PID: $($process.Id))..." -ForegroundColor Gray
+                Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+                $closedWindows++
+            }
+        } catch {
+            # Ignorer les erreurs
         }
     }
 
-    # Fermer les fenêtres Windows Terminal qui pourraient contenir des services
-    $wtProcesses = Get-Process -Name "WindowsTerminal" -ErrorAction SilentlyContinue
-    if ($wtProcesses) {
-        Write-Host "  Note: Des fenetres Windows Terminal sont ouvertes" -ForegroundColor Gray
-        Write-Host "  Vous devrez peut-etre les fermer manuellement si elles contiennent des services" -ForegroundColor Gray
+    # Approche alternative : fermer les consoles PowerShell/CMD qui n'ont pas de fenêtre principale visible
+    # (souvent les consoles lancées par des scripts)
+    $powershellProcesses = Get-Process -Name "powershell" -ErrorAction SilentlyContinue | Where-Object { 
+        $_.Id -ne $currentPID -and 
+        ($_.MainWindowTitle -eq "" -or $_.MainWindowTitle -eq $null)
+    }
+    foreach ($process in $powershellProcesses) {
+        try {
+            Write-Host "  Fermeture de console PowerShell en arriere-plan (PID: $($process.Id))..." -ForegroundColor Gray
+            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            $closedWindows++
+        } catch {
+            # Ignorer les erreurs
+        }
     }
 
-    Write-Host "  Fenetres de terminaux traitees" -ForegroundColor Green
+    $cmdProcesses = Get-Process -Name "cmd" -ErrorAction SilentlyContinue | Where-Object { 
+        $_.MainWindowTitle -eq "" -or $_.MainWindowTitle -eq $null
+    }
+    foreach ($process in $cmdProcesses) {
+        try {
+            Write-Host "  Fermeture de console CMD en arriere-plan (PID: $($process.Id))..." -ForegroundColor Gray
+            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            $closedWindows++
+        } catch {
+            # Ignorer les erreurs
+        }
+    }
+
+    if ($closedWindows -gt 0) {
+        Write-Host "  $closedWindows console(s) de services fermees" -ForegroundColor Green
+    } else {
+        Write-Host "  Aucune console de service a fermer" -ForegroundColor Gray
+    }
+
 } catch {
-    Write-Host "  Erreur lors de la fermeture des terminaux: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "  Erreur lors de la fermeture des consoles: $($_.Exception.Message)" -ForegroundColor Red
+}
+
+# Nettoyage final - processus orphelins
+Write-Host "Nettoyage final..." -ForegroundColor Yellow
+try {
+    $cleanedProcesses = 0
+    
+    # Tuer les processus Maven
+    $mavenProcesses = Get-Process -ErrorAction SilentlyContinue | Where-Object { 
+        $_.ProcessName -like "*maven*" -or $_.ProcessName -like "*mvn*"
+    }
+    foreach ($process in $mavenProcesses) {
+        try {
+            if ($process.Id -ne $currentPID) {
+                Write-Host "  Arret du processus Maven (PID: $($process.Id))..." -ForegroundColor Gray
+                Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+                $cleanedProcesses++
+            }
+        } catch {
+            # Ignorer les erreurs
+        }
+    }
+
+    # Tuer les processus npm
+    $npmProcesses = Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -like "*npm*" }
+    foreach ($process in $npmProcesses) {
+        try {
+            if ($process.Id -ne $currentPID) {
+                Write-Host "  Arret du processus NPM (PID: $($process.Id))..." -ForegroundColor Gray
+                Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+                $cleanedProcesses++
+            }
+        } catch {
+            # Ignorer les erreurs
+        }
+    }
+
+    Write-Host "  $cleanedProcesses processus orphelins nettoyes" -ForegroundColor Green
+} catch {
+    Write-Host "  Erreur lors du nettoyage: $($_.Exception.Message)" -ForegroundColor Red
 }
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
 Write-Host "  Tous les services sont arretes !" -ForegroundColor Green
+Write-Host "  Console actuelle preservee !" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "Pour redemarrer les services, executez: .\start-services.ps1" -ForegroundColor Yellow
 Write-Host ""
-Write-Host "Appuyez sur une touche pour continuer..." -ForegroundColor Gray
-$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
