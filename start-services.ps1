@@ -17,6 +17,10 @@ Write-Host "Demarrage d'User Service..." -ForegroundColor Yellow
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd 'iusj-user-service'; mvn spring-boot:run"
 Start-Sleep -Seconds 15
 
+Write-Host "Demarrage de Teacher Service..." -ForegroundColor Yellow
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd 'iusj-teacher-service'; mvn spring-boot:run"
+Start-Sleep -Seconds 15
+
 Write-Host "Demarrage du Gateway Service..." -ForegroundColor Yellow
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd 'iusj-gateway-service'; mvn spring-boot:run"
 Start-Sleep -Seconds 15

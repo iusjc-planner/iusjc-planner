@@ -1,7 +1,129 @@
 {
-	"info": {
-		"name": "IUSJ Microservices Tests - With JWT Authentication",
-		"description": "Collection complète pour tester l'architecture microservices IUSJ avec validation JWT au Gateway",
+		},
+		{
+			"name": "3. Teachers Service (Gateway, JWT)",
+			"item": [
+				{
+					"name": "List Teachers",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/api/teachers",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "teachers"]
+						}
+					}
+				},
+				{
+					"name": "Create Teacher",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nom\": \"Teacher\",\n  \"prenom\": \"Alpha\",\n  \"email\": \"teacher.alpha@iusj.ci\",\n  \"telephone\": \"0600000000\",\n  \"specialite\": \"Math\",\n  \"grade\": \"PROFESSEUR\",\n  \"status\": \"ACTIVE\"\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/api/teachers",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "teachers"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Teacher created with valid token\", () => {",
+									"    pm.response.to.have.status(200);",
+									"    const teacher = pm.response.json();",
+									"    pm.expect(teacher.id).to.not.be.undefined;",
+									"    pm.environment.set(\"teacher_id\", teacher.id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Teacher By Id",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/api/teachers/{{teacher_id}}",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "teachers", "{{teacher_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Update Teacher",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nom\": \"Teacher\",\n  \"prenom\": \"Beta\",\n  \"email\": \"teacher.beta@iusj.ci\",\n  \"telephone\": \"0611223344\",\n  \"specialite\": \"Physique\",\n  \"grade\": \"ASSISTANT\",\n  \"status\": \"EN_CONGE\"\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/api/teachers/{{teacher_id}}",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "teachers", "{{teacher_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Delete Teacher",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/api/teachers/{{teacher_id}}",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "teachers", "{{teacher_id}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Public Endpoints Tests",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -253,7 +375,7 @@
 			]
 		},
 		{
-			"name": "4. Admin Role Tests",
+			"name": "5. Admin Role Tests",
 			"item": [
 				{
 					"name": "Create Regular User for Role Test",
@@ -377,7 +499,7 @@
 			]
 		},
 		{
-			"name": "5. Token Expiration Tests",
+			"name": "6. Token Expiration Tests",
 			"item": [
 				{
 					"name": "Test with Expired Token",
