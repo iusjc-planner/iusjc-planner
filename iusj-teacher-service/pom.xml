@@ -58,6 +58,13 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        
+        <!-- iCal4j pour parser les fichiers ICS (Google Calendar export) -->
+        <dependency>
+            <groupId>org.mnode.ical4j</groupId>
+            <artifactId>ical4j</artifactId>
+            <version>3.2.14</version>
+        </dependency>
     </dependencies>
 
     <dependencyManagement>
