@@ -39,7 +39,8 @@
 									"    pm.expect(serviceNames).to.include.members([",
 									"        \"IUSJ-AUTH-SERVICE\",",
 									"        \"IUSJ-USER-SERVICE\", ",
-									"        \"IUSJ-GATEWAY-SERVICE\"",
+									"        \"IUSJ-GATEWAY-SERVICE\",",
+									"        \"IUSJ-TEACHER-SERVICE\"",
 									"    ]);",
 									"});"
 								],
@@ -143,7 +144,115 @@
 					]
 				},
 				{
-					"name": "Test 5 - Auth Service Direct Login",
+					"name": "Test 5 - Teacher Service Direct List",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{teacher_url}}/api/teachers",
+							"host": ["{{teacher_url}}"],
+							"path": ["api", "teachers"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Teacher service responds\", () => {",
+									"    pm.response.to.have.status(200);",
+									"    pm.expect(pm.response.json()).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Test 6 - Teacher Service Direct Create",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nom\": \"Prof\",\n  \"prenom\": \"Test\",\n  \"email\": \"prof.test@example.com\",\n  \"telephone\": \"0699887766\",\n  \"specialite\": \"Informatique\",\n  \"grade\": \"ASSISTANT\",\n  \"status\": \"ACTIVE\"\n}"
+						},
+						"url": {
+							"raw": "{{teacher_url}}/api/teachers",
+							"host": ["{{teacher_url}}"],
+							"path": ["api", "teachers"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Teacher created successfully\", () => {",
+									"    pm.response.to.have.status(200);",
+									"    const teacher = pm.response.json();",
+									"    pm.expect(teacher.id).to.not.be.undefined;",
+									"    pm.environment.set(\"teacher_id\", teacher.id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Test 7 - Teacher Service Direct Get By Id",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{teacher_url}}/api/teachers/{{teacher_id}}",
+							"host": ["{{teacher_url}}"],
+							"path": ["api", "teachers", "{{teacher_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Test 8 - Teacher Service Direct Update",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nom\": \"Prof\",\n  \"prenom\": \"Updated\",\n  \"email\": \"prof.updated@example.com\",\n  \"telephone\": \"0611223344\",\n  \"specialite\": \"Physique\",\n  \"grade\": \"CHEF_TRAVAUX\",\n  \"status\": \"EN_CONGE\"\n}"
+						},
+						"url": {
+							"raw": "{{teacher_url}}/api/teachers/{{teacher_id}}",
+							"host": ["{{teacher_url}}"],
+							"path": ["api", "teachers", "{{teacher_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Test 9 - Teacher Service Direct Delete",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{teacher_url}}/api/teachers/{{teacher_id}}",
+							"host": ["{{teacher_url}}"],
+							"path": ["api", "teachers", "{{teacher_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Test 10 - Auth Service Direct Login",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -190,7 +299,7 @@
 			"name": "3. Gateway Routing Tests",
 			"item": [
 				{
-					"name": "Test 6 - Gateway to User Service",
+					"name": "Test 11 - Gateway to User Service",
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -216,7 +325,7 @@
 					]
 				},
 				{
-					"name": "Test 7 - Gateway Create User",
+					"name": "Test 12 - Gateway Create User",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -253,7 +362,7 @@
 					]
 				},
 				{
-					"name": "Test 8 - Gateway to Auth Service",
+					"name": "Test 13 - Gateway to Auth Service",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -298,7 +407,7 @@
 			"name": "4. Service Discovery Tests",
 			"item": [
 				{
-					"name": "Test 9 - Gateway Routes Config",
+					"name": "Test 14 - Gateway Routes Config",
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -331,7 +440,7 @@
 					]
 				},
 				{
-					"name": "Test 10 - User Service Details in Eureka",
+					"name": "Test 15 - User Service Details in Eureka",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -368,7 +477,7 @@
 			"name": "5. Resilience Tests",
 			"item": [
 				{
-					"name": "Test 11 - Service Unavailable (Manual)",
+					"name": "Test 16 - Service Unavailable (Manual)",
 					"request": {
 						"method": "GET",
 						"header": [],
