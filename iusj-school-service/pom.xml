@@ -11,10 +11,10 @@
     </parent>
 
     <groupId>com.example</groupId>
-    <artifactId>iusj-teacher-service</artifactId>
+    <artifactId>iusj-school-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>iusj-teacher-service</name>
-    <description>IUSJ Teacher Service</description>
+    <name>iusj-school-service</name>
+    <description>IUSJ School Service</description>
 
     <properties>
         <java.version>17</java.version>

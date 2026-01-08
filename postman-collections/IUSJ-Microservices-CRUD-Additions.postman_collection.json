@@ -1,0 +1,53 @@
+{
+  "info": {
+    "_postman_id": "b3b9f4f5-2b9e-4c19-bb3e-8ea9a2b3f5c1",
+    "name": "IUSJ Microservices CRUD Additions",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Courses",
+      "item": [
+        {"name": "List Courses", "request": {"method": "GET", "header": [{"key":"Authorization","value":"Bearer {{jwt}}"}], "url": {"raw": "{{gateway}}/api/courses", "host": ["{{gateway}}"], "path": ["api","courses"]}}},
+        {"name": "Create Course", "request": {"method": "POST", "header": [{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{jwt}}"}], "body": {"mode":"raw","raw": "{\n  \"code\": \"CS101\",\n  \"title\": \"Intro to CS\",\n  \"description\": \"Basics\",\n  \"credits\": 3,\n  \"hoursPerWeek\": 4,\n  \"teacherId\": 1,\n  \"roomId\": 1,\n  \"status\": \"ACTIVE\"\n}"}, "url": {"raw": "{{gateway}}/api/courses", "host": ["{{gateway}}"], "path": ["api","courses"]}}},
+        {"name": "Get Course", "request": {"method": "GET", "header": [{"key":"Authorization","value":"Bearer {{jwt}}"}], "url": {"raw": "{{gateway}}/api/courses/:id", "host": ["{{gateway}}"], "path": ["api","courses", ":id"], "variable":[{"key":"id","value":"1"}]}}},
+        {"name": "Update Course", "request": {"method": "PUT", "header": [{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{jwt}}"}], "body": {"mode":"raw","raw": "{\n  \"code\": \"CS101\",\n  \"title\": \"Intro to CS (Updated)\",\n  \"description\": \"Basics updated\",\n  \"credits\": 4,\n  \"hoursPerWeek\": 5,\n  \"teacherId\": 1,\n  \"roomId\": 1,\n  \"status\": \"ACTIVE\"\n}"}, "url": {"raw": "{{gateway}}/api/courses/:id", "host": ["{{gateway}}"], "path": ["api","courses", ":id"], "variable":[{"key":"id","value":"1"}]}}},
+        {"name": "Delete Course", "request": {"method": "DELETE", "header": [{"key":"Authorization","value":"Bearer {{jwt}}"}], "url": {"raw": "{{gateway}}/api/courses/:id", "host": ["{{gateway}}"], "path": ["api","courses", ":id"], "variable":[{"key":"id","value":"1"}]}}}
+      ]
+    },
+    {
+      "name": "Schedule",
+      "item": [
+        {"name": "List Entries", "request": {"method": "GET", "header": [{"key":"Authorization","value":"Bearer {{jwt}}"}], "url": {"raw": "{{gateway}}/api/schedule", "host": ["{{gateway}}"], "path": ["api","schedule"]}}},
+        {"name": "Create Entry", "request": {"method": "POST", "header": [{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{jwt}}"}], "body": {"mode":"raw","raw": "{\n  \"courseId\": \"1\",\n  \"teacherId\": \"1\",\n  \"roomId\": \"1\",\n  \"groupId\": \"1\",\n  \"startTime\": \"2026-01-08T10:00:00\",\n  \"endTime\": \"2026-01-08T12:00:00\",\n  \"status\": \"SCHEDULED\"\n}"}, "url": {"raw": "{{gateway}}/api/schedule", "host": ["{{gateway}}"], "path": ["api","schedule"]}}},
+        {"name": "Get Entry", "request": {"method": "GET", "header": [{"key":"Authorization","value":"Bearer {{jwt}}"}], "url": {"raw": "{{gateway}}/api/schedule/:id", "host": ["{{gateway}}"], "path": ["api","schedule", ":id"], "variable":[{"key":"id","value":"1"}]}}},
+        {"name": "Update Entry", "request": {"method": "PUT", "header": [{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{jwt}}"}], "body": {"mode":"raw","raw": "{\n  \"courseId\": \"1\",\n  \"teacherId\": \"1\",\n  \"roomId\": \"1\",\n  \"groupId\": \"1\",\n  \"startTime\": \"2026-01-08T12:00:00\",\n  \"endTime\": \"2026-01-08T13:00:00\",\n  \"status\": \"SCHEDULED\"\n}"}, "url": {"raw": "{{gateway}}/api/schedule/:id", "host": ["{{gateway}}"], "path": ["api","schedule", ":id"], "variable":[{"key":"id","value":"1"}]}}},
+        {"name": "Delete Entry", "request": {"method": "DELETE", "header": [{"key":"Authorization","value":"Bearer {{jwt}}"}], "url": {"raw": "{{gateway}}/api/schedule/:id", "host": ["{{gateway}}"], "path": ["api","schedule", ":id"], "variable":[{"key":"id","value":"1"}]}}}
+      ]
+    },
+    {
+      "name": "Schools",
+      "item": [
+        {"name": "List Schools", "request": {"method": "GET", "header": [{"key":"Authorization","value":"Bearer {{jwt}}"}], "url": {"raw": "{{gateway}}/api/schools", "host": ["{{gateway}}"], "path": ["api","schools"]}}},
+        {"name": "Create School", "request": {"method": "POST", "header": [{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{jwt}}"}], "body": {"mode":"raw","raw": "{\n  \"name\": \"Faculté Sciences\",\n  \"address\": \"Rue 123\",\n  \"phone\": \"+212600000000\",\n  \"email\": \"sci@example.com\",\n  \"status\": \"ACTIVE\"\n}"}, "url": {"raw": "{{gateway}}/api/schools", "host": ["{{gateway}}"], "path": ["api","schools"]}}},
+        {"name": "Get School", "request": {"method": "GET", "header": [{"key":"Authorization","value":"Bearer {{jwt}}"}], "url": {"raw": "{{gateway}}/api/schools/:id", "host": ["{{gateway}}"], "path": ["api","schools", ":id"], "variable":[{"key":"id","value":"1"}]}}},
+        {"name": "Update School", "request": {"method": "PUT", "header": [{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{jwt}}"}], "body": {"mode":"raw","raw": "{\n  \"name\": \"Faculté Sciences (Maj)\",\n  \"address\": \"Rue 123\",\n  \"phone\": \"+212600000000\",\n  \"email\": \"sci@example.com\",\n  \"status\": \"ACTIVE\"\n}"}, "url": {"raw": "{{gateway}}/api/schools/:id", "host": ["{{gateway}}"], "path": ["api","schools", ":id"], "variable":[{"key":"id","value":"1"}]}}},
+        {"name": "Delete School", "request": {"method": "DELETE", "header": [{"key":"Authorization","value":"Bearer {{jwt}}"}], "url": {"raw": "{{gateway}}/api/schools/:id", "host": ["{{gateway}}"], "path": ["api","schools", ":id"], "variable":[{"key":"id","value":"1"}]}}}
+      ]
+    },
+    {
+      "name": "Groups",
+      "item": [
+        {"name": "List Groups", "request": {"method": "GET", "header": [{"key":"Authorization","value":"Bearer {{jwt}}"}], "url": {"raw": "{{gateway}}/api/groups", "host": ["{{gateway}}"], "path": ["api","groups"]}}},
+        {"name": "Create Group", "request": {"method": "POST", "header": [{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{jwt}}"}], "body": {"mode":"raw","raw": "{\n  \"name\": \"L1-INFO-A\",\n  \"level\": \"L1\",\n  \"schoolId\": 1,\n  \"size\": 30,\n  \"status\": \"ACTIVE\"\n}"}, "url": {"raw": "{{gateway}}/api/groups", "host": ["{{gateway}}"], "path": ["api","groups"]}}},
+        {"name": "Get Group", "request": {"method": "GET", "header": [{"key":"Authorization","value":"Bearer {{jwt}}"}], "url": {"raw": "{{gateway}}/api/groups/:id", "host": ["{{gateway}}"], "path": ["api","groups", ":id"], "variable":[{"key":"id","value":"1"}]}}},
+        {"name": "Update Group", "request": {"method": "PUT", "header": [{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{jwt}}"}], "body": {"mode":"raw","raw": "{\n  \"name\": \"L1-INFO-A\",\n  \"level\": \"L1\",\n  \"schoolId\": 1,\n  \"size\": 32,\n  \"status\": \"ACTIVE\"\n}"}, "url": {"raw": "{{gateway}}/api/groups/:id", "host": ["{{gateway}}"], "path": ["api","groups", ":id"], "variable":[{"key":"id","value":"1"}]}}},
+        {"name": "Delete Group", "request": {"method": "DELETE", "header": [{"key":"Authorization","value":"Bearer {{jwt}}"}], "url": {"raw": "{{gateway}}/api/groups/:id", "host": ["{{gateway}}"], "path": ["api","groups", ":id"], "variable":[{"key":"id","value":"1"}]}}}
+      ]
+    }
+  ],
+  "variable": [
+    {"key": "gateway", "value": "http://localhost:8080"},
+    {"key": "jwt", "value": ""}
+  ]
+}
