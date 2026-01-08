@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 
 import com.example.schedule.entities.ScheduleEntry;
 import com.example.schedule.entities.SessionStatus;
@@ -64,6 +66,21 @@ public class ScheduleController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(updated);
+    }
+
+    @PostMapping("/generate")
+    public ResponseEntity<?> generateAuto() {
+        return ResponseEntity.ok(scheduleService.generateAuto());
+    }
+
+    @GetMapping(value = "/{id}/export/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> exportPdf(@PathVariable Long id) {
+        return scheduleService.exportPdfStub(id);
+    }
+
+    @GetMapping(value = "/{id}/export/excel", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    public ResponseEntity<byte[]> exportExcel(@PathVariable Long id) {
+        return scheduleService.exportExcelStub(id);
     }
 
     @DeleteMapping("/{id}")

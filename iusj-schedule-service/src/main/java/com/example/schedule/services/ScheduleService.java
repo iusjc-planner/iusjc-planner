@@ -2,9 +2,13 @@ package com.example.schedule.services;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.nio.charset.StandardCharsets;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.example.schedule.entities.ScheduleEntry;
@@ -71,6 +75,31 @@ public class ScheduleService {
         long completed = repository.countByStatus(SessionStatus.COMPLETED);
         long cancelled = repository.countByStatus(SessionStatus.CANCELLED);
         return new ScheduleStats(total, scheduled, completed, cancelled);
+    }
+
+    public record GenerationResult(String message) {}
+
+    public GenerationResult generateAuto() {
+        // Stub: replace with real generation algorithm
+        return new GenerationResult("Auto-generation stub: aucun changement appliqué");
+    }
+
+    public ResponseEntity<byte[]> exportPdfStub(Long id) {
+        String payload = "PDF export stub for schedule " + id;
+        byte[] bytes = payload.getBytes(StandardCharsets.UTF_8);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=schedule-" + id + ".pdf")
+                .body(bytes);
+    }
+
+    public ResponseEntity<byte[]> exportExcelStub(Long id) {
+        String payload = "Excel export stub for schedule " + id;
+        byte[] bytes = payload.getBytes(StandardCharsets.UTF_8);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=schedule-" + id + ".xlsx")
+                .body(bytes);
     }
 
     public record ScheduleStats(long total, long scheduled, long completed, long cancelled) {}
