@@ -54,7 +54,7 @@ Write-Host "  Tous les services sont demarres !" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "URLs d'acces:" -ForegroundColor Cyan
-Write-Host "  Frontend:        http://localhost:4201" -ForegroundColor White
+Write-Host "  Frontend:        http://localhost:4200" -ForegroundColor White
 Write-Host "  API Gateway:     http://localhost:8080" -ForegroundColor White
 Write-Host "  Eureka Dashboard: http://localhost:8761" -ForegroundColor White
 Write-Host ""
