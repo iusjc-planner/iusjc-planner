@@ -3,6 +3,9 @@ package com.example.iusj_course_service.entities;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -55,6 +58,7 @@ public class Course {
      * Type de séance
      */
     @Enumerated(EnumType.STRING)
+    @Column(length = 20)
     private CourseType type = CourseType.CM;
 
     /**
@@ -71,18 +75,21 @@ public class Course {
      * Date de la séance
      */
     @NotNull
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate date;
 
     /**
      * Heure de début
      */
     @NotNull
+    @JsonFormat(pattern = "HH:mm")
     private LocalTime startTime;
 
     /**
      * Heure de fin
      */
     @NotNull
+    @JsonFormat(pattern = "HH:mm")
     private LocalTime endTime;
 
     /**
@@ -102,6 +109,7 @@ public class Course {
     private Long teacherId;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 20)
     private CourseStatus status = CourseStatus.SCHEDULED;
 
     /**

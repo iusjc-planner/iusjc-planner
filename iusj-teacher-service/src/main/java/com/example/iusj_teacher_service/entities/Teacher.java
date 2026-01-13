@@ -64,4 +64,7 @@ public class Teacher {
 
     @Enumerated(EnumType.STRING)
     private Status status = Status.ACTIVE;
+
+    // Lien avec l'utilisateur (user-service)
+    private Long userId;
 }

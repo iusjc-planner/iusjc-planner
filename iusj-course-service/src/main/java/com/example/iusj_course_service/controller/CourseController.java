@@ -3,6 +3,8 @@ package com.example.iusj_course_service.controller;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -26,6 +28,8 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/courses")
 public class CourseController {
+
+    private static final Logger logger = LoggerFactory.getLogger(CourseController.class);
 
     private final CourseService courseService;
 
@@ -86,15 +90,29 @@ public class CourseController {
     }
 
     @PostMapping
-    public ResponseEntity<Course> createCourse(@Valid @RequestBody Course course) {
-        return ResponseEntity.ok(courseService.create(course));
+    public ResponseEntity<?> createCourse(@Valid @RequestBody Course course) {
+        try {
+            logger.info("Création séance: matiereId={}, date={}, startTime={}, endTime={}", 
+                course.getMatiereId(), course.getDate(), course.getStartTime(), course.getEndTime());
+            Course created = courseService.create(course);
+            logger.info("Séance créée avec ID: {}", created.getId());
+            return ResponseEntity.ok(created);
+        } catch (Exception e) {
+            logger.error("Erreur création séance: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().body("Erreur: " + e.getMessage());
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Course> updateCourse(@PathVariable Long id, @Valid @RequestBody Course course) {
-        return courseService.update(id, course)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<?> updateCourse(@PathVariable Long id, @Valid @RequestBody Course course) {
+        try {
+            return courseService.update(id, course)
+                    .map(c -> ResponseEntity.ok((Object) c))
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            logger.error("Erreur mise à jour séance: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().body("Erreur: " + e.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")
