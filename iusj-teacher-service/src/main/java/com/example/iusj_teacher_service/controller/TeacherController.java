@@ -49,6 +49,19 @@ public class TeacherController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/by-user/{userId}")
+    public ResponseEntity<Teacher> getByUserId(@PathVariable Long userId) {
+        return teacherService.findByUserId(userId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/by-user/{userId}")
+    public ResponseEntity<Void> deleteByUserId(@PathVariable Long userId) {
+        teacherService.deleteByUserId(userId);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/by-status/{status}")
     public ResponseEntity<List<Teacher>> getByStatus(@PathVariable String status) {
         try {

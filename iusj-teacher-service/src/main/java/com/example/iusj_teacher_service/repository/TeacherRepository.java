@@ -6,11 +6,18 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface TeacherRepository extends JpaRepository<Teacher, Long> {
               List<Teacher> findByStatus(Teacher.Status status);
 
               List<Teacher> findByGrade(Teacher.Grade grade);
+
+              Optional<Teacher> findByUserId(Long userId);
+
+              void deleteByUserId(Long userId);
+
+              boolean existsByUserId(Long userId);
 
               @Query("""
                                           SELECT t
