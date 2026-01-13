@@ -7,7 +7,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
+/**
+ * Service pour gérer les enseignants
+ */
 @Service
 @Transactional
 public class TeacherService {
@@ -18,52 +22,80 @@ public class TeacherService {
         this.teacherRepository = teacherRepository;
     }
 
+    /**
+     * Récupère tous les enseignants
+     */
     public List<Teacher> getAll() {
         return teacherRepository.findAll();
     }
 
+    /**
+     * Récupère un enseignant par son ID
+     */
     public Optional<Teacher> getById(Long id) {
         return teacherRepository.findById(id);
     }
 
-    public Teacher create(Teacher teacher) {
+    /**
+     * Récupère un enseignant par son userId
+     */
+    public Optional<Teacher> getByUserId(Long userId) {
+        return teacherRepository.findByUserId(userId);
+    }
+
+    /**
+     * Crée un nouvel enseignant
+     */
+    public Teacher create(Long userId, Set<String> specialities) {
+        // Vérifier que l'enseignant n'existe pas déjà pour cet userId
+        if (teacherRepository.findByUserId(userId).isPresent()) {
+            throw new IllegalArgumentException("Un profil enseignant existe déjà pour cet utilisateur");
+        }
+        
+        Teacher teacher = new Teacher();
+        teacher.setUserId(userId);
+        teacher.setSpecialities(specialities != null ? specialities : Set.of());
+        
         return teacherRepository.save(teacher);
     }
 
-    public Optional<Teacher> update(Long id, Teacher payload) {
+    /**
+     * Met à jour un enseignant
+     */
+    public Optional<Teacher> update(Long id, Set<String> specialities) {
         return teacherRepository.findById(id).map(existing -> {
-            existing.setNom(payload.getNom());
-            existing.setPrenom(payload.getPrenom());
-            existing.setEmail(payload.getEmail());
-            existing.setTelephone(payload.getTelephone());
-            existing.setSpecialite(payload.getSpecialite());
-            existing.setGrade(payload.getGrade());
-            existing.setStatus(payload.getStatus());
+            if (specialities != null) {
+                existing.setSpecialities(specialities);
+            }
             return teacherRepository.save(existing);
         });
     }
 
+    /**
+     * Supprime un enseignant
+     */
     public void delete(Long id) {
         teacherRepository.deleteById(id);
     }
 
-    public List<Teacher> findByStatus(Teacher.Status status) {
-        return teacherRepository.findByStatus(status);
+    /**
+     * Ajoute une spécialité à un enseignant
+     */
+    public Optional<Teacher> addSpeciality(Long id, String speciality) {
+        return teacherRepository.findById(id).map(existing -> {
+            existing.getSpecialities().add(speciality);
+            return teacherRepository.save(existing);
+        });
     }
 
-    public List<Teacher> findByGrade(Teacher.Grade grade) {
-        return teacherRepository.findByGrade(grade);
-    }
-
-    public List<Teacher> search(String nom, String prenom, String specialite, String email) {
-        return teacherRepository.search(emptyToNull(nom), emptyToNull(prenom), emptyToNull(specialite), emptyToNull(email));
-    }
-
-    private String emptyToNull(String value) {
-        if (value == null) {
-            return null;
-        }
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
+    /**
+     * Supprime une spécialité d'un enseignant
+     */
+    public Optional<Teacher> removeSpeciality(Long id, String speciality) {
+        return teacherRepository.findById(id).map(existing -> {
+            existing.getSpecialities().remove(speciality);
+            return teacherRepository.save(existing);
+        });
     }
 }
+

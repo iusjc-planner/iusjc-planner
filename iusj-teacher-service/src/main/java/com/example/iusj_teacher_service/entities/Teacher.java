@@ -1,67 +1,55 @@
 package com.example.iusj_teacher_service.entities;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * Représente un enseignant du système.
+ * 
+ * Un enseignant est lié à un User (qui contient nom, prenom, email, telephone).
+ * Un enseignant a des spécialités (matières qu'il enseigne) et des disponibilités.
+ */
 @Entity
 @Table(name = "teachers", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_teacher_email", columnNames = "email")
+        @UniqueConstraint(name = "uk_teacher_user_id", columnNames = "user_id")
 })
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Teacher {
 
-    public enum Grade {
-        ASSISTANT,
-        CHEF_TRAVAUX,
-        PROFESSEUR
-    }
-
-    public enum Status {
-        ACTIVE,
-        INACTIVE,
-        EN_CONGE
-    }
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
-    @Size(max = 100)
-    private String nom;
+    /**
+     * Référence au User (contient nom, prenom, email, telephone, status, role)
+     */
+    @NotNull
+    @Column(name = "user_id", nullable = false, unique = true)
+    private Long userId;
 
-    @NotBlank
-    @Size(max = 100)
-    private String prenom;
+    /**
+     * Matières que l'enseignant dispense
+     * Exemple: ["Mathématiques", "Physique"]
+     */
+    @ElementCollection
+    @CollectionTable(name = "teacher_specialities", 
+                     joinColumns = @JoinColumn(name = "teacher_id"))
+    @Column(name = "speciality")
+    private Set<String> specialities = new HashSet<>();
 
-    @Email
-    @NotBlank
-    @Size(max = 150)
-    private String email;
-
-    @Size(max = 25)
-    private String telephone;
-
-    @Size(max = 120)
-    private String specialite;
-
-    @Enumerated(EnumType.STRING)
-    private Grade grade = Grade.ASSISTANT;
-
-    @Enumerated(EnumType.STRING)
-    private Status status = Status.ACTIVE;
+    /**
+     * Créneaux de disponibilité de l'enseignant
+     */
+    @OneToMany(mappedBy = "teacher", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<Disponibilite> disponibilites = new ArrayList<>();
 }

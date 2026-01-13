@@ -8,6 +8,8 @@ ui/*
 infrastructure/*
 documentation/*
 
+PurpleAdmin-Free-Angular-Admin-Template-master
+
 # Autoriser les dossiers mais pas les fichiers internes
 !services/
 !ui/
