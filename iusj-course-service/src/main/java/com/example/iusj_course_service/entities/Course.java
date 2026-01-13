@@ -1,7 +1,11 @@
 package com.example.iusj_course_service.entities;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -9,55 +13,114 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Course (Séance) - représente une séance de cours à insérer dans l'emploi du temps
+ * Référence une Matière existante
+ */
 @Entity
-@Table(name = "courses", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_course_code", columnNames = "code")
-})
+@Table(name = "courses")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Course {
 
     public enum CourseStatus {
-        ACTIVE,
-        INACTIVE
+        SCHEDULED,   // Programmée
+        COMPLETED,   // Terminée
+        CANCELLED,   // Annulée
+        POSTPONED    // Reportée
+    }
+
+    public enum CourseType {
+        CM,  // Cours Magistral
+        TD,  // Travaux Dirigés
+        TP,  // Travaux Pratiques
+        EXAM // Examen
     }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
-    @Size(max = 50)
-    private String code;
+    /**
+     * Référence à la matière
+     */
+    @NotNull
+    private Long matiereId;
 
-    @NotBlank
-    @Size(max = 150)
+    /**
+     * Type de séance
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private CourseType type = CourseType.CM;
+
+    /**
+     * Titre spécifique de la séance (optionnel)
+     * Si non renseigné, on utilisera le nom de la matière
+     */
+    @Size(max = 200)
     private String title;
 
     @Size(max = 500)
     private String description;
 
+    /**
+     * Date de la séance
+     */
     @NotNull
-    private Integer credits;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate date;
 
-    private Integer hoursPerWeek;
+    /**
+     * Heure de début
+     */
+    @NotNull
+    @JsonFormat(pattern = "HH:mm")
+    private LocalTime startTime;
 
-    private Long teacherId;
+    /**
+     * Heure de fin
+     */
+    @NotNull
+    @JsonFormat(pattern = "HH:mm")
+    private LocalTime endTime;
 
+    /**
+     * Salle assignée
+     */
     private Long roomId;
 
-    @Enumerated(EnumType.STRING)
-    private CourseStatus status = CourseStatus.ACTIVE;
+    /**
+     * Groupe assigné (si applicable)
+     */
+    private Long groupId;
 
-    private LocalDate startDate;
-    private LocalDate endDate;
+    /**
+     * Enseignant pour cette séance (peut être différent du responsable de matière)
+     * Si null, on prend l'enseignant de la matière
+     */
+    private Long teacherId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private CourseStatus status = CourseStatus.SCHEDULED;
+
+    /**
+     * Numéro de la séance dans la séquence du cours (e.g., Séance 1, 2, 3...)
+     */
+    private Integer sequenceNumber;
+
+    /**
+     * Notes/commentaires sur cette séance
+     */
+    @Size(max = 1000)
+    private String notes;
 }
+
