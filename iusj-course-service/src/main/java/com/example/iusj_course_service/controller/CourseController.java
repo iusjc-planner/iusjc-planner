@@ -1,7 +1,9 @@
 package com.example.iusj_course_service.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,6 +20,9 @@ import com.example.iusj_course_service.services.CourseService;
 
 import jakarta.validation.Valid;
 
+/**
+ * Contrôleur pour les séances de cours
+ */
 @RestController
 @RequestMapping("/api/courses")
 public class CourseController {
@@ -29,12 +34,16 @@ public class CourseController {
     }
 
     @GetMapping
-    public List<Course> listCourses(@RequestParam(required = false) String code,
-                                    @RequestParam(required = false) String title,
-                                    @RequestParam(required = false) Course.CourseStatus status,
-                                    @RequestParam(required = false) Long teacherId,
-                                    @RequestParam(required = false) Long roomId) {
-        return courseService.getAll(code, title, status, teacherId, roomId);
+    public List<Course> listCourses(
+            @RequestParam(required = false) Long matiereId,
+            @RequestParam(required = false) Course.CourseStatus status,
+            @RequestParam(required = false) Course.CourseType type,
+            @RequestParam(required = false) Long teacherId,
+            @RequestParam(required = false) Long roomId,
+            @RequestParam(required = false) Long groupId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo) {
+        return courseService.getAll(matiereId, status, type, teacherId, roomId, groupId, dateFrom, dateTo);
     }
 
     @GetMapping("/{id}")
@@ -42,6 +51,38 @@ public class CourseController {
         return courseService.getById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/matiere/{matiereId}")
+    public List<Course> getCoursesByMatiere(@PathVariable Long matiereId) {
+        return courseService.getByMatiere(matiereId);
+    }
+
+    @GetMapping("/date/{date}")
+    public List<Course> getCoursesByDate(
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return courseService.getByDate(date);
+    }
+
+    @GetMapping("/date-range")
+    public List<Course> getCoursesByDateRange(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        return courseService.getByDateRange(startDate, endDate);
+    }
+
+    @GetMapping("/teacher/{teacherId}/date/{date}")
+    public List<Course> getCoursesByTeacherAndDate(
+            @PathVariable Long teacherId,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return courseService.getByTeacherAndDate(teacherId, date);
+    }
+
+    @GetMapping("/room/{roomId}/date/{date}")
+    public List<Course> getCoursesByRoomAndDate(
+            @PathVariable Long roomId,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return courseService.getByRoomAndDate(roomId, date);
     }
 
     @PostMapping
@@ -60,5 +101,10 @@ public class CourseController {
     public ResponseEntity<Void> deleteCourse(@PathVariable Long id) {
         courseService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/stats")
+    public CourseService.CourseStats stats() {
+        return courseService.stats();
     }
 }

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.iusj_school_service.entities.Filiere;
 import com.example.iusj_school_service.entities.School;
 import com.example.iusj_school_service.services.SchoolService;
 
@@ -58,5 +59,38 @@ public class SchoolController {
     @GetMapping("/stats")
     public SchoolService.SchoolStats stats() {
         return service.stats();
+    }
+
+    // === Filière endpoints ===
+
+    @GetMapping("/filieres")
+    public List<Filiere> getAllFilieres() {
+        return service.getAllFilieres();
+    }
+
+    @GetMapping("/{schoolId}/filieres")
+    public List<Filiere> getFilieresBySchool(@PathVariable Long schoolId) {
+        return service.getFilieresBySchoolId(schoolId);
+    }
+
+    @GetMapping("/filieres/{id}")
+    public ResponseEntity<Filiere> getFiliere(@PathVariable Long id) {
+        return service.getFiliereById(id).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/{schoolId}/filieres")
+    public ResponseEntity<Filiere> addFiliere(@PathVariable Long schoolId, @Valid @RequestBody Filiere filiere) {
+        return ResponseEntity.ok(service.addFiliereToSchool(schoolId, filiere));
+    }
+
+    @PutMapping("/filieres/{id}")
+    public ResponseEntity<Filiere> updateFiliere(@PathVariable Long id, @Valid @RequestBody Filiere filiere) {
+        return service.updateFiliere(id, filiere).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/filieres/{id}")
+    public ResponseEntity<Void> deleteFiliere(@PathVariable Long id) {
+        service.deleteFiliere(id);
+        return ResponseEntity.noContent().build();
     }
 }

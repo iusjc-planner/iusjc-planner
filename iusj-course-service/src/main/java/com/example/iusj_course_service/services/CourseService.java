@@ -1,5 +1,6 @@
 package com.example.iusj_course_service.services;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,9 +24,33 @@ public class CourseService {
         this.courseRepository = courseRepository;
     }
 
-    public List<Course> getAll(String code, String title, Course.CourseStatus status, Long teacherId, Long roomId) {
-        Specification<Course> spec = CourseSpecifications.withFilters(code, title, status, teacherId, roomId);
-        return courseRepository.findAll(spec, Sort.by(Sort.Direction.ASC, "code"));
+    public List<Course> getAll(Long matiereId, Course.CourseStatus status, Course.CourseType type,
+                                Long teacherId, Long roomId, Long groupId,
+                                LocalDate dateFrom, LocalDate dateTo) {
+        Specification<Course> spec = CourseSpecifications.withFilters(
+            matiereId, status, type, teacherId, roomId, groupId, dateFrom, dateTo
+        );
+        return courseRepository.findAll(spec, Sort.by(Sort.Direction.ASC, "date", "startTime"));
+    }
+
+    public List<Course> getByMatiere(Long matiereId) {
+        return courseRepository.findByMatiereId(matiereId);
+    }
+
+    public List<Course> getByDate(LocalDate date) {
+        return courseRepository.findByDate(date);
+    }
+
+    public List<Course> getByDateRange(LocalDate startDate, LocalDate endDate) {
+        return courseRepository.findByDateBetween(startDate, endDate);
+    }
+
+    public List<Course> getByTeacherAndDate(Long teacherId, LocalDate date) {
+        return courseRepository.findByTeacherIdAndDate(teacherId, date);
+    }
+
+    public List<Course> getByRoomAndDate(Long roomId, LocalDate date) {
+        return courseRepository.findByRoomIdAndDate(roomId, date);
     }
 
     public Optional<Course> getById(Long id) {
@@ -45,8 +70,18 @@ public class CourseService {
 
     public void delete(Long id) {
         if (!courseRepository.existsById(id)) {
-            throw new EntityNotFoundException("Course not found with id " + id);
+            throw new EntityNotFoundException("Séance non trouvée avec l'id " + id);
         }
         courseRepository.deleteById(id);
     }
+
+    public CourseStats stats() {
+        long total = courseRepository.count();
+        long scheduled = courseRepository.countByStatus(Course.CourseStatus.SCHEDULED);
+        long completed = courseRepository.countByStatus(Course.CourseStatus.COMPLETED);
+        long cancelled = courseRepository.countByStatus(Course.CourseStatus.CANCELLED);
+        return new CourseStats(total, scheduled, completed, cancelled);
+    }
+
+    public record CourseStats(long total, long scheduled, long completed, long cancelled) {}
 }
