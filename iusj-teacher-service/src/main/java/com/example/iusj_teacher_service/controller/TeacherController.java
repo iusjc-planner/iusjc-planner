@@ -2,14 +2,15 @@ package com.example.iusj_teacher_service.controller;
 
 import com.example.iusj_teacher_service.entities.Teacher;
 import com.example.iusj_teacher_service.services.TeacherService;
-import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
+/**
+ * Contrôleur REST pour gérer les enseignants
+ */
 @RestController
 @RequestMapping("/api/teachers")
+@CrossOrigin(origins = {"http://localhost:4200", "http://localhost:3000"}, allowCredentials = "true")
 public class TeacherController {
 
     private final TeacherService teacherService;
@@ -18,62 +19,33 @@ public class TeacherController {
         this.teacherService = teacherService;
     }
 
-    @GetMapping
-    public List<Teacher> getAllTeachers() {
-        return teacherService.getAll();
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<Teacher> getTeacherById(@PathVariable Long id) {
-        return teacherService.getById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PostMapping
-    public ResponseEntity<Teacher> createTeacher(@Valid @RequestBody Teacher teacher) {
-        Teacher created = teacherService.create(teacher);
-        return ResponseEntity.ok(created);
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<Teacher> updateTeacher(@PathVariable Long id, @Valid @RequestBody Teacher teacher) {
-        return teacherService.update(id, teacher)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTeacher(@PathVariable Long id) {
-        teacherService.delete(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/by-status/{status}")
-    public ResponseEntity<List<Teacher>> getByStatus(@PathVariable String status) {
-        try {
-            Teacher.Status teacherStatus = Teacher.Status.valueOf(status.toUpperCase());
-            return ResponseEntity.ok(teacherService.findByStatus(teacherStatus));
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().build();
+    /**
+     * Récupère le Teacher de l'utilisateur connecté
+     */
+    @GetMapping("/current")
+    public ResponseEntity<Teacher> getCurrentTeacher() {
+        System.out.println("DEBUG: TeacherController.getCurrentTeacher() appelé");
+        Teacher teacher = teacherService.getCurrentTeacher();
+        System.out.println("DEBUG: Teacher récupéré: " + teacher);
+        if (teacher == null) {
+            System.out.println("DEBUG: Teacher est null, retour 404");
+            return ResponseEntity.notFound().build();
         }
+        System.out.println("DEBUG: Teacher trouvé, retour 200");
+        return ResponseEntity.ok(teacher);
     }
 
-    @GetMapping("/by-grade/{grade}")
-    public ResponseEntity<List<Teacher>> getByGrade(@PathVariable String grade) {
-        try {
-            Teacher.Grade teacherGrade = Teacher.Grade.valueOf(grade.toUpperCase());
-            return ResponseEntity.ok(teacherService.findByGrade(teacherGrade));
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    @GetMapping("/search")
-    public ResponseEntity<List<Teacher>> searchTeachers(@RequestParam(required = false) String nom,
-                                                        @RequestParam(required = false) String prenom,
-                                                        @RequestParam(required = false) String specialite,
-                                                        @RequestParam(required = false) String email) {
-        return ResponseEntity.ok(teacherService.search(nom, prenom, specialite, email));
+    /**
+     * Récupère un Teacher par son userId
+     */
+    @GetMapping("/by-user/{userId}")
+    public ResponseEntity<Teacher> getTeacherByUserId(@PathVariable Long userId) {
+        System.out.println("DEBUG: TeacherController.getTeacherByUserId() appelé avec userId=" + userId);
+        return teacherService.getByUserId(userId)
+                .map(teacher -> {
+                    System.out.println("DEBUG: Teacher trouvé pour userId=" + userId);
+                    return ResponseEntity.ok(teacher);
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 }

@@ -1,8 +1,6 @@
 package com.example.iusj_teacher_service.services;
 
-import com.example.iusj_teacher_service.entities.TeacherAvailability;
-import com.example.iusj_teacher_service.entities.TeacherAvailability.AvailabilityStatus;
-import com.example.iusj_teacher_service.entities.TeacherAvailability.AvailabilityType;
+import com.example.iusj_teacher_service.entities.Disponibilite;
 import net.fortuna.ical4j.data.CalendarBuilder;
 import net.fortuna.ical4j.data.ParserException;
 import net.fortuna.ical4j.model.Calendar;
@@ -20,8 +18,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.DayOfWeek;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -31,13 +29,6 @@ import java.util.List;
 
 /**
  * Service pour parser les fichiers ICS (iCalendar) exportés depuis Google Calendar.
- * 
- * Flow d'utilisation:
- * 1. L'enseignant exporte son calendrier Google Calendar (Settings > Import & Export > Export)
- * 2. L'enseignant envoie le fichier .ics à l'admin
- * 3. L'admin upload le fichier via l'interface /app/teachers/{id}/availability
- * 4. Ce service parse le fichier et extrait les événements comme indisponibilités
- * 5. Les indisponibilités sont stockées dans la table teacher_availability
  */
 @Service
 public class IcsParserService {
@@ -52,15 +43,10 @@ public class IcsParserService {
     private static final LocalTime WORK_END = LocalTime.of(18, 0);
 
     /**
-     * Parse un fichier ICS et retourne la liste des indisponibilités.
-     * 
-     * @param file Le fichier ICS uploadé
-     * @param teacherId L'ID de l'enseignant
-     * @return Liste des indisponibilités extraites du fichier
-     * @throws IcsParseException En cas d'erreur de parsing
+     * Parse un fichier ICS et retourne la liste des disponibilités.
      */
-    public List<TeacherAvailability> parseIcsFile(MultipartFile file, Long teacherId) throws IcsParseException {
-        List<TeacherAvailability> availabilities = new ArrayList<>();
+    public List<Disponibilite> parseIcsFile(MultipartFile file, Long teacherId) throws IcsParseException {
+        List<Disponibilite> disponibilites = new ArrayList<>();
         
         try (InputStream inputStream = file.getInputStream()) {
             CalendarBuilder builder = new CalendarBuilder();
@@ -71,31 +57,29 @@ public class IcsParserService {
                 VEvent event = (VEvent) component;
                 
                 try {
-                    TeacherAvailability availability = parseEvent(event, teacherId);
-                    if (availability != null) {
-                        availabilities.add(availability);
+                    Disponibilite disponibilite = parseEvent(event, teacherId);
+                    if (disponibilite != null) {
+                        disponibilites.add(disponibilite);
                     }
                 } catch (Exception e) {
                     logger.warn("Impossible de parser l'événement: {}", getEventSummary(event), e);
-                    // Continuer avec les autres événements
                 }
             }
             
             logger.info("Fichier ICS parsé avec succès: {} événements extraits pour l'enseignant {}", 
-                availabilities.size(), teacherId);
+                disponibilites.size(), teacherId);
             
         } catch (IOException | ParserException e) {
             throw new IcsParseException("Erreur lors du parsing du fichier ICS: " + e.getMessage(), e);
         }
         
-        return availabilities;
+        return disponibilites;
     }
     
     /**
-     * Parse un événement iCal et le convertit en TeacherAvailability
+     * Parse un événement iCal et le convertit en Disponibilite
      */
-    private TeacherAvailability parseEvent(VEvent event, Long teacherId) {
-        // Récupérer les propriétés de l'événement
+    private Disponibilite parseEvent(VEvent event, Long teacherId) {
         DtStart dtStart = event.getStartDate();
         DtEnd dtEnd = event.getEndDate();
         Uid uid = event.getUid();
@@ -106,7 +90,6 @@ public class IcsParserService {
             return null;
         }
         
-        // Convertir les dates iCal4j en LocalDateTime
         LocalDateTime startDateTime = convertIcalDate(dtStart.getDate());
         LocalDateTime endDateTime = convertIcalDate(dtEnd.getDate());
         
@@ -120,62 +103,25 @@ public class IcsParserService {
             return null;
         }
         
-        TeacherAvailability availability = new TeacherAvailability();
-        availability.setTeacherId(teacherId);
-        availability.setStatus(AvailabilityStatus.UNAVAILABLE);
-        availability.setFromIcsImport(true);
+        Disponibilite disponibilite = new Disponibilite();
+        disponibilite.setDate(startDateTime.toLocalDate());
+        disponibilite.setHeureDebut(startDateTime.toLocalTime());
+        
+        // Calculer la durée en minutes
+        long durationMinutes = java.time.temporal.ChronoUnit.MINUTES.between(startDateTime, endDateTime);
+        disponibilite.setDuree((int) durationMinutes);
+        
+        disponibilite.setFromIcsImport(true);
         
         if (uid != null) {
-            availability.setIcsEventUid(uid.getValue());
+            disponibilite.setIcsEventUid(uid.getValue());
         }
         
-        if (summary != null) {
-            availability.setReason(truncateReason(summary.getValue()));
-        }
-        
-        // Déterminer le type d'événement
-        boolean isAllDay = isAllDayEvent(dtStart);
-        boolean isRecurring = event.getProperty(Property.RRULE) != null;
-        
-        if (isAllDay) {
-            // Événement sur toute la journée
-            LocalDate startDate = startDateTime.toLocalDate();
-            LocalDate endDate = endDateTime.toLocalDate();
-            
-            if (startDate.equals(endDate) || endDate.minusDays(1).equals(startDate)) {
-                // Une seule journée
-                availability.setAvailabilityType(AvailabilityType.SPECIFIC_DATE);
-                availability.setSpecificDate(startDate);
-            } else {
-                // Plusieurs jours
-                availability.setAvailabilityType(AvailabilityType.DATE_RANGE);
-                availability.setSpecificDate(startDate);
-                availability.setEndDate(endDate.minusDays(1)); // Ajuster car la fin est exclusive
-            }
-            
-            availability.setStartTime(WORK_START);
-            availability.setEndTime(WORK_END);
-            
-        } else if (isRecurring) {
-            // Événement récurrent
-            availability.setAvailabilityType(AvailabilityType.WEEKLY_RECURRING);
-            availability.setDayOfWeek(startDateTime.getDayOfWeek().getValue());
-            availability.setStartTime(startDateTime.toLocalTime());
-            availability.setEndTime(endDateTime.toLocalTime());
-            
-        } else {
-            // Événement ponctuel avec horaires précis
-            availability.setAvailabilityType(AvailabilityType.SPECIFIC_DATE);
-            availability.setSpecificDate(startDateTime.toLocalDate());
-            availability.setStartTime(startDateTime.toLocalTime());
-            availability.setEndTime(endDateTime.toLocalTime());
-        }
-        
-        return availability;
+        return disponibilite;
     }
     
     /**
-     * Convertit une date iCal4j (net.fortuna.ical4j.model.Date) en LocalDateTime
+     * Convertit une date iCal4j en LocalDateTime
      */
     private LocalDateTime convertIcalDate(net.fortuna.ical4j.model.Date icalDate) {
         if (icalDate == null) {
@@ -183,24 +129,12 @@ public class IcsParserService {
         }
         
         try {
-            // Convertir en java.util.Date puis en LocalDateTime
             Date javaDate = new Date(icalDate.getTime());
             return javaDate.toInstant().atZone(DEFAULT_TIMEZONE).toLocalDateTime();
         } catch (Exception e) {
             logger.warn("Impossible de convertir la date iCal: {}", icalDate, e);
             return null;
         }
-    }
-    
-    /**
-     * Vérifie si l'événement est un événement sur toute la journée
-     */
-    private boolean isAllDayEvent(DtStart dtStart) {
-        if (dtStart == null) return false;
-        
-        // Un événement "toute la journée" a généralement une date sans heure
-        String value = dtStart.getValue();
-        return value != null && value.length() == 8; // Format YYYYMMDD
     }
     
     /**
@@ -228,14 +162,6 @@ public class IcsParserService {
     }
     
     /**
-     * Tronque la raison si elle est trop longue
-     */
-    private String truncateReason(String reason) {
-        if (reason == null) return null;
-        return reason.length() > 250 ? reason.substring(0, 250) + "..." : reason;
-    }
-    
-    /**
      * Exception personnalisée pour les erreurs de parsing ICS
      */
     public static class IcsParseException extends Exception {
@@ -248,3 +174,4 @@ public class IcsParserService {
         }
     }
 }
+
