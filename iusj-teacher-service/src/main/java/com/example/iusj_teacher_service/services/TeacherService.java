@@ -2,10 +2,15 @@ package com.example.iusj_teacher_service.services;
 
 import com.example.iusj_teacher_service.entities.Teacher;
 import com.example.iusj_teacher_service.repository.TeacherRepository;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -17,9 +22,44 @@ import java.util.Set;
 public class TeacherService {
 
     private final TeacherRepository teacherRepository;
+    private final RestTemplate restTemplate;
 
-    public TeacherService(TeacherRepository teacherRepository) {
+    public TeacherService(TeacherRepository teacherRepository, RestTemplate restTemplate) {
         this.teacherRepository = teacherRepository;
+        this.restTemplate = restTemplate;
+    }
+
+    /**
+     * Récupère le Teacher de l'utilisateur connecté
+     */
+    public Teacher getCurrentTeacher() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+        
+        // Le login est stocké dans le principal
+        String login = authentication.getName();
+        
+        try {
+            // Appeler le user-service via le gateway pour récupérer l'utilisateur
+            String url = "http://iusj-user-service/api/users/login/" + login;
+            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+            
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                Map<String, Object> user = response.getBody();
+                Long userId = ((Number) user.get("id")).longValue();
+                
+                // Récupérer le Teacher associé à cet utilisateur
+                Optional<Teacher> teacher = teacherRepository.findByUserId(userId);
+                return teacher.orElse(null);
+            }
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la récupération de l'utilisateur: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return null;
     }
 
     /**

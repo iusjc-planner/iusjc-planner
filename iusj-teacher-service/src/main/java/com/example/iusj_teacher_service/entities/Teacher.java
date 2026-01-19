@@ -46,10 +46,4 @@ public class Teacher {
                      joinColumns = @JoinColumn(name = "teacher_id"))
     @Column(name = "speciality")
     private Set<String> specialities = new HashSet<>();
-
-    /**
-     * Créneaux de disponibilité de l'enseignant
-     */
-    @OneToMany(mappedBy = "teacher", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Disponibilite> disponibilites = new ArrayList<>();
 }

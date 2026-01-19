@@ -104,12 +104,12 @@ public class IcsParserService {
         }
         
         Disponibilite disponibilite = new Disponibilite();
-        disponibilite.setDayOfWeek(startDateTime.getDayOfWeek());
-        disponibilite.setStartTime(startDateTime.toLocalTime());
+        disponibilite.setDate(startDateTime.toLocalDate());
+        disponibilite.setHeureDebut(startDateTime.toLocalTime());
         
         // Calculer la durée en minutes
         long durationMinutes = java.time.temporal.ChronoUnit.MINUTES.between(startDateTime, endDateTime);
-        disponibilite.setDurationMinutes((int) durationMinutes);
+        disponibilite.setDuree((int) durationMinutes);
         
         disponibilite.setFromIcsImport(true);
         
