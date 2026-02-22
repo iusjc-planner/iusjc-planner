@@ -1,0 +1,77 @@
+<div class="page-header">
+	<h3 class="page-title">
+		<i class="mdi mdi-door-open menu-icon"></i>
+		{{ isEdit ? 'Modifier une salle' : 'Ajouter une salle' }}
+	</h3>
+	<nav aria-label="breadcrumb">
+		<ol class="breadcrumb">
+			<li class="breadcrumb-item"><a routerLink="/app/dashboard">Accueil</a></li>
+			<li class="breadcrumb-item"><a routerLink="/app/rooms">Salles</a></li>
+			<li class="breadcrumb-item active" aria-current="page">{{ isEdit ? 'Modifier' : 'Nouvelle' }}</li>
+		</ol>
+	</nav>
+</div>
+
+<div class="card">
+	<div class="card-body">
+		<h4 class="card-title">Informations</h4>
+		<form [formGroup]="form" (ngSubmit)="onSubmit()" class="forms-sample">
+			<div class="row">
+				<div class="col-md-6">
+					<div class="form-group">
+						<label>Nom *</label>
+						<input type="text" class="form-control" formControlName="name" />
+						<small class="text-danger" *ngIf="form.get('name')?.invalid && form.get('name')?.touched">Nom requis</small>
+					</div>
+				</div>
+				<div class="col-md-3">
+					<div class="form-group">
+						<label>Capacité *</label>
+						<input type="number" class="form-control" formControlName="capacity" />
+					</div>
+				</div>
+				<div class="col-md-3">
+					<div class="form-group">
+						<label>Type *</label>
+						<select class="form-control" formControlName="type">
+							<option *ngFor="let t of [RoomType.CLASSROOM, RoomType.LAB, RoomType.AUDITORIUM]" [ngValue]="t">{{ t }}</option>
+						</select>
+					</div>
+				</div>
+			</div>
+
+			<div class="row">
+				<div class="col-md-4">
+					<div class="form-group">
+						<label>Statut *</label>
+						<select class="form-control" formControlName="status">
+							<option *ngFor="let s of [RoomStatus.ACTIVE, RoomStatus.MAINTENANCE]" [ngValue]="s">{{ s }}</option>
+						</select>
+					</div>
+				</div>
+				<div class="col-md-4">
+					<div class="form-group">
+						<label>Lieu</label>
+						<input type="text" class="form-control" formControlName="location" />
+					</div>
+				</div>
+				<div class="col-md-4">
+					<div class="form-group">
+						<label>Equipements (séparés par des virgules)</label>
+						<input type="text" class="form-control" formControlName="equipments" placeholder="Projecteur, Clim..." />
+					</div>
+				</div>
+			</div>
+
+			<div class="form-group">
+				<label>Description</label>
+				<textarea class="form-control" rows="3" formControlName="description"></textarea>
+			</div>
+
+			<button type="submit" class="btn btn-primary mr-2" [disabled]="form.invalid || submitting">
+				<i class="mdi mdi-content-save"></i> Enregistrer
+			</button>
+			<a class="btn btn-light" routerLink="/app/rooms">Annuler</a>
+		</form>
+	</div>
+</div>

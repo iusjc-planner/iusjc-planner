@@ -1,0 +1,111 @@
+<div class="page-header">
+  <h3 class="page-title">
+    <i class="mdi mdi-account-tie menu-icon"></i>
+    Fiche Enseignant
+  </h3>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a routerLink="/app/dashboard">Accueil</a></li>
+      <li class="breadcrumb-item"><a routerLink="/app/teachers">Enseignants</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Détails</li>
+    </ol>
+  </nav>
+</div>
+
+<div class="row">
+  <!-- Carte Profil -->
+  <div class="col-md-4 grid-margin stretch-card">
+    <div class="card">
+      <div class="card-body text-center">
+        <img 
+          [src]="teacher?.photo || 'assets/images/faces/face1.jpg'" 
+          alt="photo" 
+          class="img-lg rounded-circle mb-3">
+        <h4 class="mb-1">{{ teacher?.prenom }} {{ teacher?.nom }}</h4>
+        <p class="text-muted mb-2">{{ teacher?.email }}</p>
+        <p class="text-muted mb-3">{{ teacher?.telephone || 'Non renseigné' }}</p>
+        
+        <div class="mt-4 d-flex flex-column">
+          <button class="btn btn-primary mb-2" [routerLink]="['/app/teachers', teacher?.id, 'availability']">
+            <i class="mdi mdi-calendar-clock"></i> Voir disponibilités
+          </button>
+          <button class="btn btn-outline-secondary" routerLink="/app/teachers">
+            <i class="mdi mdi-arrow-left"></i> Retour à la liste
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Informations détaillées -->
+  <div class="col-md-8 grid-margin stretch-card">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title">Informations générales</h4>
+        
+        <div class="row mb-3">
+          <div class="col-sm-4">
+            <p class="text-muted mb-0">Prénom</p>
+          </div>
+          <div class="col-sm-8">
+            <p class="mb-0">{{ teacher?.prenom }}</p>
+          </div>
+        </div>
+        
+        <div class="row mb-3">
+          <div class="col-sm-4">
+            <p class="text-muted mb-0">Nom</p>
+          </div>
+          <div class="col-sm-8">
+            <p class="mb-0">{{ teacher?.nom }}</p>
+          </div>
+        </div>
+        
+        <div class="row mb-3">
+          <div class="col-sm-4">
+            <p class="text-muted mb-0">Email</p>
+          </div>
+          <div class="col-sm-8">
+            <p class="mb-0">{{ teacher?.email }}</p>
+          </div>
+        </div>
+        
+        <div class="row mb-3">
+          <div class="col-sm-4">
+            <p class="text-muted mb-0">Téléphone</p>
+          </div>
+          <div class="col-sm-8">
+            <p class="mb-0">{{ teacher?.telephone || 'Non renseigné' }}</p>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-sm-4">
+            <p class="text-muted mb-0">Spécialité</p>
+          </div>
+          <div class="col-sm-8">
+            <p class="mb-0">{{ teacher?.specialite || 'Non renseignée' }}</p>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-sm-4">
+            <p class="text-muted mb-0">Grade</p>
+          </div>
+          <div class="col-sm-8">
+            <p class="mb-0">{{ teacher?.grade || 'Non renseigné' }}</p>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-sm-4">
+            <p class="text-muted mb-0">Statut</p>
+          </div>
+          <div class="col-sm-8">
+            <p class="mb-0">{{ teacher?.status || 'Non renseigné' }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

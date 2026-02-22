@@ -1,0 +1,125 @@
+<div class="page-header">
+  <h3 class="page-title">
+    <i class="mdi mdi-account-plus menu-icon"></i>
+    {{ isEditMode ? 'Modifier' : 'Ajouter' }} un Enseignant
+  </h3>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a routerLink="/app/dashboard">Accueil</a></li>
+      <li class="breadcrumb-item"><a routerLink="/app/teachers">Enseignants</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ isEditMode ? 'Modifier' : 'Nouveau' }}</li>
+    </ol>
+  </nav>
+</div>
+
+<div class="row">
+  <div class="col-12 grid-margin stretch-card">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title">Informations de l'enseignant</h4>
+        <form class="forms-sample" [formGroup]="teacherForm" (ngSubmit)="onSubmit()">
+          
+          <!-- Informations personnelles -->
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="prenom">Prénom *</label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  id="prenom" 
+                  formControlName="prenom"
+                  placeholder="Prénom">
+                <small class="text-danger" *ngIf="teacherForm.get('prenom')?.invalid && teacherForm.get('prenom')?.touched">
+                  Le prénom est requis
+                </small>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="nom">Nom *</label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  id="nom" 
+                  formControlName="nom"
+                  placeholder="Nom">
+                <small class="text-danger" *ngIf="teacherForm.get('nom')?.invalid && teacherForm.get('nom')?.touched">
+                  Le nom est requis
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="email">Email *</label>
+                <input 
+                  type="email" 
+                  class="form-control" 
+                  id="email" 
+                  formControlName="email"
+                  placeholder="email@iusj.edu">
+                <small class="text-danger" *ngIf="teacherForm.get('email')?.invalid && teacherForm.get('email')?.touched">
+                  Email valide requis
+                </small>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="telephone">Téléphone</label>
+                <input 
+                  type="tel" 
+                  class="form-control" 
+                  id="telephone" 
+                  formControlName="telephone"
+                  placeholder="+237 6XX XX XX XX">
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="specialite">Spécialité</label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  id="specialite" 
+                  formControlName="specialite"
+                  placeholder="Ex: Mathématiques">
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="form-group">
+                <label for="grade">Grade *</label>
+                <select class="form-control" id="grade" formControlName="grade">
+                  <option *ngFor="let grade of gradeOptions" [value]="grade.value">{{ grade.label }}</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="form-group">
+                <label for="status">Statut *</label>
+                <select class="form-control" id="status" formControlName="status">
+                  <option *ngFor="let status of statusOptions" [value]="status.value">{{ status.label }}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Boutons -->
+          <div class="mt-4">
+            <button type="submit" class="btn btn-primary mr-2" [disabled]="teacherForm.invalid">
+              <i class="mdi mdi-content-save"></i> Enregistrer
+            </button>
+            <button type="button" class="btn btn-light" routerLink="/app/teachers">
+              Annuler
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

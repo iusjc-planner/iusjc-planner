@@ -1,0 +1,95 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1"><i class="mdi mdi-account-group me-2"></i>Planning Groupe</h2>
+      <p class="text-muted mb-0">Emploi du temps par classe/groupe</p>
+    </div>
+  </div>
+
+  <!-- Group Selector -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row align-items-end">
+        <div class="col-md-6">
+          <label class="form-label">Sélectionner un groupe</label>
+          <select class="form-select" [(ngModel)]="selectedGroupId" (change)="loadSchedule()">
+            <option value="">-- Choisir un groupe --</option>
+            <option *ngFor="let g of groups" [value]="g.id">{{ g.name }} - {{ g.level }} ({{ g.size }} étudiants)</option>
+          </select>
+        </div>
+        <div class="col-md-6" *ngIf="getSelectedGroup() as group">
+          <div class="d-flex align-items-center">
+            <div class="avatar bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+              <i class="mdi mdi-account-multiple mdi-24px"></i>
+            </div>
+            <div>
+              <h6 class="mb-0">{{ group.name }}</h6>
+              <small class="text-muted">{{ group.level }} - {{ group.size }} étudiants</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loadingEntries" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+  </div>
+
+  <!-- No selection -->
+  <div *ngIf="!selectedGroupId && !loading" class="text-center py-5">
+    <i class="mdi mdi-calendar-account mdi-48px text-muted"></i>
+    <p class="text-muted mt-2">Sélectionnez un groupe pour voir son emploi du temps</p>
+  </div>
+
+  <!-- Schedule Table -->
+  <div class="card" *ngIf="selectedGroupId && !loadingEntries">
+    <div class="card-header">
+      <h5 class="mb-0"><i class="mdi mdi-calendar me-2"></i>Emploi du temps ({{ entries.length }} séances)</h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Date</th>
+              <th>Horaire</th>
+              <th>Cours</th>
+              <th>Enseignant</th>
+              <th>Salle</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="entries.length === 0">
+              <td colspan="6" class="text-center py-4 text-muted">
+                <i class="mdi mdi-calendar-blank mdi-36px"></i>
+                <p class="mb-0 mt-2">Aucune séance planifiée pour ce groupe</p>
+              </td>
+            </tr>
+            <tr *ngFor="let entry of entries">
+              <td>{{ formatDate(entry.startTime) }}</td>
+              <td>
+                <span class="badge bg-light text-dark">
+                  {{ formatTime(entry.startTime) }} - {{ formatTime(entry.endTime) }}
+                </span>
+              </td>
+              <td>{{ entry.courseName || entry.courseId }}</td>
+              <td>{{ entry.teacherName || entry.teacherId }}</td>
+              <td>{{ entry.roomName || entry.roomId }}</td>
+              <td>
+                <span class="badge" [ngClass]="getStatusClass(entry.status)">
+                  {{ entry.status }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

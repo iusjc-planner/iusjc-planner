@@ -1,0 +1,243 @@
+/* Styles pour la liste des enseignants selon Pages-et-Composants */
+
+.page-header {
+  margin-bottom: 1.5rem;
+}
+
+/* Photos des enseignants */
+.teacher-photo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e9ecef;
+}
+
+.teacher-photo-grid {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #e9ecef;
+  margin: 0 auto;
+}
+
+/* Badges */
+.badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  font-weight: 500;
+}
+
+.badge-success {
+  background-color: #28a745;
+  color: white;
+}
+
+.badge-warning {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.badge-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.badge-info {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.badge-light {
+  background-color: #f8f9fa;
+  color: #495057;
+  border: 1px solid #dee2e6;
+}
+
+.badge-primary {
+  background-color: #007bff;
+  color: white;
+}
+
+/* Boutons */
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+.btn-group .btn {
+  margin-right: 0;
+}
+
+/* Cartes pour la vue grille */
+.teacher-card {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  border: 1px solid #e9ecef;
+}
+
+.teacher-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Liste des matières */
+.subjects-list {
+  max-width: 200px;
+}
+
+.subjects-list .badge {
+  margin-bottom: 2px;
+  font-size: 0.7rem;
+}
+
+/* Tableau */
+.table th {
+  border-top: none;
+  font-weight: 600;
+  background-color: #f8f9fa;
+  color: #495057;
+}
+
+.table td {
+  vertical-align: middle;
+  border-top: 1px solid #e9ecef;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Formulaires */
+.form-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.form-group {
+  margin-bottom: 0;
+}
+
+/* Pagination */
+.pagination .page-link {
+  color: #007bff;
+  border-color: #dee2e6;
+}
+
+.pagination .page-item.active .page-link {
+  background-color: #007bff;
+  border-color: #007bff;
+}
+
+.pagination .page-item.disabled .page-link {
+  color: #6c757d;
+  background-color: #fff;
+  border-color: #dee2e6;
+}
+
+/* Icônes */
+.mdi-48px {
+  font-size: 48px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .teacher-photo-grid {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .subjects-list {
+    max-width: 150px;
+  }
+  
+  .btn-group {
+    flex-direction: column;
+  }
+  
+  .btn-group .btn {
+    margin-bottom: 2px;
+  }
+}
+
+/* Animation de chargement */
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+/* États vides */
+.text-center .mdi-48px {
+  opacity: 0.5;
+}
+
+/* Blocs statistiques colorés */
+.card.bg-gradient-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+  transition: transform 0.2s ease-in-out;
+}
+
+.card.bg-gradient-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+}
+
+.card.bg-gradient-success {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  border: none;
+  box-shadow: 0 4px 8px rgba(67, 233, 123, 0.3);
+  transition: transform 0.2s ease-in-out;
+}
+
+.card.bg-gradient-success:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(67, 233, 123, 0.4);
+}
+
+.card.bg-gradient-warning {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  border: none;
+  box-shadow: 0 4px 8px rgba(250, 112, 154, 0.3);
+  transition: transform 0.2s ease-in-out;
+}
+
+.card.bg-gradient-warning:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(250, 112, 154, 0.4);
+}
+
+.card.bg-gradient-info {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  border: none;
+  box-shadow: 0 4px 8px rgba(79, 172, 254, 0.3);
+  transition: transform 0.2s ease-in-out;
+}
+
+.card.bg-gradient-info:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(79, 172, 254, 0.4);
+}
+
+/* Styles pour le bouton réinitialiser dans l'input-group */
+.input-group-append .btn {
+  border-left: 0;
+  border-color: #ced4da;
+}
+
+.input-group-append .btn:hover {
+  background-color: #f8f9fa;
+  border-color: #adb5bd;
+}
+
+.input-group .form-control:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.input-group .form-control:focus + .input-group-append .btn {
+  border-color: #80bdff;
+}

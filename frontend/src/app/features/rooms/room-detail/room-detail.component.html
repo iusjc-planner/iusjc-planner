@@ -1,0 +1,57 @@
+<div class="page-header">
+	<h3 class="page-title">
+		<i class="mdi mdi-door-closed menu-icon"></i>
+		Détail Salle
+	</h3>
+	<nav aria-label="breadcrumb">
+		<ol class="breadcrumb">
+			<li class="breadcrumb-item"><a routerLink="/app/dashboard">Accueil</a></li>
+			<li class="breadcrumb-item"><a routerLink="/app/rooms">Salles</a></li>
+			<li class="breadcrumb-item active" aria-current="page">Détail</li>
+		</ol>
+	</nav>
+</div>
+
+<div *ngIf="loading" class="text-center py-4">
+	<div class="spinner-border text-primary" role="status"></div>
+</div>
+
+<div class="card" *ngIf="room && !loading">
+	<div class="card-body">
+		<div class="d-flex justify-content-between align-items-center mb-3">
+			<h4 class="card-title mb-0">{{ room.name }}</h4>
+			<div>
+				<a class="btn btn-outline-warning btn-sm" [routerLink]="['/app/rooms', room.id, 'edit']"><i class="mdi mdi-pencil"></i> Modifier</a>
+				<a class="btn btn-light btn-sm" routerLink="/app/rooms">Retour</a>
+			</div>
+		</div>
+
+		<div class="row mb-2">
+			<div class="col-sm-4 text-muted">Type</div>
+			<div class="col-sm-8">{{ room.type }}</div>
+		</div>
+		<div class="row mb-2">
+			<div class="col-sm-4 text-muted">Statut</div>
+			<div class="col-sm-8"><span class="badge" [ngClass]="room.status === 'ACTIVE' ? 'badge-success' : 'badge-warning'">{{ room.status }}</span></div>
+		</div>
+		<div class="row mb-2">
+			<div class="col-sm-4 text-muted">Capacité</div>
+			<div class="col-sm-8">{{ room.capacity }}</div>
+		</div>
+		<div class="row mb-2">
+			<div class="col-sm-4 text-muted">Lieu</div>
+			<div class="col-sm-8">{{ room.location || 'N/A' }}</div>
+		</div>
+		<div class="row mb-2" *ngIf="room.description">
+			<div class="col-sm-4 text-muted">Description</div>
+			<div class="col-sm-8">{{ room.description }}</div>
+		</div>
+		<div class="row mb-2">
+			<div class="col-sm-4 text-muted">Equipements</div>
+			<div class="col-sm-8">
+				<span *ngIf="!room.equipments || room.equipments.length === 0">Aucun</span>
+				<span *ngFor="let eq of room.equipments" class="badge badge-info mr-1">{{ eq }}</span>
+			</div>
+		</div>
+	</div>
+</div>

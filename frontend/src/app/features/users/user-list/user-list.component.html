@@ -1,0 +1,162 @@
+<div class="page-header">
+  <h3 class="page-title">
+    <i class="mdi mdi-account-multiple menu-icon"></i>
+    Gestion des Utilisateurs
+  </h3>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a routerLink="/app/dashboard">Accueil</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Utilisateurs</li>
+    </ol>
+  </nav>
+</div>
+
+<div class="row">
+  <div class="col-lg-12 grid-margin stretch-card">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4 class="card-title mb-0">Liste des Utilisateurs</h4>
+          <button class="btn btn-primary btn-sm" routerLink="/app/users/new">
+            <i class="mdi mdi-plus"></i> Ajouter un utilisateur
+          </button>
+        </div>
+        
+        <!-- Message d'erreur -->
+        <div class="alert alert-danger" *ngIf="errorMessage">
+          <i class="mdi mdi-alert-circle"></i>
+          {{ errorMessage }}
+          <button class="btn btn-sm btn-outline-danger ml-2" (click)="loadUsers()">
+            <i class="mdi mdi-refresh"></i> Réessayer
+          </button>
+        </div>
+
+        <!-- Indicateur de chargement -->
+        <div class="text-center py-4" *ngIf="loading">
+          <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Chargement...</span>
+          </div>
+          <p class="mt-2 text-muted">Chargement des utilisateurs...</p>
+        </div>
+
+        <!-- Filtres -->
+        <div class="row mb-3" *ngIf="!loading">
+          <div class="col-md-4">
+            <input 
+              type="text" 
+              class="form-control" 
+              placeholder="Rechercher par nom, email, login..."
+              [(ngModel)]="searchTerm"
+              (input)="filterUsers()">
+          </div>
+          <div class="col-md-3">
+            <select class="form-control" [(ngModel)]="filterRole" (change)="filterUsers()">
+              <option value="">Tous les rôles</option>
+              <option value="ADMIN">Administrateur</option>
+              <option value="USER">Enseignant</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <select class="form-control" [(ngModel)]="filterStatus" (change)="filterUsers()">
+              <option value="">Tous les statuts</option>
+              <option value="ACTIVE">Actif</option>
+              <option value="INACTIVE">Inactif</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <button class="btn btn-outline-secondary btn-block" (click)="resetFilters()">
+              <i class="mdi mdi-refresh"></i> Réinitialiser
+            </button>
+          </div>
+        </div>
+
+        <!-- Tableau -->
+        <div class="table-responsive" *ngIf="!loading">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nom complet</th>
+                <th>Login</th>
+                <th>Email</th>
+                <th>Téléphone</th>
+                <th>Rôle</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let user of paginatedUsers">
+                <td class="py-1">
+                  <span class="font-weight-medium">#{{ user.id }}</span>
+                </td>
+                <td>{{ user.prenom }} {{ user.nom }}</td>
+                <td>
+                  <span class="text-primary font-weight-medium">{{ user.login }}</span>
+                </td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.telephone || '-' }}</td>
+                <td>
+                  <span class="text-dark font-weight-medium">{{ getRoleDisplayName(user.role) }}</span>
+                </td>
+                <td>
+                  <span class="text-dark font-weight-medium">{{ getStatusDisplayName(user.status) }}</span>
+                </td>
+                <td>
+                  <button class="btn btn-sm btn-outline-primary mr-1" [routerLink]="['/app/users', user.id]" title="Voir">
+                    <i class="mdi mdi-eye"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-warning mr-1" [routerLink]="['/app/users', user.id, 'edit']" title="Modifier">
+                    <i class="mdi mdi-pencil"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger" (click)="deleteUser(user.id!)" title="Supprimer">
+                    <i class="mdi mdi-delete"></i>
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="paginatedUsers.length === 0 && !loading">
+                <td colspan="8" class="text-center text-muted py-4">
+                  <i class="mdi mdi-account-off mdi-48px text-muted mb-2"></i>
+                  <p>Aucun utilisateur trouvé</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="d-flex justify-content-between align-items-center mt-3" *ngIf="!loading && filteredUsers.length > 0">
+          <div>
+            {{ getDisplayRange() }}
+          </div>
+          <nav *ngIf="totalPages > 1">
+            <ul class="pagination mb-0">
+              <!-- Bouton Précédent -->
+              <li class="page-item" [class.disabled]="currentPage === 1">
+                <a class="page-link" href="javascript:void(0)" (click)="previousPage()">
+                  <i class="mdi mdi-chevron-left"></i> Précédent
+                </a>
+              </li>
+              
+              <!-- Numéros de pages -->
+              <li class="page-item" 
+                  *ngFor="let page of getPageNumbers()" 
+                  [class.active]="page === currentPage">
+                <a class="page-link" href="javascript:void(0)" (click)="goToPage(page)">
+                  {{ page }}
+                </a>
+              </li>
+              
+              <!-- Bouton Suivant -->
+              <li class="page-item" [class.disabled]="currentPage === totalPages">
+                <a class="page-link" href="javascript:void(0)" (click)="nextPage()">
+                  Suivant <i class="mdi mdi-chevron-right"></i>
+                </a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

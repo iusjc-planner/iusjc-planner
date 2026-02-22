@@ -15,80 +15,68 @@ L’objectif est de garantir :
 
 ## 1. Structure générale du workspace
 
-La racine du workspace contient uniquement les éléments globaux (infrastructure,
-documentation, configuration, scripts DevOps, pilotage du projet).
+La racine du workspace contient les éléments globaux (documentation, scripts
+DevOps, configuration CI, frontend) et les microservices.
 
 iusjc-planner/
 │
-├── services/ # Contient les microservices (via Git Submodules)
-│ ├── auth-service/
-│ ├── user-service/
-│ ├── schedule-service/
-│ ├── room-service/
-│ ├── ...
+├── frontend/ # Application Angular (SPA)
+├── infrastructure/ # Scripts et assets d'infrastructure
+├── documentation/ # Cahiers, guides techniques, API
+├── postman-collections/ # Collections et environnements Postman
 │
-├── ui/ # Interface utilisateur (submodule séparé)
-│ └── iusjc-ui/
+├── iusj-auth-service/
+├── iusj-user-service/
+├── iusj-gateway-service/
+├── iusj-eureka-service/
+├── iusj-teacher-service/
+├── iusj-school-service/
+├── iusj-course-service/
+├── iusj-room-service/
+├── iusj-group-service/
+├── iusj-schedule-service/
 │
-├── infrastructure/ # Docker compose, scripts de déploiement, config
-│ ├── docker/
-│ ├── scripts/
-│ └── config/
-│
-├── documentation/ # UML, cahiers, API, guides techniques
-│ ├── cahier_charges/
-│ ├── cahier_analyse/
-│ ├── cahier_conception/
-│ ├── UML/
-│ └── API/
-│
-├── README.md # Documentation rapide du projet
-└── WORKSPACE.md # Présentation complète du workspace (ce fichier)
+├── docker-compose.ci.yml
+├── start-services.ps1
+├── stop-services.ps1
+├── README.md
+└── WORKSPACE.md
 
 ## 2. Dépôts Git
 
-Le workspace utilise une architecture à **dépôts séparés** :
+Le workspace est un **mono-repo** qui regroupe :
 
-- 1 dépôt principal : `iusjc-planner`
-- 1 dépôt par microservice (gateway, eureka, auth-service, user-service…)
-- 1 dépôt UI
-- chaque microservice est ajouté au workspace via **Git Submodule**
+- un frontend Angular (dossier `frontend/`)
+- plusieurs microservices Spring Boot (dossiers `iusj-*-service/`)
+- scripts et fichiers de configuration CI/infra
 
-Commande générale :
-
-git submodule add <url-du-dépôt> services/<nom-service>
-
-Cette approche garantit :
-- indépendance technique,
-- pipelines CI/CD par service,
-- modularité complète,
-- facilitation du déploiement et du scaling.
+Cette approche facilite :
+- une vision globale de l'architecture,
+- la synchronisation des versions,
+- l'execution locale multi-services.
 
 ## 3. Objectifs de chaque dossier
 
-### /services/
-Contient uniquement les microservices. Chaque service est autonome :
-- son propre git
-- son propre CI/CD
-- sa propre base de code
-- son Dockerfile
+### /iusj-*-service/
+Chaque microservice Spring Boot est autonome :
+- configuration propre (`application.properties`)
+- dependencies Maven (`pom.xml`)
+- logique metier et API REST
 
-### /ui/
-Contient le front-end (Thymeleaf).
+### /frontend/
+Contient l'application Angular (SPA).
 
 ### /infrastructure/
 Contient :
-- docker-compose global
-- scripts DevOps
-- configuration partagée (env, SSL, monitoring)
+- scripts et assets d'infrastructure
+- fichiers utilitaires pour l'environnement local/CI
 
 ### /documentation/
 Contient tous les livrables académiques et techniques :
-- cahier des charges
-- cahier d’analyse
+- cahier d'analyse
 - cahier de conception
-- UML
-- API Docs
+- guides techniques
+- documentation API
 
 ### /README.md
 Vue d’ensemble simple pour les encadrants.
@@ -103,9 +91,9 @@ Ce fichier — guide détaillé du workspace pour les développeurs.
 - `develop` → intégration
 - `feature/<nom>` → développement d’une fonctionnalité
 
-### Exécution locale
-- Lancer l’ensemble des services avec :
-docker compose up
+### Execution locale
+- Utiliser `start-services.ps1` et `stop-services.ps1`.
+- Pour l'integration CI, voir `docker-compose.ci.yml`.
 
 ### Documentation
 Toujours mettre à jour le dossier `/documentation/` à chaque Sprint.
