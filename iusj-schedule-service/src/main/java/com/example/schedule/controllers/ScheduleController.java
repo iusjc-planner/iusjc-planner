@@ -16,11 +16,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 
+import com.example.schedule.dto.GenerationConfigDTO;
+import com.example.schedule.dto.GenerationResultDTO;
 import com.example.schedule.entities.ScheduleEntry;
 import com.example.schedule.entities.SessionStatus;
 import com.example.schedule.services.ScheduleService;
+import com.example.schedule.services.ScheduleGeneratorService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -31,6 +33,7 @@ import lombok.RequiredArgsConstructor;
 public class ScheduleController {
 
     private final ScheduleService scheduleService;
+    private final ScheduleGeneratorService generatorService;
 
     @GetMapping
     public List<ScheduleEntry> getAll(
@@ -69,8 +72,13 @@ public class ScheduleController {
     }
 
     @PostMapping("/generate")
-    public ResponseEntity<?> generateAuto() {
-        return ResponseEntity.ok(scheduleService.generateAuto());
+    public ResponseEntity<GenerationResultDTO> generateAuto(@RequestBody(required = false) GenerationConfigDTO config) {
+        if (config == null) {
+            config = new GenerationConfigDTO();
+            config.setStartDate(java.time.LocalDate.now().plusDays(1));
+            config.setEndDate(java.time.LocalDate.now().plusDays(7));
+        }
+        return ResponseEntity.ok(generatorService.generateSchedule(config));
     }
 
     @GetMapping(value = "/{id}/export/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
@@ -87,6 +95,18 @@ public class ScheduleController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         scheduleService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Annuler une séance (seule action manuelle sur le statut autorisée)
+     */
+    @PutMapping("/{id}/cancel")
+    public ResponseEntity<ScheduleEntry> cancelSession(@PathVariable Long id) {
+        ScheduleEntry cancelled = scheduleService.cancelSession(id);
+        if (cancelled == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(cancelled);
     }
 
     @GetMapping("/stats")

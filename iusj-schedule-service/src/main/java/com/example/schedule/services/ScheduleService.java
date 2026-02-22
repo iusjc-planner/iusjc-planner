@@ -69,6 +69,51 @@ public class ScheduleService {
         repository.deleteById(id);
     }
 
+    /**
+     * Annule une séance (seule modification manuelle du statut autorisée)
+     */
+    public ScheduleEntry cancelSession(Long id) {
+        ScheduleEntry entry = repository.findById(id).orElse(null);
+        if (entry == null) {
+            return null;
+        }
+        entry.setStatus(SessionStatus.CANCELLED);
+        return repository.save(entry);
+    }
+
+    /**
+     * Met à jour automatiquement le statut des séances passées
+     * Appelé périodiquement ou lors de la récupération
+     */
+    public void updateCompletedSessions() {
+        LocalDateTime now = LocalDateTime.now();
+        List<ScheduleEntry> scheduledEntries = repository.findAll(
+            ScheduleSpecifications.filter(null, null, null, null, SessionStatus.SCHEDULED, null, now)
+        );
+        
+        for (ScheduleEntry entry : scheduledEntries) {
+            if (entry.getEndTime().isBefore(now)) {
+                entry.setStatus(SessionStatus.COMPLETED);
+                repository.save(entry);
+            }
+        }
+    }
+
+    /**
+     * Calcule le statut dynamique d'une séance
+     */
+    public SessionStatus calculateStatus(ScheduleEntry entry) {
+        if (entry.getStatus() == SessionStatus.CANCELLED) {
+            return SessionStatus.CANCELLED;
+        }
+        
+        LocalDateTime now = LocalDateTime.now();
+        if (entry.getEndTime().isBefore(now)) {
+            return SessionStatus.COMPLETED;
+        }
+        return SessionStatus.SCHEDULED;
+    }
+
     public ScheduleStats stats() {
         long total = repository.count();
         long scheduled = repository.countByStatus(SessionStatus.SCHEDULED);
