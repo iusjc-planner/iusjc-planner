@@ -62,3 +62,25 @@ Request body example:
 ### Notes
 - Auth: routed through Gateway with `JwtAuthenticationFilter`; include `Authorization: Bearer <token>` when required.
 - Validation: create/update expects valid fields; schedule enforces `endTime` after `startTime` and rejects overlaps on room/teacher/group.
+
+## Students Service (`/api/students` via Gateway)
+- **GET** `/api/students` — list (filters: `matricule`, `nom`, `prenom`, `email`, `status`, `groupId`)
+- **GET** `/api/students/{id}` — get one
+- **POST** `/api/students` — create
+- **PUT** `/api/students/{id}` — update
+- **DELETE** `/api/students/{id}` — delete
+- **POST** `/api/students/{id}/groups/{groupId}` — add group to student
+- **DELETE** `/api/students/{id}/groups/{groupId}` — remove group from student
+
+Request body example:
+```json
+{
+  "matricule": "ETU-2026-001",
+  "nom": "Doe",
+  "prenom": "Jane",
+  "dateNaissance": "2004-05-21",
+  "email": "jane.doe@example.com",
+  "status": "ACTIVE",
+  "groupIds": [1, 2]
+}
+```

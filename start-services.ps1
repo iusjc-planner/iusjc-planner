@@ -51,6 +51,7 @@ Start-Service -ServiceName "iusj-course-service" -ServicePath "iusj-course-servi
 Start-Service -ServiceName "iusj-schedule-service" -ServicePath "iusj-schedule-service" -Port 8086
 Start-Service -ServiceName "iusj-school-service" -ServicePath "iusj-school-service" -Port 8087
 Start-Service -ServiceName "iusj-group-service" -ServicePath "iusj-group-service" -Port 8088
+Start-Service -ServiceName "iusj-student-service" -ServicePath "iusj-student-service" -Port 8089
 Start-Service -ServiceName "iusj-gateway-service" -ServicePath "iusj-gateway-service" -Port 8080
 
 Write-Host "Demarrage du Frontend Angular..." -ForegroundColor Yellow
@@ -76,6 +77,7 @@ Write-Host "  Course Service:   http://localhost:8085" -ForegroundColor White
 Write-Host "  Schedule Service: http://localhost:8086" -ForegroundColor White
 Write-Host "  School Service:   http://localhost:8087" -ForegroundColor White
 Write-Host "  Group Service:    http://localhost:8088" -ForegroundColor White
+Write-Host "  Student Service:  http://localhost:8089" -ForegroundColor White
 Write-Host ""
 Write-Host "Appuyez sur une touche pour continuer..." -ForegroundColor Gray
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
