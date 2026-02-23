@@ -95,18 +95,27 @@ mvn spring-boot:run
 
 ### 1. Vérifier Eureka Dashboard :
 - URL : http://localhost:8761
-- **Attendu** : 3 services enregistrés
+- **Attendu** : services principaux enregistrés
   - IUSJ-AUTH-SERVICE
-  - IUSJ-USER-SERVICE  
+  - IUSJ-USER-SERVICE
+  - IUSJ-TEACHER-SERVICE
+  - IUSJ-ROOM-SERVICE
+  - IUSJ-COURSE-SERVICE
+  - IUSJ-SCHEDULE-SERVICE
+  - IUSJ-SCHOOL-SERVICE
+  - IUSJ-GROUP-SERVICE
+  - IUSJ-STUDENT-SERVICE
+  - IUSJ-RESOURCE-SERVICE
   - IUSJ-GATEWAY-SERVICE
 
 ### 2. Vérifier les ports :
 ```bash
+
 # Windows
-netstat -ano | findstr "8080\|8081\|8082\|8761"
+netstat -ano | findstr "8080\|8081\|8082\|8083\|8084\|8085\|8086\|8087\|8088\|8089\|8090\|8761"
 
 # Linux/Mac
-netstat -tulpn | grep -E "8080|8081|8082|8761"
+netstat -tulpn | grep -E "8080|8081|8082|8083|8084|8085|8086|8087|8088|8089|8090|8761"
 ```
 
 ### 3. Test de santé des services :
@@ -133,7 +142,7 @@ curl -X POST http://localhost:8080/api/users \
     "email": "test@example.com",
     "login": "testuser",
     "password": "test123",
-    "role": "USER"
+    "role": "ENSEIGNANT"
   }'
 ```
 

@@ -49,7 +49,7 @@ if ($nodeProcesses) {
 
 # Liberation des ports
 Write-Host "Verification des ports..." -ForegroundColor Yellow
-$ports = @(8761, 8080, 8081, 8082, 8089, 4200, 4201)
+$ports = @(8761, 8080, 8081, 8082, 8083, 8084, 8085, 8086, 8087, 8088, 8089, 8090, 4200, 4201)
 $closedPorts = 0
 foreach ($port in $ports) {
     try {

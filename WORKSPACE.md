@@ -35,6 +35,8 @@ iusjc-planner/
 ├── iusj-room-service/
 ├── iusj-group-service/
 ├── iusj-schedule-service/
+├── iusj-student-service/
+├── iusj-resource-service/
 │
 ├── docker-compose.ci.yml
 ├── start-services.ps1

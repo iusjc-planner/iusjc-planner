@@ -17,7 +17,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.iusj_room_service.dto.RoomReservationRequest;
 import com.example.iusj_room_service.entities.Room;
+import com.example.iusj_room_service.entities.RoomReservation;
 import com.example.iusj_room_service.services.RoomService;
 
 import jakarta.validation.Valid;
@@ -78,5 +80,26 @@ public class RoomController {
                 ? Arrays.asList(equipments.split(","))
                 : Collections.emptyList();
         return roomService.findAvailable(start, end, minCapacity, equipmentsList);
+    }
+
+    @GetMapping("/{id}/reservations")
+    public List<RoomReservation> listReservations(@PathVariable Long id) {
+        return roomService.getReservations(id);
+    }
+
+    @PostMapping("/{id}/reserve")
+    public ResponseEntity<?> reserve(@PathVariable Long id, @Valid @RequestBody RoomReservationRequest request) {
+        try {
+            RoomReservation reservation = roomService.reserve(id, request);
+            return ResponseEntity.status(201).body(reservation);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(409).body(ex.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{id}/reservations/{reservationId}")
+    public ResponseEntity<Void> cancelReservation(@PathVariable Long id, @PathVariable Long reservationId) {
+        roomService.cancelReservation(id, reservationId);
+        return ResponseEntity.noContent().build();
     }
 }

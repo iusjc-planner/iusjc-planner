@@ -63,6 +63,48 @@ Request body example:
 - Auth: routed through Gateway with `JwtAuthenticationFilter`; include `Authorization: Bearer <token>` when required.
 - Validation: create/update expects valid fields; schedule enforces `endTime` after `startTime` and rejects overlaps on room/teacher/group.
 
+## Rooms Service (`/api/rooms` via Gateway)
+- **GET** `/api/rooms` — list (filters: `name`, `type`, `status`, `minCapacity`, `equipments`)
+- **GET** `/api/rooms/{id}` — get one
+- **POST** `/api/rooms` — create
+- **PUT** `/api/rooms/{id}` — update
+- **DELETE** `/api/rooms/{id}` — delete
+- **GET** `/api/rooms/available` — list available rooms for a time range
+- **POST** `/api/rooms/{id}/reserve` — reserve a room
+- **GET** `/api/rooms/{id}/reservations` — list reservations
+- **DELETE** `/api/rooms/{id}/reservations/{reservationId}` — cancel reservation
+
+Reservation body example:
+```json
+{
+  "startTime": "2026-01-08T10:00:00",
+  "endTime": "2026-01-08T12:00:00",
+  "reservedByUserId": 12,
+  "purpose": "Soutenance"
+}
+```
+
+## Resources Service (`/api/resources` via Gateway)
+- **GET** `/api/resources` — list (filters: `name`, `type`, `status`)
+- **GET** `/api/resources/{id}` — get one
+- **POST** `/api/resources` — create
+- **PUT** `/api/resources/{id}` — update
+- **DELETE** `/api/resources/{id}` — delete
+- **GET** `/api/resources/stats` — counts `{ total, active, inactive }`
+
+Request body example:
+```json
+{
+  "name": "Projecteur Epson X120",
+  "type": "PROJECTOR",
+  "quantityTotal": 5,
+  "quantityAvailable": 4,
+  "location": "Batiment A",
+  "description": "Projecteur HD",
+  "status": "ACTIVE"
+}
+```
+
 ## Students Service (`/api/students` via Gateway)
 - **GET** `/api/students` — list (filters: `matricule`, `nom`, `prenom`, `email`, `status`, `groupId`)
 - **GET** `/api/students/{id}` — get one

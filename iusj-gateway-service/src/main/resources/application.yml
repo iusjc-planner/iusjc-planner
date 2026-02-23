@@ -100,6 +100,15 @@ spring:
           filters:
             - StripPrefix=0
             - JwtAuthenticationFilter
+
+        # Route pour le service ressources (AVEC validation JWT)
+        - id: resource-service-protected
+          uri: lb://iusj-resource-service
+          predicates:
+            - Path=/api/resources/**
+          filters:
+            - StripPrefix=0
+            - JwtAuthenticationFilter
       
       # Configuration globale CORS - désactivée car gérée par CorsConfig.java
       # globalcors:
