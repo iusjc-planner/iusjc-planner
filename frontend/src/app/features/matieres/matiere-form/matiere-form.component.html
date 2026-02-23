@@ -1,0 +1,253 @@
+<div class="page-header">
+  <h3 class="page-title">
+    <i class="mdi mdi-book-plus menu-icon"></i>
+    {{ isEditMode ? 'Modifier' : 'Nouvelle' }} Matière
+  </h3>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a routerLink="/app/dashboard">Accueil</a></li>
+      <li class="breadcrumb-item"><a routerLink="/app/matieres">Matières</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ isEditMode ? 'Modifier' : 'Nouvelle' }}</li>
+    </ol>
+  </nav>
+</div>
+
+<div class="row">
+  <!-- Formulaire principal -->
+  <div class="col-lg-8 grid-margin stretch-card">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title">Informations de la matière</h4>
+        <form class="forms-sample" [formGroup]="matiereForm" (ngSubmit)="onSubmit()">
+          
+          <!-- Code et Nom -->
+          <div class="row">
+            <div class="col-md-4">
+              <div class="form-group">
+                <label for="code">Code de la matière *</label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  id="code" 
+                  formControlName="code"
+                  placeholder="Ex: ISI4177"
+                  [class.is-invalid]="matiereForm.get('code')?.invalid && matiereForm.get('code')?.touched">
+                <small class="text-danger" *ngIf="matiereForm.get('code')?.hasError('required') && matiereForm.get('code')?.touched">
+                  Le code est requis
+                </small>
+                <small class="text-muted">Identifiant unique de la matière</small>
+              </div>
+            </div>
+            <div class="col-md-8">
+              <div class="form-group">
+                <label for="nom">Nom de la matière *</label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  id="nom" 
+                  formControlName="nom"
+                  placeholder="Ex: Programmation Orientée Objet"
+                  [class.is-invalid]="matiereForm.get('nom')?.invalid && matiereForm.get('nom')?.touched">
+                <small class="text-danger" *ngIf="matiereForm.get('nom')?.hasError('required') && matiereForm.get('nom')?.touched">
+                  Le nom est requis
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <!-- École et Filière -->
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="schoolId">École *</label>
+                <select 
+                  class="form-control" 
+                  id="schoolId" 
+                  formControlName="schoolId"
+                  [class.is-invalid]="matiereForm.get('schoolId')?.invalid && matiereForm.get('schoolId')?.touched">
+                  <option [ngValue]="null">-- Sélectionner une école --</option>
+                  <option *ngFor="let school of schools" [ngValue]="school.id">{{ school.name }}</option>
+                </select>
+                <small class="text-danger" *ngIf="matiereForm.get('schoolId')?.hasError('required') && matiereForm.get('schoolId')?.touched">
+                  L'école est requise
+                </small>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="filiereId">Filière *</label>
+                <select 
+                  class="form-control" 
+                  id="filiereId" 
+                  formControlName="filiereId"
+                  [class.is-invalid]="matiereForm.get('filiereId')?.invalid && matiereForm.get('filiereId')?.touched">
+                  <option [ngValue]="null">-- Sélectionner une filière --</option>
+                  <option *ngFor="let filiere of filteredFilieres" [ngValue]="filiere.id">
+                    {{ filiere.code }} - {{ filiere.nom }}
+                  </option>
+                </select>
+                <small class="text-danger" *ngIf="matiereForm.get('filiereId')?.hasError('required') && matiereForm.get('filiereId')?.touched">
+                  La filière est requise
+                </small>
+                <small class="text-muted" *ngIf="!matiereForm.get('schoolId')?.value">
+                  Sélectionnez d'abord une école
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Enseignant -->
+          <div class="row">
+            <div class="col-md-12">
+              <div class="form-group">
+                <label for="teacherId">Enseignant responsable</label>
+                <select class="form-control" id="teacherId" formControlName="teacherId">
+                  <option [ngValue]="null">-- Sélectionner un enseignant --</option>
+                  <option *ngFor="let teacher of teachers" [ngValue]="teacher.id">
+                    {{ teacher.prenom }} {{ teacher.nom }} 
+                    <span *ngIf="teacher.specialite">- {{ teacher.specialite }}</span>
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Crédits et Volume horaire -->
+          <div class="row">
+            <div class="col-md-4">
+              <div class="form-group">
+                <label for="credits">Nombre de crédits *</label>
+                <input 
+                  type="number" 
+                  class="form-control" 
+                  id="credits" 
+                  formControlName="credits"
+                  min="1"
+                  [class.is-invalid]="matiereForm.get('credits')?.invalid && matiereForm.get('credits')?.touched">
+                <small class="text-danger" *ngIf="matiereForm.get('credits')?.hasError('required') && matiereForm.get('credits')?.touched">
+                  Le nombre de crédits est requis
+                </small>
+                <small class="text-danger" *ngIf="matiereForm.get('credits')?.hasError('min') && matiereForm.get('credits')?.touched">
+                  Minimum 1 crédit
+                </small>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label for="hoursTotal">Volume horaire total *</label>
+                <div class="input-group">
+                  <input 
+                    type="number" 
+                    class="form-control" 
+                    id="hoursTotal" 
+                    formControlName="hoursTotal"
+                    min="1"
+                    [class.is-invalid]="matiereForm.get('hoursTotal')?.invalid && matiereForm.get('hoursTotal')?.touched">
+                  <div class="input-group-append">
+                    <span class="input-group-text">heures</span>
+                  </div>
+                </div>
+                <small class="text-danger" *ngIf="matiereForm.get('hoursTotal')?.hasError('required') && matiereForm.get('hoursTotal')?.touched">
+                  Le volume horaire est requis
+                </small>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label for="status">Statut *</label>
+                <select class="form-control" id="status" formControlName="status">
+                  <option *ngFor="let status of statusOptions" [value]="status.value">{{ status.label }}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="form-group">
+            <label for="description">Description</label>
+            <textarea 
+              class="form-control" 
+              id="description" 
+              formControlName="description"
+              rows="3"
+              placeholder="Description de la matière, objectifs pédagogiques..."></textarea>
+          </div>
+
+          <!-- Boutons -->
+          <div class="mt-4">
+            <button type="submit" class="btn btn-primary mr-2" [disabled]="matiereForm.invalid || loading">
+              <span *ngIf="loading" class="spinner-border spinner-border-sm mr-1"></span>
+              <i *ngIf="!loading" class="mdi mdi-content-save"></i> 
+              {{ isEditMode ? 'Mettre à jour' : 'Créer' }}
+            </button>
+            <button type="button" class="btn btn-light" routerLink="/app/matieres">
+              Annuler
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Supports de cours -->
+  <div class="col-lg-4 grid-margin stretch-card">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title">
+          <i class="mdi mdi-file-document-multiple"></i>
+          Supports de cours
+        </h4>
+        <p class="card-description">
+          Ajoutez des liens vers les supports de cours (PDF, DOCX, PPTX...)
+        </p>
+
+        <!-- Formulaire d'ajout -->
+        <div class="form-group">
+          <div class="input-group">
+            <input 
+              type="text" 
+              class="form-control" 
+              [(ngModel)]="newSupportUrl"
+              [ngModelOptions]="{standalone: true}"
+              placeholder="URL du support...">
+            <div class="input-group-append">
+              <button 
+                class="btn btn-success" 
+                type="button"
+                (click)="addSupport()"
+                [disabled]="!newSupportUrl">
+                <i class="mdi mdi-plus"></i>
+              </button>
+            </div>
+          </div>
+          <small class="text-muted">Ex: https://drive.google.com/file/...</small>
+        </div>
+
+        <!-- Liste des supports -->
+        <div *ngIf="supports.length > 0" class="mt-3">
+          <h6>Supports ajoutés ({{ supports.length }})</h6>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-0" 
+                *ngFor="let support of supports; let i = index">
+              <small class="text-truncate" style="max-width: 200px;" [title]="support">
+                <i class="mdi mdi-file-outline mr-1"></i>
+                {{ support }}
+              </small>
+              <button 
+                type="button" 
+                class="btn btn-outline-danger btn-sm"
+                (click)="removeSupport(i)">
+                <i class="mdi mdi-close"></i>
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div *ngIf="supports.length === 0" class="text-center text-muted py-3">
+          <i class="mdi mdi-file-document-outline mdi-36px d-block mb-2"></i>
+          Aucun support ajouté
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

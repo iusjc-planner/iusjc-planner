@@ -1,0 +1,318 @@
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title">Bienvenue sur IUSJ Planner</h4>
+        <p class="card-description">
+          Système de gestion des emplois du temps et réservations de salles
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mt-4">
+  <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
+    <div class="card gradient-primary">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <h2 class="text-white mb-2">125</h2>
+            <p class="text-white mb-0">Utilisateurs</p>
+          </div>
+          <div>
+            <i class="mdi mdi-account-multiple text-white" style="font-size: 3rem;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
+    <div class="card" style="background: linear-gradient(to right, #f093fb, #f5576c);">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <h2 class="text-white mb-2">45</h2>
+            <p class="text-white mb-0">Enseignants</p>
+          </div>
+          <div>
+            <i class="mdi mdi-account-tie text-white" style="font-size: 3rem;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
+    <div class="card" style="background: linear-gradient(to right, #84d9d2, #07cdae);">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <h2 class="text-white mb-2">32</h2>
+            <p class="text-white mb-0">Salles</p>
+          </div>
+          <div>
+            <i class="mdi mdi-door text-white" style="font-size: 3rem;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
+    <div class="card" style="background: linear-gradient(to right, #90caf9, #047edf);">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <h2 class="text-white mb-2">156</h2>
+            <p class="text-white mb-0">Cours</p>
+          </div>
+          <div>
+            <i class="mdi mdi-book-open-variant text-white" style="font-size: 3rem;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Graphiques circulaires -->
+<div class="row mt-4">
+  <div class="col-lg-6 grid-margin stretch-card">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title">Répartition des Utilisateurs par École</h4>
+        <div class="chart-container" style="height: 300px; position: relative;">
+          <canvas baseChart
+                  [datasets]="doughnutChartData.datasets"
+                  [labels]="doughnutChartData.labels"
+                  [type]="doughnutChartType"
+                  [options]="doughnutChartOptions">
+          </canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6 grid-margin stretch-card">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title">Statut des Salles</h4>
+        <div class="chart-container" style="height: 300px; position: relative;">
+          <canvas baseChart
+                  [datasets]="pieChartData.datasets"
+                  [labels]="pieChartData.labels"
+                  [type]="pieChartType"
+                  [options]="pieChartOptions">
+          </canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Statistiques visuelles -->
+<div class="row mt-4">
+  <div class="col-lg-7 grid-margin stretch-card">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title">Occupation des Salles par École</h4>
+        <div class="mt-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="text-muted">SJI</span>
+            <div class="d-flex align-items-center">
+              <div class="progress mr-2" style="width: 200px; height: 8px;">
+                <div class="progress-bar bg-primary" role="progressbar" style="width: 60%" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+              <span class="text-muted">12/20</span>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="text-muted">SJM</span>
+            <div class="d-flex align-items-center">
+              <div class="progress mr-2" style="width: 200px; height: 8px;">
+                <div class="progress-bar bg-success" role="progressbar" style="width: 53%" aria-valuenow="53" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+              <span class="text-muted">8/15</span>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="text-muted">PrepaVogt</span>
+            <div class="d-flex align-items-center">
+              <div class="progress mr-2" style="width: 200px; height: 8px;">
+                <div class="progress-bar bg-warning" role="progressbar" style="width: 75%" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+              <span class="text-muted">15/20</span>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="text-muted">CPGE</span>
+            <div class="d-flex align-items-center">
+              <div class="progress mr-2" style="width: 200px; height: 8px;">
+                <div class="progress-bar bg-info" role="progressbar" style="width: 56%" aria-valuenow="56" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+              <span class="text-muted">10/18</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5 grid-margin stretch-card">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title">Répartition des Cours par Type</h4>
+        <div class="mt-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex align-items-center">
+              <div class="rounded-circle bg-primary mr-2" style="width: 12px; height: 12px;"></div>
+              <span>Cours Magistraux</span>
+            </div>
+            <span class="font-weight-bold">45%</span>
+          </div>
+          <div class="progress mb-4" style="height: 8px;">
+            <div class="progress-bar bg-primary" role="progressbar" style="width: 45%" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex align-items-center">
+              <div class="rounded-circle bg-success mr-2" style="width: 12px; height: 12px;"></div>
+              <span>Travaux Dirigés</span>
+            </div>
+            <span class="font-weight-bold">35%</span>
+          </div>
+          <div class="progress mb-4" style="height: 8px;">
+            <div class="progress-bar bg-success" role="progressbar" style="width: 35%" aria-valuenow="35" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex align-items-center">
+              <div class="rounded-circle bg-warning mr-2" style="width: 12px; height: 12px;"></div>
+              <span>Travaux Pratiques</span>
+            </div>
+            <span class="font-weight-bold">20%</span>
+          </div>
+          <div class="progress mb-4" style="height: 8px;">
+            <div class="progress-bar bg-warning" role="progressbar" style="width: 20%" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>  
+</div>
+
+<!-- Statistiques détaillées -->
+<div class="row">
+  <div class="col-md-6 grid-margin stretch-card">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title">Disponibilité des Enseignants</h4>
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>École</th>
+                <th>Disponibles</th>
+                <th>Occupés</th>
+                <th>Taux</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>SJI</td>
+                <td>12</td>
+                <td>8</td>
+                <td>
+                  <div class="progress">
+                    <div class="progress-bar bg-gradient-success" role="progressbar" style="width: 60%" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100"></div>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>SJM</td>
+                <td>8</td>
+                <td>7</td>
+                <td>
+                  <div class="progress">
+                    <div class="progress-bar bg-gradient-warning" role="progressbar" style="width: 53%" aria-valuenow="53" aria-valuemin="0" aria-valuemax="100"></div>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>PrepaVogt</td>
+                <td>15</td>
+                <td>5</td>
+                <td>
+                  <div class="progress">
+                    <div class="progress-bar bg-gradient-success" role="progressbar" style="width: 75%" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>CPGE</td>
+                <td>10</td>
+                <td>8</td>
+                <td>
+                  <div class="progress">
+                    <div class="progress-bar bg-gradient-info" role="progressbar" style="width: 56%" aria-valuenow="56" aria-valuemin="0" aria-valuemax="100"></div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 grid-margin stretch-card">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title">Activités Récentes</h4>
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Action</th>
+                <th>Utilisateur</th>
+                <th>Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>23/11/2025 10:30</td>
+                <td>Nouveau cours créé</td>
+                <td>Admin IUSJ</td>
+                <td><span class="badge badge-success">Succès</span></td>
+              </tr>
+              <tr>
+                <td>23/11/2025 09:15</td>
+                <td>Salle réservée</td>
+                <td>Prof. Dupont</td>
+                <td><span class="badge badge-success">Succès</span></td>
+              </tr>
+              <tr>
+                <td>23/11/2025 08:45</td>
+                <td>Conflit d'horaire détecté</td>
+                <td>Système</td>
+                <td><span class="badge badge-warning">Attention</span></td>
+              </tr>
+              <tr>
+                <td>23/11/2025 08:30</td>
+                <td>Enseignant ajouté</td>
+                <td>Admin IUSJ</td>
+                <td><span class="badge badge-success">Succès</span></td>
+              </tr>
+              <tr>
+                <td>23/11/2025 08:15</td>
+                <td>Disponibilités mises à jour</td>
+                <td>Prof. Martin</td>
+                <td><span class="badge badge-info">Info</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

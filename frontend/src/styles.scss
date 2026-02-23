@@ -1,0 +1,164 @@
+/* Styles globaux de l'application IUSJ Planner */
+
+// Import Material Design Icons
+@import '@mdi/font/css/materialdesignicons.min.css';
+
+// Import Bootstrap
+@import 'bootstrap/scss/bootstrap';
+
+// Import des variables
+@import 'assets/scss/variables';
+
+// Import du layout simplifié
+@import 'assets/scss/simple-layout';
+
+// Import des styles auth
+@import 'assets/scss/auth-styles';
+
+// Styles personnalisés IUSJ
+:root {
+  // Palette IUSJ (adaptation du violet)
+  --primary-color: #667eea;
+  --primary-dark: #764ba2;
+  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  
+  --secondary-color: #4facfe;
+  --success-color: #43e97b;
+  --warning-color: #fee140;
+  --danger-color: #f5576c;
+  
+  --text-primary: #343a40;
+  --text-secondary: #9c9fa6;
+  --text-muted: #9c9fa6;
+  
+  --border-color: #ebedf2;
+  --background-light: #f2edf3;
+  
+  // Sidebar
+  --sidebar-width: 260px;
+  --sidebar-width-icon: 70px;
+  --sidebar-bg: #ffffff;
+  
+  // Navbar
+  --navbar-height: 70px;
+  --navbar-bg: #ffffff;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background-color: var(--background-light);
+}
+
+// Classes utilitaires IUSJ
+.gradient-primary {
+  background: var(--primary-gradient) !important;
+  color: white !important;
+}
+
+.text-primary-gradient {
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.btn-gradient-primary {
+  background: var(--primary-gradient);
+  border: none;
+  color: white;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+  }
+}
+
+.card-gradient-primary {
+  background: var(--primary-gradient);
+  color: white;
+  
+  .card-title,
+  .card-text {
+    color: white;
+  }
+}
+
+// Animations
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease;
+}
+
+.slide-up {
+  animation: slideUp 0.4s ease;
+}
+
+.slide-in-left {
+  animation: slideInLeft 0.4s ease;
+}
+
+// Scrollbar personnalisée
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-dark);
+}
+
+// Responsive utilities
+@media (max-width: 767px) {
+  body {
+    font-size: 0.8125rem;
+  }
+}

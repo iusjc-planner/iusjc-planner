@@ -1,0 +1,39 @@
+<nav class="sidebar" id="sidebar">
+  <ul class="nav">
+    <!-- Menu Items -->
+    <li class="nav-item" *ngFor="let item of menuItems" 
+        [ngClass]="{ 'active': item.isActive }">
+      
+      <!-- Simple Link -->
+      <a *ngIf="!item.submenu" 
+         class="nav-link" 
+         [routerLink]="item.link" 
+         routerLinkActive="active">
+        <span class="menu-title">{{ item.title }}</span>
+        <i class="menu-icon" [ngClass]="item.icon"></i>
+      </a>
+
+      <!-- Link with Submenu -->
+      <ng-container *ngIf="item.submenu">
+        <a class="nav-link" 
+           (click)="item.collapsed = !item.collapsed" 
+           [attr.aria-expanded]="item.collapsed">
+          <span class="menu-title">{{ item.title }}</span>
+          <i class="menu-arrow"></i>
+          <i class="menu-icon" [ngClass]="item.icon"></i>
+        </a>
+        <div class="collapse" [ngbCollapse]="!item.collapsed">
+          <ul class="nav flex-column sub-menu">
+            <li class="nav-item" *ngFor="let subitem of item.submenu">
+              <a class="nav-link" 
+                 [routerLink]="subitem.link" 
+                 routerLinkActive="active">
+                {{ subitem.title }}
+              </a>
+            </li>
+          </ul>
+        </div>
+      </ng-container>
+    </li>
+  </ul>
+</nav>

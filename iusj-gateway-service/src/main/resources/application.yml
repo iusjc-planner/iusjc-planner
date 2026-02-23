@@ -1,0 +1,163 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: iusj-gateway-service
+  
+  cloud:
+    gateway:
+      httpclient:
+        connect-timeout: 10000
+        response-timeout: 30000
+      
+      routes:
+        # Route pour le service d'authentification (SANS validation JWT)
+        - id: auth-service
+          uri: lb://iusj-auth-service
+          predicates:
+            - Path=/auth/**
+          filters:
+            - StripPrefix=0
+        
+        # Route pour le service utilisateur (AVEC validation JWT)
+        - id: user-service-protected
+          uri: lb://iusj-user-service
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - StripPrefix=0
+            - JwtAuthenticationFilter
+
+        # Route pour le service enseignants (AVEC validation JWT)
+        - id: teacher-service-protected
+          uri: lb://iusj-teacher-service
+          predicates:
+            - Path=/api/teachers/**
+          filters:
+            - StripPrefix=0
+            - JwtAuthenticationFilter
+
+        # Route pour le service salles (AVEC validation JWT)
+        - id: room-service-protected
+          uri: lb://iusj-room-service
+          predicates:
+            - Path=/api/rooms/**
+          filters:
+            - StripPrefix=0
+            - JwtAuthenticationFilter
+
+        # Route pour le service cours (AVEC validation JWT)
+        - id: course-service-protected
+          uri: lb://iusj-course-service
+          predicates:
+            - Path=/api/courses/**
+          filters:
+            - StripPrefix=0
+            - JwtAuthenticationFilter
+
+        # Route pour le service matières (AVEC validation JWT)
+        - id: matiere-service-protected
+          uri: lb://iusj-course-service
+          predicates:
+            - Path=/api/matieres/**
+          filters:
+            - StripPrefix=0
+            - JwtAuthenticationFilter
+
+        # Route pour le service planning (AVEC validation JWT)
+        - id: schedule-service-protected
+          uri: lb://iusj-schedule-service
+          predicates:
+            - Path=/api/schedule/**
+          filters:
+            - StripPrefix=0
+            - JwtAuthenticationFilter
+
+        # Route pour le service écoles (AVEC validation JWT)
+        - id: school-service-protected
+          uri: lb://iusj-school-service
+          predicates:
+            - Path=/api/schools/**
+          filters:
+            - StripPrefix=0
+            - JwtAuthenticationFilter
+
+        # Route pour le service groupes/classes (AVEC validation JWT)
+        - id: group-service-protected
+          uri: lb://iusj-group-service
+          predicates:
+            - Path=/api/groups/**
+          filters:
+            - StripPrefix=0
+            - JwtAuthenticationFilter
+
+        # Route pour le service etudiants (AVEC validation JWT)
+        - id: student-service-protected
+          uri: lb://iusj-student-service
+          predicates:
+            - Path=/api/students/**
+          filters:
+            - StripPrefix=0
+            - JwtAuthenticationFilter
+
+        # Route pour le service ressources (AVEC validation JWT)
+        - id: resource-service-protected
+          uri: lb://iusj-resource-service
+          predicates:
+            - Path=/api/resources/**
+          filters:
+            - StripPrefix=0
+            - JwtAuthenticationFilter
+      
+      # Configuration globale CORS - désactivée car gérée par CorsConfig.java
+      # globalcors:
+      #   add-to-simple-url-handler-mapping: true
+      #   cors-configurations:
+      #     '[/**]':
+      #       allowedOriginPatterns:
+      #         - "http://localhost:*"
+      #       allowedMethods:
+      #         - GET
+      #         - POST
+      #         - PUT
+      #         - DELETE
+      #         - OPTIONS
+      #         - PATCH
+      #       allowedHeaders: "*"
+      #       exposedHeaders:
+      #         - "Authorization"
+      #         - "Content-Type"
+      #       allowCredentials: true
+      #       maxAge: 3600
+      
+      # Filtres globaux
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+
+# Configuration Eureka Client
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+
+# Configuration des logs
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web.reactive: DEBUG
+    reactor.netty: DEBUG
+
+# Configuration de sécurité pour les routes
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+  endpoint:
+    health:
+      show-details: always

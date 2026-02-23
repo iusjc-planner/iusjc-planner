@@ -1,0 +1,145 @@
+<div class="page-header">
+  <h3 class="page-title">
+    <i class="mdi mdi-book-open-variant menu-icon"></i>
+    Détail de la Matière
+  </h3>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a routerLink="/app/dashboard">Accueil</a></li>
+      <li class="breadcrumb-item"><a routerLink="/app/matieres">Matières</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ matiere?.code }}</li>
+    </ol>
+  </nav>
+</div>
+
+<!-- Loader -->
+<div *ngIf="loading" class="text-center py-5">
+  <div class="spinner-border text-primary" role="status">
+    <span class="sr-only">Chargement...</span>
+  </div>
+</div>
+
+<!-- Erreur -->
+<div *ngIf="error" class="alert alert-danger">
+  <i class="mdi mdi-alert-circle mr-2"></i>{{ error }}
+</div>
+
+<div *ngIf="matiere && !loading" class="row">
+  <!-- Informations principales -->
+  <div class="col-lg-8 grid-margin stretch-card">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-4">
+          <div>
+            <h4 class="card-title mb-1">{{ matiere.nom }}</h4>
+            <span class="badge badge-primary badge-lg">{{ matiere.code }}</span>
+            <span class="badge ml-2" [ngClass]="getStatusClass()">{{ getStatusLabel() }}</span>
+          </div>
+          <div>
+            <button class="btn btn-outline-primary btn-sm mr-2" [routerLink]="['/app/matieres', matiere.id, 'edit']">
+              <i class="mdi mdi-pencil"></i> Modifier
+            </button>
+            <button class="btn btn-outline-danger btn-sm" (click)="deleteMatiere()">
+              <i class="mdi mdi-delete"></i> Supprimer
+            </button>
+          </div>
+        </div>
+
+        <p *ngIf="matiere.description" class="text-muted mb-4">{{ matiere.description }}</p>
+
+        <div class="row">
+          <div class="col-md-6">
+            <h6 class="text-muted">École</h6>
+            <p>
+              <i class="mdi mdi-school text-primary mr-2"></i>
+              {{ school?.name || 'Non définie' }}
+            </p>
+          </div>
+          <div class="col-md-6">
+            <h6 class="text-muted">Filière</h6>
+            <p>
+              <i class="mdi mdi-folder text-info mr-2"></i>
+              <span *ngIf="filiere">{{ filiere.code }} - {{ filiere.nom }}</span>
+              <span *ngIf="!filiere">Non définie</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-6">
+            <h6 class="text-muted">Enseignant responsable</h6>
+            <p>
+              <i class="mdi mdi-account-tie text-success mr-2"></i>
+              <span *ngIf="teacher">{{ teacher.prenom }} {{ teacher.nom }}</span>
+              <span *ngIf="!teacher" class="text-muted">Non assigné</span>
+            </p>
+          </div>
+          <div class="col-md-3">
+            <h6 class="text-muted">Crédits</h6>
+            <p>
+              <span class="badge badge-warning badge-lg">{{ matiere.credits }} crédits</span>
+            </p>
+          </div>
+          <div class="col-md-3">
+            <h6 class="text-muted">Volume horaire</h6>
+            <p>
+              <span class="badge badge-info badge-lg">{{ matiere.hoursTotal }}h</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Supports de cours -->
+        <div *ngIf="matiere.supports && matiere.supports.length > 0" class="mt-4 pt-4 border-top">
+          <h5><i class="mdi mdi-file-document-multiple mr-2"></i>Supports de cours</h5>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item px-0" *ngFor="let support of matiere.supports; let i = index">
+              <a [href]="support" target="_blank" class="text-primary">
+                <i class="mdi mdi-file-download-outline mr-2"></i>
+                Support {{ i + 1 }}
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistiques et séances -->
+  <div class="col-lg-4 grid-margin stretch-card">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title">Séances programmées</h4>
+        
+        <div *ngIf="courses.length === 0" class="text-center text-muted py-4">
+          <i class="mdi mdi-calendar-blank mdi-48px d-block mb-2"></i>
+          <p>Aucune séance programmée</p>
+          <a [routerLink]="['/app/courses/new']" [queryParams]="{matiereId: matiere.id}" class="btn btn-primary btn-sm">
+            <i class="mdi mdi-plus"></i> Programmer une séance
+          </a>
+        </div>
+
+        <div *ngIf="courses.length > 0">
+          <p class="mb-3">
+            <strong>{{ courses.length }}</strong> séance(s) au total
+          </p>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item px-0 py-2" *ngFor="let course of courses.slice(0, 5)">
+              <div class="d-flex justify-content-between">
+                <span>
+                  <i class="mdi mdi-calendar mr-1"></i>
+                  {{ course.date | date:'dd/MM/yyyy' }}
+                </span>
+                <span class="text-muted">
+                  {{ course.startTime }} - {{ course.endTime }}
+                </span>
+              </div>
+            </li>
+          </ul>
+          <a *ngIf="courses.length > 5" [routerLink]="['/app/courses']" [queryParams]="{matiereId: matiere.id}" class="btn btn-link btn-sm">
+            Voir toutes les séances
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

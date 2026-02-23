@@ -1,0 +1,407 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1">
+        <i class="mdi mdi-calendar-plus me-2 text-primary"></i>
+        Nouvelle Séance
+      </h2>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0">
+          <li class="breadcrumb-item"><a routerLink="/app/schedules">Emploi du temps</a></li>
+          <li class="breadcrumb-item active">Création manuelle</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Progress Steps -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center position-relative">
+        <!-- Progress Line -->
+        <div class="position-absolute w-100" style="top: 50%; z-index: 0;">
+          <div class="progress" style="height: 4px;">
+            <div class="progress-bar bg-primary" 
+                 [style.width]="((currentStep - 1) / (totalSteps - 1)) * 100 + '%'">
+            </div>
+          </div>
+        </div>
+        
+        <!-- Step Indicators -->
+        <div *ngFor="let step of [1, 2, 3]" 
+             class="step-indicator d-flex flex-column align-items-center position-relative"
+             style="z-index: 1; cursor: pointer;"
+             (click)="goToStep(step)">
+          <div class="rounded-circle d-flex justify-content-center align-items-center mb-2"
+               [ngClass]="{
+                 'bg-primary text-white': currentStep === step,
+                 'bg-success text-white': isStepComplete(step) && currentStep !== step,
+                 'bg-light text-muted border': !isStepComplete(step) && currentStep !== step
+               }"
+               style="width: 48px; height: 48px; font-size: 1.2rem;">
+            <i *ngIf="isStepComplete(step) && currentStep !== step" class="mdi mdi-check"></i>
+            <span *ngIf="!isStepComplete(step) || currentStep === step">{{ step }}</span>
+          </div>
+          <small class="text-center fw-medium" 
+                 [class.text-primary]="currentStep === step"
+                 [class.text-success]="isStepComplete(step) && currentStep !== step">
+            {{ step === 1 ? 'Cours' : step === 2 ? 'Planning' : 'Salle' }}
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Alert -->
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="mdi mdi-alert-circle me-2"></i>{{ error }}
+    <button type="button" class="btn-close" (click)="error = null"></button>
+  </div>
+
+  <!-- Form Card -->
+  <div class="card">
+    <div class="card-header bg-white py-3">
+      <h5 class="mb-0">
+        <ng-container [ngSwitch]="currentStep">
+          <span *ngSwitchCase="1"><i class="mdi mdi-school me-2"></i>Étape 1: Sélection du cours</span>
+          <span *ngSwitchCase="2"><i class="mdi mdi-calendar-clock me-2"></i>Étape 2: Planification</span>
+          <span *ngSwitchCase="3"><i class="mdi mdi-door me-2"></i>Étape 3: Attribution de la salle</span>
+        </ng-container>
+      </h5>
+    </div>
+    
+    <div class="card-body">
+      <form [formGroup]="form">
+        
+        <!-- ========== STEP 1: École, Filière, Matière, Enseignant ========== -->
+        <div *ngIf="currentStep === 1" class="step-content">
+          <div class="row g-4">
+            <!-- École -->
+            <div class="col-md-6">
+              <label for="schoolId" class="form-label fw-semibold">
+                <i class="mdi mdi-domain me-1 text-muted"></i>École <span class="text-danger">*</span>
+              </label>
+              <select class="form-select form-select-lg" id="schoolId" formControlName="schoolId"
+                      [class.is-invalid]="f['schoolId'].touched && f['schoolId'].invalid">
+                <option [ngValue]="null">-- Sélectionner une école --</option>
+                <option *ngFor="let school of schools" [value]="school.id">
+                  {{ school.name }}
+                </option>
+              </select>
+              <div *ngIf="loadingSchools" class="form-text">
+                <span class="spinner-border spinner-border-sm me-1"></span> Chargement...
+              </div>
+              <div class="invalid-feedback">Veuillez sélectionner une école</div>
+            </div>
+
+            <!-- Filière -->
+            <div class="col-md-6">
+              <label for="filiereId" class="form-label fw-semibold">
+                <i class="mdi mdi-book-education me-1 text-muted"></i>Filière <span class="text-danger">*</span>
+              </label>
+              <select class="form-select form-select-lg" id="filiereId" formControlName="filiereId"
+                      [class.is-invalid]="f['filiereId'].touched && f['filiereId'].invalid"
+                      [disabled]="!f['schoolId'].value">
+                <option [ngValue]="null">-- Sélectionner une filière --</option>
+                <option *ngFor="let filiere of filieres" [value]="filiere.id">
+                  {{ filiere.code }} - {{ filiere.nom }}
+                </option>
+              </select>
+              <div *ngIf="loadingFilieres" class="form-text">
+                <span class="spinner-border spinner-border-sm me-1"></span> Chargement...
+              </div>
+              <div *ngIf="f['schoolId'].value && filieres.length === 0 && !loadingFilieres" class="form-text text-warning">
+                <i class="mdi mdi-alert me-1"></i>Aucune filière trouvée pour cette école
+              </div>
+              <div class="invalid-feedback">Veuillez sélectionner une filière</div>
+            </div>
+
+            <!-- Matière -->
+            <div class="col-md-6">
+              <label for="matiereId" class="form-label fw-semibold">
+                <i class="mdi mdi-book-open-variant me-1 text-muted"></i>Matière <span class="text-danger">*</span>
+              </label>
+              <select class="form-select form-select-lg" id="matiereId" formControlName="matiereId"
+                      [class.is-invalid]="f['matiereId'].touched && f['matiereId'].invalid"
+                      [disabled]="!f['filiereId'].value">
+                <option [ngValue]="null">-- Sélectionner une matière --</option>
+                <option *ngFor="let matiere of matieres" [value]="matiere.id">
+                  {{ matiere.code }} - {{ matiere.nom }}
+                </option>
+              </select>
+              <div *ngIf="loadingMatieres" class="form-text">
+                <span class="spinner-border spinner-border-sm me-1"></span> Chargement...
+              </div>
+              <div *ngIf="f['filiereId'].value && matieres.length === 0 && !loadingMatieres" class="form-text text-warning">
+                <i class="mdi mdi-alert me-1"></i>Aucune matière trouvée pour cette filière
+              </div>
+              <div class="invalid-feedback">Veuillez sélectionner une matière</div>
+            </div>
+
+            <!-- Enseignant -->
+            <div class="col-md-6">
+              <label for="teacherId" class="form-label fw-semibold">
+                <i class="mdi mdi-account-tie me-1 text-muted"></i>Enseignant <span class="text-danger">*</span>
+              </label>
+              <select class="form-select form-select-lg" id="teacherId" formControlName="teacherId"
+                      [class.is-invalid]="f['teacherId'].touched && f['teacherId'].invalid"
+                      [disabled]="!f['matiereId'].value">
+                <option [ngValue]="null">-- Sélectionner un enseignant --</option>
+                <option *ngFor="let teacher of teachers" [value]="teacher.id">
+                  {{ teacher.prenom }} {{ teacher.nom }} 
+                  <span *ngIf="teacher.specialite"> - {{ teacher.specialite }}</span>
+                </option>
+              </select>
+              <div *ngIf="loadingTeachers" class="form-text">
+                <span class="spinner-border spinner-border-sm me-1"></span> Chargement...
+              </div>
+              <div class="invalid-feedback">Veuillez sélectionner un enseignant</div>
+            </div>
+          </div>
+
+          <!-- Résumé Section 1 -->
+          <div *ngIf="getSelectedMatiere()" class="alert alert-info mt-4 mb-0">
+            <div class="d-flex align-items-start">
+              <i class="mdi mdi-information-outline me-2 fs-5"></i>
+              <div>
+                <strong>Matière sélectionnée:</strong> {{ getSelectedMatiere()?.code }} - {{ getSelectedMatiere()?.nom }}<br>
+                <small class="text-muted">{{ getSelectedMatiere()?.credits }} crédits • {{ getSelectedMatiere()?.hoursTotal }}h de cours</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== STEP 2: Groupe, Date, Heures ========== -->
+        <div *ngIf="currentStep === 2" class="step-content">
+          <div class="row g-4">
+            <!-- Groupe d'étudiants -->
+            <div class="col-md-6">
+              <label for="groupId" class="form-label fw-semibold">
+                <i class="mdi mdi-account-group me-1 text-muted"></i>Groupe d'étudiants <span class="text-danger">*</span>
+              </label>
+              <select class="form-select form-select-lg" id="groupId" formControlName="groupId"
+                      [class.is-invalid]="f['groupId'].touched && f['groupId'].invalid">
+                <option [ngValue]="null">-- Sélectionner un groupe --</option>
+                <option *ngFor="let group of groups" [value]="group.id">
+                  {{ group.name }} 
+                  <span *ngIf="group.level">({{ group.level }})</span>
+                  <span *ngIf="group.size"> - {{ group.size }} étudiants</span>
+                </option>
+              </select>
+              <div *ngIf="loadingGroups" class="form-text">
+                <span class="spinner-border spinner-border-sm me-1"></span> Chargement...
+              </div>
+              <div class="invalid-feedback">Veuillez sélectionner un groupe</div>
+            </div>
+
+            <!-- Type de séance -->
+            <div class="col-md-6">
+              <label for="type" class="form-label fw-semibold">
+                <i class="mdi mdi-tag me-1 text-muted"></i>Type de séance <span class="text-danger">*</span>
+              </label>
+              <select class="form-select form-select-lg" id="type" formControlName="type">
+                <option *ngFor="let type of courseTypes" [value]="type">
+                  {{ getCourseTypeLabel(type) }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Date -->
+            <div class="col-md-4">
+              <label for="date" class="form-label fw-semibold">
+                <i class="mdi mdi-calendar me-1 text-muted"></i>Date <span class="text-danger">*</span>
+              </label>
+              <input type="date" class="form-control form-control-lg" id="date" formControlName="date"
+                     [class.is-invalid]="f['date'].touched && f['date'].invalid">
+              <div class="invalid-feedback">Veuillez sélectionner une date</div>
+            </div>
+
+            <!-- Heure début -->
+            <div class="col-md-4">
+              <label for="startTime" class="form-label fw-semibold">
+                <i class="mdi mdi-clock-start me-1 text-muted"></i>Heure début <span class="text-danger">*</span>
+              </label>
+              <input type="time" class="form-control form-control-lg" id="startTime" formControlName="startTime"
+                     [class.is-invalid]="f['startTime'].touched && f['startTime'].invalid">
+              <div class="invalid-feedback">Heure de début requise</div>
+            </div>
+
+            <!-- Heure fin -->
+            <div class="col-md-4">
+              <label for="endTime" class="form-label fw-semibold">
+                <i class="mdi mdi-clock-end me-1 text-muted"></i>Heure fin <span class="text-danger">*</span>
+              </label>
+              <input type="time" class="form-control form-control-lg" id="endTime" formControlName="endTime"
+                     [class.is-invalid]="f['endTime'].touched && f['endTime'].invalid">
+              <div class="invalid-feedback">Heure de fin requise</div>
+            </div>
+
+            <!-- Titre optionnel -->
+            <div class="col-12">
+              <label for="title" class="form-label fw-semibold">
+                <i class="mdi mdi-format-title me-1 text-muted"></i>Titre de la séance <span class="text-muted">(optionnel)</span>
+              </label>
+              <input type="text" class="form-control" id="title" formControlName="title"
+                     placeholder="Ex: Introduction au chapitre 1">
+            </div>
+          </div>
+
+          <!-- Résumé -->
+          <div *ngIf="getSelectedGroup()" class="alert alert-info mt-4 mb-0">
+            <div class="d-flex align-items-start">
+              <i class="mdi mdi-information-outline me-2 fs-5"></i>
+              <div>
+                <strong>Récapitulatif:</strong><br>
+                <small>
+                  {{ getSelectedMatiere()?.code }} - {{ getSelectedMatiere()?.nom }}<br>
+                  Enseignant: {{ getSelectedTeacher()?.prenom }} {{ getSelectedTeacher()?.nom }}<br>
+                  Groupe: {{ getSelectedGroup()?.name }} 
+                  <span *ngIf="getSelectedGroup()?.size">({{ getSelectedGroup()?.size }} étudiants)</span>
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== STEP 3: Salle ========== -->
+        <div *ngIf="currentStep === 3" class="step-content">
+          <!-- Info séance -->
+          <div class="alert alert-secondary mb-4">
+            <div class="row align-items-center">
+              <div class="col">
+                <i class="mdi mdi-calendar-clock me-2"></i>
+                <strong>{{ f['date'].value | date:'EEEE d MMMM yyyy':'':'fr' }}</strong> 
+                de {{ f['startTime'].value }} à {{ f['endTime'].value }}
+              </div>
+              <div class="col-auto">
+                <span class="badge bg-primary fs-6">
+                  {{ getSelectedGroup()?.size || '?' }} étudiants
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chargement -->
+          <div *ngIf="loadingRooms" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Recherche des salles disponibles...</span>
+            </div>
+            <p class="mt-3 text-muted">Recherche des salles disponibles...</p>
+          </div>
+
+          <!-- Aucune salle disponible -->
+          <div *ngIf="noRoomsAvailable && !loadingRooms" class="alert alert-warning">
+            <div class="d-flex align-items-center">
+              <i class="mdi mdi-alert-circle me-3 fs-2"></i>
+              <div>
+                <h5 class="alert-heading mb-1">Aucune salle disponible</h5>
+                <p class="mb-0">
+                  Aucune salle n'est disponible pour le créneau sélectionné 
+                  ({{ f['date'].value }} de {{ f['startTime'].value }} à {{ f['endTime'].value }}).
+                </p>
+                <hr>
+                <div class="small">
+                  <strong>Suggestions:</strong>
+                  <ul class="mb-0">
+                    <li>Modifier l'horaire de la séance</li>
+                    <li>Choisir une autre date</li>
+                    <li>Vérifier les réservations existantes</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Liste des salles disponibles -->
+          <div *ngIf="!loadingRooms && availableRooms.length > 0">
+            <label class="form-label fw-semibold mb-3">
+              <i class="mdi mdi-door me-1 text-muted"></i>
+              Salles disponibles <span class="badge bg-success">{{ availableRooms.length }}</span>
+            </label>
+            
+            <div class="row g-3">
+              <div *ngFor="let room of availableRooms" class="col-md-6 col-lg-4">
+                <div class="card h-100 room-card" 
+                     [class.border-primary]="f['roomId'].value === room.id"
+                     [class.bg-primary-subtle]="f['roomId'].value === room.id"
+                     (click)="form.patchValue({ roomId: room.id })"
+                     style="cursor: pointer;">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                      <h5 class="card-title mb-0">
+                        <i class="mdi mdi-door me-1"></i>{{ room.name }}
+                      </h5>
+                      <div class="form-check">
+                        <input class="form-check-input" type="radio" 
+                               [checked]="f['roomId'].value === room.id"
+                               (click)="form.patchValue({ roomId: room.id })">
+                      </div>
+                    </div>
+                    <p class="card-text text-muted small mb-2">
+                      <i class="mdi mdi-map-marker-outline me-1"></i>{{ room.location || 'Non spécifié' }}
+                    </p>
+                    <div class="d-flex flex-wrap gap-2">
+                      <span class="badge bg-secondary">
+                        <i class="mdi mdi-account-multiple me-1"></i>{{ room.capacity }} places
+                      </span>
+                      <span class="badge" 
+                            [ngClass]="room.type === 'LAB' ? 'bg-info' : room.type === 'AUDITORIUM' ? 'bg-warning' : 'bg-light text-dark'">
+                        {{ room.type }}
+                      </span>
+                    </div>
+                    <div *ngIf="room.equipments?.length" class="mt-2">
+                      <small class="text-muted">
+                        <i class="mdi mdi-television me-1"></i>
+                        {{ room.equipments.slice(0, 3).join(', ') }}
+                        <span *ngIf="room.equipments.length > 3">...</span>
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="f['roomId'].touched && f['roomId'].invalid" class="text-danger mt-2">
+              <i class="mdi mdi-alert me-1"></i>Veuillez sélectionner une salle
+            </div>
+          </div>
+
+          <!-- Notes optionnelles -->
+          <div class="mt-4">
+            <label for="notes" class="form-label fw-semibold">
+              <i class="mdi mdi-note-text me-1 text-muted"></i>Notes <span class="text-muted">(optionnel)</span>
+            </label>
+            <textarea class="form-control" id="notes" formControlName="notes" rows="3"
+                      placeholder="Remarques, instructions particulières..."></textarea>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Card Footer - Navigation -->
+    <div class="card-footer bg-white py-3">
+      <div class="d-flex justify-content-between">
+        <button type="button" class="btn btn-outline-secondary" 
+                (click)="currentStep === 1 ? onCancel() : previousStep()">
+          <i class="mdi" [ngClass]="currentStep === 1 ? 'mdi-close' : 'mdi-arrow-left'"></i>
+          {{ currentStep === 1 ? 'Annuler' : 'Précédent' }}
+        </button>
+        
+        <div class="d-flex gap-2">
+          <button *ngIf="currentStep < totalSteps" type="button" class="btn btn-primary btn-lg"
+                  (click)="nextStep()">
+            Suivant <i class="mdi mdi-arrow-right ms-1"></i>
+          </button>
+          
+          <button *ngIf="currentStep === totalSteps" type="button" class="btn btn-success btn-lg"
+                  (click)="onSubmit()" [disabled]="saving || noRoomsAvailable">
+            <span *ngIf="saving" class="spinner-border spinner-border-sm me-1"></span>
+            <i *ngIf="!saving" class="mdi mdi-check me-1"></i>
+            Créer la séance
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

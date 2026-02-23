@@ -1,0 +1,76 @@
+Bien sûr Astrid, voici une explication claire et structurée de tout ce que je t’ai donné pour le endpoint `/auth/login` avec JWT :
+
+---
+
+## 🧱 1. `LoginRequest` (DTO)
+
+C’est un **objet de transfert de données** qui représente ce que l’utilisateur envoie dans sa requête POST `/auth/login`.
+
+```json
+{
+  "login": "alice123",
+  "password": "motDePasse"
+}
+```
+
+Il contient :
+- `login` : le nom d’utilisateur ou email
+- `password` : le mot de passe brut (non encodé)
+
+---
+
+## 🧾 2. `LoginResponse` (DTO)
+
+C’est ce que ton API retourne après une authentification réussie :
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+Il contient :
+- `token` : le JWT généré, que le client utilisera ensuite dans les headers `Authorization: Bearer <token>`
+
+---
+
+## 🔐 3. `JwtUtil`
+
+C’est une classe utilitaire qui :
+- **génère** un token JWT avec `generateToken(username, role)`
+- **valide** un token avec `validateToken(token)`
+- **extrait** le nom d’utilisateur avec `extractUsername(token)`
+
+Elle utilise la bibliothèque **JJWT** et une clé secrète (`jwtSecret`) pour signer les tokens.
+
+---
+
+## 🧠 4. `AuthService`
+
+C’est le cœur de la logique métier :
+
+- Il récupère l’utilisateur depuis la base via `UserRepository`
+- Il vérifie que le mot de passe est correct avec `PasswordEncoder`
+- Il génère un JWT avec `JwtUtil`
+- Il retourne un `LoginResponse` contenant le token
+
+---
+
+## 🌐 5. `AuthController`
+
+C’est le contrôleur REST qui expose l’endpoint `/auth/login`. Il reçoit un `LoginRequest`, appelle le service, et retourne un `LoginResponse`.
+
+---
+
+## 🔁 Résumé du flux
+
+1. Le client envoie un `POST /auth/login` avec login + mot de passe
+2. Le contrôleur appelle `AuthService`
+3. `AuthService` :
+   - vérifie l’utilisateur
+   - vérifie le mot de passe
+   - génère un JWT
+4. Le contrôleur retourne le token au client
+
+---
+

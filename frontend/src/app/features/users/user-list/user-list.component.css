@@ -1,0 +1,22 @@
+/* Styles pour la liste des utilisateurs */
+
+.page-header {
+  margin-bottom: 1.5rem;
+}
+
+.table img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}

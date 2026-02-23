@@ -1,0 +1,222 @@
+<div class="page-header">
+  <h3 class="page-title">
+    <i class="mdi mdi-school menu-icon"></i>
+    {{ isEditMode ? 'Modifier École' : 'Nouvelle École' }}
+  </h3>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a routerLink="/app/dashboard">Accueil</a></li>
+      <li class="breadcrumb-item"><a routerLink="/app/schools">Écoles</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ isEditMode ? 'Modifier' : 'Nouvelle' }}</li>
+    </ol>
+  </nav>
+</div>
+
+<div class="row">
+  <!-- Informations de l'école -->
+  <div class="col-lg-6 grid-margin stretch-card">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title">Informations de l'École</h4>
+        <form (ngSubmit)="onSubmit()" #schoolForm="ngForm">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="name" class="form-label">Nom de l'École *</label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  id="name" 
+                  name="name"
+                  [(ngModel)]="school.name"
+                  required
+                  placeholder="Ex: SJI">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="code" class="form-label">Code</label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  id="code" 
+                  name="code"
+                  [(ngModel)]="school.code"
+                  placeholder="Ex: SJI">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="description" class="form-label">Description</label>
+            <textarea 
+              class="form-control" 
+              id="description" 
+              name="description"
+              [(ngModel)]="school.description"
+              rows="3"
+              placeholder="Description de l'école..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="address" class="form-label">Adresse</label>
+            <input 
+              type="text" 
+              class="form-control" 
+              id="address" 
+              name="address"
+              [(ngModel)]="school.address"
+              placeholder="Adresse complète de l'école">
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="phone" class="form-label">Téléphone</label>
+                <input 
+                  type="tel" 
+                  class="form-control" 
+                  id="phone" 
+                  name="phone"
+                  [(ngModel)]="school.phone"
+                  placeholder="Ex: +237 6XX XX XX XX">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="email" class="form-label">Email</label>
+                <input 
+                  type="email" 
+                  class="form-control" 
+                  id="email" 
+                  name="email"
+                  [(ngModel)]="school.email"
+                  placeholder="contact@ecole.cm">
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mt-4">
+            <button 
+              type="submit" 
+              class="btn btn-primary"
+              [disabled]="!schoolForm.form.valid || loading">
+              <i class="mdi mdi-content-save"></i>
+              {{ isEditMode ? 'Mettre à jour' : 'Créer' }}
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-secondary" 
+              (click)="onCancel()">
+              <i class="mdi mdi-cancel"></i>
+              Annuler
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gestion des filières -->
+  <div class="col-lg-6 grid-margin stretch-card">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title">
+          <i class="mdi mdi-folder-multiple"></i>
+          Filières de l'École
+        </h4>
+        <p class="card-description">
+          Ajoutez les filières disponibles dans cette école
+        </p>
+
+        <!-- Formulaire d'ajout de filière -->
+        <div class="border rounded p-3 mb-3 bg-light">
+          <h6 class="mb-3">Ajouter une filière</h6>
+          <div class="row">
+            <div class="col-md-4">
+              <div class="form-group mb-2">
+                <label class="form-label">Code *</label>
+                <input 
+                  type="text" 
+                  class="form-control form-control-sm" 
+                  [(ngModel)]="newFiliere.code"
+                  placeholder="Ex: LIC, MA, ISI">
+              </div>
+            </div>
+            <div class="col-md-8">
+              <div class="form-group mb-2">
+                <label class="form-label">Nom *</label>
+                <input 
+                  type="text" 
+                  class="form-control form-control-sm" 
+                  [(ngModel)]="newFiliere.nom"
+                  placeholder="Ex: Licence Informatique">
+              </div>
+            </div>
+          </div>
+          <div class="form-group mb-2">
+            <label class="form-label">Description</label>
+            <input 
+              type="text" 
+              class="form-control form-control-sm" 
+              [(ngModel)]="newFiliere.description"
+              placeholder="Description courte (optionnel)">
+          </div>
+          <button 
+            type="button" 
+            class="btn btn-success btn-sm"
+            (click)="addFiliere()"
+            [disabled]="!newFiliere.code || !newFiliere.nom">
+            <i class="mdi mdi-plus"></i> Ajouter la filière
+          </button>
+        </div>
+
+        <!-- Liste des filières ajoutées -->
+        <div *ngIf="school.filieres && school.filieres.length > 0">
+          <h6 class="mb-2">Filières ajoutées ({{ school.filieres.length }})</h6>
+          <div class="table-responsive">
+            <table class="table table-sm table-hover">
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Nom</th>
+                  <th style="width: 60px;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let filiere of school.filieres; let i = index">
+                  <td><strong>{{ filiere.code }}</strong></td>
+                  <td>{{ filiere.nom }}</td>
+                  <td>
+                    <button 
+                      type="button" 
+                      class="btn btn-outline-danger btn-sm"
+                      (click)="removeFiliere(i)"
+                      title="Retirer">
+                      <i class="mdi mdi-delete"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div *ngIf="!school.filieres || school.filieres.length === 0" class="text-center text-muted py-3">
+          <i class="mdi mdi-folder-open mdi-48px d-block mb-2"></i>
+          Aucune filière ajoutée
+        </div>
+
+        <!-- Exemples de filières -->
+        <div class="mt-3 p-2 border-top">
+          <small class="text-muted">
+            <strong>Exemples de filières :</strong><br>
+            LIC - Licence Informatique, MA - Master, TC - Tronc Commun,<br>
+            ISI - Informatique et Systèmes d'Information, SRT - Systèmes Réseaux et Télécommunications,<br>
+            GC - Génie Civil, GL - Génie Électrique, MSI - Management des SI
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

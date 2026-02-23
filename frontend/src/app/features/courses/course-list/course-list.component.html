@@ -1,0 +1,181 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1"><i class="mdi mdi-calendar-text me-2"></i>Gestion des Séances</h2>
+      <p class="text-muted mb-0">Séances de cours programmées dans l'emploi du temps</p>
+    </div>
+    <a routerLink="/app/courses/new" class="btn btn-primary">
+      <i class="mdi mdi-plus me-1"></i>Nouvelle Séance
+    </a>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="row mb-4" *ngIf="stats">
+    <div class="col-md-3">
+      <div class="card bg-primary text-white">
+        <div class="card-body">
+          <h6 class="card-subtitle mb-2">Total Séances</h6>
+          <h3 class="card-title mb-0">{{ stats.total }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-info text-white">
+        <div class="card-body">
+          <h6 class="card-subtitle mb-2">Programmées</h6>
+          <h3 class="card-title mb-0">{{ stats.scheduled }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-success text-white">
+        <div class="card-body">
+          <h6 class="card-subtitle mb-2">Terminées</h6>
+          <h3 class="card-title mb-0">{{ stats.completed }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-danger text-white">
+        <div class="card-body">
+          <h6 class="card-subtitle mb-2">Annulées</h6>
+          <h3 class="card-title mb-0">{{ stats.cancelled }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-2">
+          <label class="form-label">Matière</label>
+          <select class="form-select" [(ngModel)]="filterMatiereId">
+            <option [ngValue]="null">Toutes</option>
+            <option *ngFor="let m of matieres" [ngValue]="m.id">{{ m.code }} - {{ m.nom }}</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Type</label>
+          <select class="form-select" [(ngModel)]="filterType">
+            <option value="">Tous</option>
+            <option [value]="CourseType.CM">CM</option>
+            <option [value]="CourseType.TD">TD</option>
+            <option [value]="CourseType.TP">TP</option>
+            <option [value]="CourseType.EXAM">Examen</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Statut</label>
+          <select class="form-select" [(ngModel)]="filterStatus">
+            <option value="">Tous</option>
+            <option [value]="CourseStatus.SCHEDULED">Programmée</option>
+            <option [value]="CourseStatus.COMPLETED">Terminée</option>
+            <option [value]="CourseStatus.CANCELLED">Annulée</option>
+            <option [value]="CourseStatus.POSTPONED">Reportée</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Du</label>
+          <input type="date" class="form-control" [(ngModel)]="filterDateFrom">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Au</label>
+          <input type="date" class="form-control" [(ngModel)]="filterDateTo">
+        </div>
+        <div class="col-md-2 d-flex align-items-end gap-2">
+          <button class="btn btn-primary" (click)="applyFilters()">
+            <i class="mdi mdi-magnify"></i>
+          </button>
+          <button class="btn btn-outline-secondary" (click)="resetFilters()">
+            <i class="mdi mdi-refresh"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error" class="alert alert-danger">
+    <i class="mdi mdi-alert-circle me-2"></i>{{ error }}
+  </div>
+
+  <!-- Table -->
+  <div class="card" *ngIf="!loading && !error">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Date</th>
+              <th>Horaires</th>
+              <th>Matière</th>
+              <th>Type</th>
+              <th>Salle</th>
+              <th>Enseignant</th>
+              <th>Statut</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="filteredCourses.length === 0">
+              <td colspan="8" class="text-center py-4 text-muted">
+                <i class="mdi mdi-calendar-blank mdi-48px"></i>
+                <p class="mb-0 mt-2">Aucune séance trouvée</p>
+              </td>
+            </tr>
+            <tr *ngFor="let course of filteredCourses">
+              <td>
+                <strong>{{ course.date | date:'dd/MM/yyyy' }}</strong>
+                <br>
+                <small class="text-muted">{{ course.date | date:'EEEE':'':'fr' }}</small>
+              </td>
+              <td>
+                {{ course.startTime }} - {{ course.endTime }}
+              </td>
+              <td>
+                <a [routerLink]="['/app/matieres', course.matiereId]" class="text-decoration-none">
+                  <code>{{ course.matiereCode }}</code>
+                </a>
+                <br>
+                <small>{{ course.matiereName }}</small>
+              </td>
+              <td>
+                <span class="badge bg-secondary">{{ getTypeLabel(course.type) }}</span>
+              </td>
+              <td>{{ course.roomName || '-' }}</td>
+              <td>{{ course.teacherName || '-' }}</td>
+              <td>
+                <span class="badge" [ngClass]="getStatusClass(course.status)">
+                  {{ getStatusLabel(course.status) }}
+                </span>
+              </td>
+              <td class="text-end">
+                <div class="btn-group btn-group-sm">
+                  <a [routerLink]="['/app/courses', course.id]" class="btn btn-outline-primary" title="Voir">
+                    <i class="mdi mdi-eye"></i>
+                  </a>
+                  <a [routerLink]="['/app/courses', course.id, 'edit']" class="btn btn-outline-warning" title="Modifier">
+                    <i class="mdi mdi-pencil"></i>
+                  </a>
+                  <button class="btn btn-outline-danger" (click)="deleteCourse(course.id!)" title="Supprimer">
+                    <i class="mdi mdi-delete"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

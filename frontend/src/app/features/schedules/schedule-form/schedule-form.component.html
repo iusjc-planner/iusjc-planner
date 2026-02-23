@@ -1,0 +1,130 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1">
+        <i class="mdi mdi-calendar-plus me-2"></i>
+        {{ isEditMode ? 'Modifier la Séance' : 'Nouvelle Séance' }}
+      </h2>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-0">
+          <li class="breadcrumb-item"><a routerLink="/app/schedules">Planning</a></li>
+          <li class="breadcrumb-item active">{{ isEditMode ? 'Modifier' : 'Nouvelle' }}</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error" class="alert alert-danger">
+    <i class="mdi mdi-alert-circle me-2"></i>{{ error }}
+  </div>
+
+  <!-- Form -->
+  <div class="card" *ngIf="!loading">
+    <div class="card-body">
+      <form [formGroup]="form" (ngSubmit)="onSubmit()">
+        <div class="row">
+          <!-- Cours -->
+          <div class="col-md-6 mb-3">
+            <label for="courseId" class="form-label">Cours <span class="text-danger">*</span></label>
+            <select class="form-select" id="courseId" formControlName="courseId"
+              [class.is-invalid]="f['courseId'].touched && f['courseId'].invalid">
+              <option value="">-- Sélectionner un cours --</option>
+              <option *ngFor="let c of courses" [value]="c.id">{{ c.code }} - {{ c.title }}</option>
+            </select>
+            <div class="invalid-feedback">Cours requis</div>
+          </div>
+
+          <!-- Enseignant -->
+          <div class="col-md-6 mb-3">
+            <label for="teacherId" class="form-label">Enseignant <span class="text-danger">*</span></label>
+            <select class="form-select" id="teacherId" formControlName="teacherId"
+              [class.is-invalid]="f['teacherId'].touched && f['teacherId'].invalid">
+              <option value="">-- Sélectionner un enseignant --</option>
+              <option *ngFor="let t of teachers" [value]="t.id">{{ t.prenom }} {{ t.nom }}</option>
+            </select>
+            <div class="invalid-feedback">Enseignant requis</div>
+          </div>
+
+          <!-- Salle -->
+          <div class="col-md-6 mb-3">
+            <label for="roomId" class="form-label">Salle <span class="text-danger">*</span></label>
+            <select class="form-select" id="roomId" formControlName="roomId"
+              [class.is-invalid]="f['roomId'].touched && f['roomId'].invalid">
+              <option value="">-- Sélectionner une salle --</option>
+              <option *ngFor="let r of rooms" [value]="r.id">{{ r.name }} ({{ r.capacity }} places)</option>
+            </select>
+            <div class="invalid-feedback">Salle requise</div>
+          </div>
+
+          <!-- Groupe -->
+          <div class="col-md-6 mb-3">
+            <label for="groupId" class="form-label">Groupe <span class="text-danger">*</span></label>
+            <select class="form-select" id="groupId" formControlName="groupId"
+              [class.is-invalid]="f['groupId'].touched && f['groupId'].invalid">
+              <option value="">-- Sélectionner un groupe --</option>
+              <option *ngFor="let g of groups" [value]="g.id">{{ g.name }} - {{ g.level }}</option>
+            </select>
+            <div class="invalid-feedback">Groupe requis</div>
+          </div>
+
+          <!-- Date -->
+          <div class="col-md-4 mb-3">
+            <label for="date" class="form-label">Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="date" formControlName="date"
+              [class.is-invalid]="f['date'].touched && f['date'].invalid">
+            <div class="invalid-feedback">Date requise</div>
+          </div>
+
+          <!-- Heure début -->
+          <div class="col-md-4 mb-3">
+            <label for="startTime" class="form-label">Heure début <span class="text-danger">*</span></label>
+            <input type="time" class="form-control" id="startTime" formControlName="startTime"
+              [class.is-invalid]="f['startTime'].touched && f['startTime'].invalid">
+            <div class="invalid-feedback">Heure de début requise</div>
+          </div>
+
+          <!-- Heure fin -->
+          <div class="col-md-4 mb-3">
+            <label for="endTime" class="form-label">Heure fin <span class="text-danger">*</span></label>
+            <input type="time" class="form-control" id="endTime" formControlName="endTime"
+              [class.is-invalid]="f['endTime'].touched && f['endTime'].invalid">
+            <div class="invalid-feedback">Heure de fin requise</div>
+          </div>
+
+          <!-- Statut -->
+          <div class="col-md-4 mb-3">
+            <label for="status" class="form-label">Statut <span class="text-danger">*</span></label>
+            <select class="form-select" id="status" formControlName="status">
+              <option [value]="ScheduleStatus.SCHEDULED">Planifié</option>
+              <option [value]="ScheduleStatus.COMPLETED">Terminé</option>
+              <option [value]="ScheduleStatus.CANCELLED">Annulé</option>
+            </select>
+          </div>
+        </div>
+
+        <hr>
+
+        <!-- Actions -->
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary" [disabled]="saving">
+            <span *ngIf="saving" class="spinner-border spinner-border-sm me-1"></span>
+            <i *ngIf="!saving" class="mdi mdi-content-save me-1"></i>
+            {{ isEditMode ? 'Mettre à jour' : 'Créer la séance' }}
+          </button>
+          <button type="button" class="btn btn-outline-secondary" (click)="onCancel()">
+            <i class="mdi mdi-close me-1"></i>Annuler
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,124 @@
+<div class="login-container">
+  <!-- Left Side - Illustration -->
+  <div class="login-left">
+    <div class="illustration-container">
+      <div class="floating-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+        <div class="shape shape-4"></div>
+      </div>
+      
+      <div class="illustration-content">
+        <div class="main-illustration">
+          <div class="phone-mockup">
+            <div class="phone-screen">
+              <div class="app-interface">
+                <div class="header-bar"></div>
+                <div class="content-bars">
+                  <div class="bar bar-1"></div>
+                  <div class="bar bar-2"></div>
+                  <div class="bar bar-3"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="floating-elements">
+            <div class="element element-1">
+              <i class="mdi mdi-calendar-check"></i>
+            </div>
+            <div class="element element-2">
+              <i class="mdi mdi-account-group"></i>
+            </div>
+            <div class="element element-3">
+              <i class="mdi mdi-door"></i>
+            </div>
+          </div>
+        </div>
+        
+        <div class="welcome-text">
+          <h2>Bienvenue sur IUSJ Planning</h2>
+          <p>Gérez vos emplois du temps et réservations de salles en toute simplicité</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side - Login Form -->
+  <div class="login-right">
+    <div class="login-form-container">
+      <div class="form-header">
+        <div class="logo">
+          <div class="logo-icon">
+            <i class="mdi mdi-calendar-clock"></i>
+          </div>
+          <h1>IUSJ Planning</h1>
+        </div>
+        
+        <div class="form-title">
+          <h2>Se connecter</h2>
+          <p>Accédez à votre espace de gestion</p>
+        </div>
+      </div>
+
+      <form class="login-form" (ngSubmit)="onSubmit()">
+        <div class="input-group">
+          <div class="input-wrapper">
+            <i class="mdi mdi-account-outline input-icon"></i>
+            <input 
+              type="text" 
+              class="form-input" 
+              placeholder="Nom d'utilisateur"
+              [(ngModel)]="credentials.login"
+              name="login"
+              required>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <div class="input-wrapper">
+            <i class="mdi mdi-lock-outline input-icon"></i>
+            <input 
+              type="password" 
+              class="form-input" 
+              placeholder="Mot de passe"
+              [(ngModel)]="credentials.password"
+              name="password"
+              required>
+            <button type="button" class="toggle-password" (click)="togglePasswordVisibility()">
+              <i class="mdi" [class]="showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-options">
+          <label class="checkbox-container">
+            <input type="checkbox" [(ngModel)]="rememberMe" name="rememberMe">
+            <span class="checkmark"></span>
+            Se souvenir de moi
+          </label>
+          
+          <a href="javascript:void(0)" class="forgot-password">Mot de passe oublié?</a>
+        </div>
+
+        <!-- Message d'erreur -->
+        <div class="error-message" *ngIf="errorMessage">
+          <i class="mdi mdi-alert-circle"></i>
+          <span>{{ errorMessage }}</span>
+        </div>
+
+        <button type="submit" class="login-btn" [disabled]="!credentials.login || !credentials.password || loading">
+          <span class="btn-text" *ngIf="!loading">Se connecter</span>
+          <span class="btn-text" *ngIf="loading">Connexion...</span>
+          <i class="mdi mdi-loading mdi-spin btn-icon" *ngIf="loading"></i>
+          <i class="mdi mdi-arrow-right btn-icon" *ngIf="!loading"></i>
+        </button>
+
+        <div class="form-footer">
+          <p>Besoin d'aide? <a href="javascript:void(0)" class="support-link">Contactez le support</a></p>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
