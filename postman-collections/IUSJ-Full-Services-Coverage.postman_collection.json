@@ -1,0 +1,1692 @@
+{
+  "info": {
+    "name": "IUSJ Full Services Coverage",
+    "description": "Unified collection covering CRUD and validation flows for all microservices via the API gateway.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "0. Auth",
+      "item": [
+        {
+          "name": "Create User (for auth)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const stamp = Date.now();",
+                  "pm.environment.set('auth_login', 'user' + stamp);",
+                  "pm.environment.set('auth_password', 'Password123!');",
+                  "pm.environment.set('auth_email', 'user' + stamp + '@example.com');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('User created', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "  const user = pm.response.json();",
+                  "  pm.expect(user.id).to.not.be.undefined;",
+                  "  pm.environment.set('user_id', user.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nom\": \"Auth\",\n  \"prenom\": \"User\",\n  \"email\": \"{{auth_email}}\",\n  \"login\": \"{{auth_login}}\",\n  \"password\": \"{{auth_password}}\",\n  \"role\": \"ENSEIGNANT\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": "{{gateway_url}}/api/users"
+          }
+        },
+        {
+          "name": "Login (JWT)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"{{auth_login}}\",\n  \"password\": \"{{auth_password}}\"\n}"
+            },
+            "url": "{{gateway_url}}/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('JWT received', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.token).to.not.be.undefined;",
+                  "  pm.environment.set('jwt_token', body.token);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Users",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/users"
+          }
+        },
+        {
+          "name": "Get User By Id",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/users/{{user_id}}"
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nom\": \"Auth\",\n  \"prenom\": \"User Updated\",\n  \"email\": \"{{auth_email}}\",\n  \"login\": \"{{auth_login}}\",\n  \"password\": \"{{auth_password}}\",\n  \"role\": \"ENSEIGNANT\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": "{{gateway_url}}/api/users/{{user_id}}"
+          }
+        },
+        {
+          "name": "Check Email",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/users/check-email?email={{auth_email}}"
+          }
+        },
+        {
+          "name": "Check Login",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/users/check-login?login={{auth_login}}"
+          }
+        },
+        {
+          "name": "List By Role",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/users/by-role/ENSEIGNANT"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Teachers",
+      "item": [
+        {
+          "name": "Create Teacher",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": {{user_id}},\n  \"specialities\": [\"Math\", \"CS\"]\n}"
+            },
+            "url": "{{gateway_url}}/api/teachers"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Teacher created', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.not.be.undefined;",
+                  "  pm.environment.set('teacher_id', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Teachers",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/teachers"
+          }
+        },
+        {
+          "name": "Get Teacher By Id",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/teachers/{{teacher_id}}"
+          }
+        },
+        {
+          "name": "Update Teacher",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": {{user_id}},\n  \"specialities\": [\"AI\"]\n}"
+            },
+            "url": "{{gateway_url}}/api/teachers/{{teacher_id}}"
+          }
+        },
+        {
+          "name": "Add Speciality",
+          "request": {
+            "method": "POST",
+            "url": "{{gateway_url}}/api/teachers/{{teacher_id}}/specialities?speciality=DataScience"
+          }
+        },
+        {
+          "name": "Remove Speciality",
+          "request": {
+            "method": "DELETE",
+            "url": "{{gateway_url}}/api/teachers/{{teacher_id}}/specialities?speciality=DataScience"
+          }
+        },
+        {
+          "name": "Get Teacher By User Id",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/teachers/by-user/{{user_id}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Teacher Availability",
+      "item": [
+        {
+          "name": "Create Disponibilite",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2026-01-10\",\n  \"heureDebut\": \"09:00\",\n  \"duree\": 60,\n  \"isAvailable\": true\n}"
+            },
+            "url": "{{gateway_url}}/api/teachers/{{user_id}}/disponibilites"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Disponibilite created', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.not.be.undefined;",
+                  "  pm.environment.set('disponibilite_id', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Disponibilites",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/teachers/{{user_id}}/disponibilites"
+          }
+        },
+        {
+          "name": "List Available",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/teachers/{{user_id}}/disponibilites/available"
+          }
+        },
+        {
+          "name": "By Date",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/teachers/{{user_id}}/disponibilites/date/2026-01-10"
+          }
+        },
+        {
+          "name": "Available By Date",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/teachers/{{user_id}}/disponibilites/available/date/2026-01-10"
+          }
+        },
+        {
+          "name": "By Date Range",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/teachers/{{user_id}}/disponibilites/range?startDate=2026-01-09&endDate=2026-01-12"
+          }
+        },
+        {
+          "name": "Update Disponibilite",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2026-01-10\",\n  \"heureDebut\": \"10:00\",\n  \"duree\": 90,\n  \"isAvailable\": true\n}"
+            },
+            "url": "{{gateway_url}}/api/teachers/{{user_id}}/disponibilites/{{disponibilite_id}}"
+          }
+        },
+        {
+          "name": "Replace All Disponibilites",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"date\": \"2026-01-11\",\n    \"heureDebut\": \"09:00\",\n    \"duree\": 60,\n    \"isAvailable\": true\n  }\n]"
+            },
+            "url": "{{gateway_url}}/api/teachers/{{user_id}}/disponibilites"
+          }
+        },
+        {
+          "name": "Delete Disponibilite",
+          "request": {
+            "method": "DELETE",
+            "url": "{{gateway_url}}/api/teachers/{{user_id}}/disponibilites/{{disponibilite_id}}"
+          }
+        },
+        {
+          "name": "Create Disponibilites Batch",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"date\": \"2026-01-12\",\n    \"heureDebut\": \"08:00\",\n    \"duree\": 60,\n    \"isAvailable\": true\n  },\n  {\n    \"date\": \"2026-01-12\",\n    \"heureDebut\": \"10:00\",\n    \"duree\": 60,\n    \"isAvailable\": true\n  }\n]"
+            },
+            "url": "{{gateway_url}}/api/teachers/{{user_id}}/disponibilites/batch"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Schools and Filieres",
+      "item": [
+        {
+          "name": "Create School",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const stamp = Date.now();",
+                  "pm.environment.set('school_name', 'School ' + stamp);",
+                  "pm.environment.set('school_email', 'school' + stamp + '@example.com');",
+                  "pm.environment.set('school_code', 'SCH' + stamp);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{school_name}}\",\n  \"code\": \"{{school_code}}\",\n  \"address\": \"Street 123\",\n  \"phone\": \"+212600000000\",\n  \"email\": \"{{school_email}}\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": "{{gateway_url}}/api/schools"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('School created', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.not.be.undefined;",
+                  "  pm.environment.set('school_id', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Schools",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/schools"
+          }
+        },
+        {
+          "name": "Get School",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/schools/{{school_id}}"
+          }
+        },
+        {
+          "name": "Update School",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{school_name}} Updated\",\n  \"code\": \"{{school_code}}\",\n  \"address\": \"Street 123\",\n  \"phone\": \"+212600000000\",\n  \"email\": \"{{school_email}}\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": "{{gateway_url}}/api/schools/{{school_id}}"
+          }
+        },
+        {
+          "name": "School Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/schools/stats"
+          }
+        },
+        {
+          "name": "Create Filiere",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const stamp = Date.now();",
+                  "pm.environment.set('filiere_code', 'FIL' + stamp);",
+                  "pm.environment.set('filiere_name', 'Filiere ' + stamp);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{filiere_code}}\",\n  \"nom\": \"{{filiere_name}}\",\n  \"description\": \"Main track\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": "{{gateway_url}}/api/schools/{{school_id}}/filieres"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Filiere created', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.not.be.undefined;",
+                  "  pm.environment.set('filiere_id', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Filieres",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/schools/filieres"
+          }
+        },
+        {
+          "name": "List Filieres By School",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/schools/{{school_id}}/filieres"
+          }
+        },
+        {
+          "name": "Get Filiere",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/schools/filieres/{{filiere_id}}"
+          }
+        },
+        {
+          "name": "Update Filiere",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{filiere_code}}\",\n  \"nom\": \"{{filiere_name}} Updated\",\n  \"description\": \"Updated\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": "{{gateway_url}}/api/schools/filieres/{{filiere_id}}"
+          }
+        },
+        {
+          "name": "Delete Filiere",
+          "request": {
+            "method": "DELETE",
+            "url": "{{gateway_url}}/api/schools/filieres/{{filiere_id}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Groups",
+      "item": [
+        {
+          "name": "Create Group",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"L1-INFO-{{$timestamp}}\",\n  \"level\": \"L1\",\n  \"schoolId\": {{school_id}},\n  \"size\": 30,\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": "{{gateway_url}}/api/groups"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Group created', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.not.be.undefined;",
+                  "  pm.environment.set('group_id', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Groups",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/groups"
+          }
+        },
+        {
+          "name": "Get Group",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/groups/{{group_id}}"
+          }
+        },
+        {
+          "name": "Update Group",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"L1-INFO-{{$timestamp}}\",\n  \"level\": \"L1\",\n  \"schoolId\": {{school_id}},\n  \"size\": 32,\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": "{{gateway_url}}/api/groups/{{group_id}}"
+          }
+        },
+        {
+          "name": "Group Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/groups/stats"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Students",
+      "item": [
+        {
+          "name": "Create Student",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"matricule\": \"ETU-{{$timestamp}}\",\n  \"nom\": \"Doe\",\n  \"prenom\": \"Jane\",\n  \"dateNaissance\": \"2004-05-21\",\n  \"email\": \"student{{$timestamp}}@example.com\",\n  \"status\": \"ACTIVE\",\n  \"groupIds\": [{{group_id}}]\n}"
+            },
+            "url": "{{gateway_url}}/api/students"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Student created', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.not.be.undefined;",
+                  "  pm.environment.set('student_id', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Students",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/students"
+          }
+        },
+        {
+          "name": "Get Student",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/students/{{student_id}}"
+          }
+        },
+        {
+          "name": "Update Student",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"matricule\": \"ETU-{{$timestamp}}\",\n  \"nom\": \"Doe\",\n  \"prenom\": \"Jane Updated\",\n  \"dateNaissance\": \"2004-05-21\",\n  \"email\": \"student{{$timestamp}}@example.com\",\n  \"status\": \"ACTIVE\",\n  \"groupIds\": [{{group_id}}]\n}"
+            },
+            "url": "{{gateway_url}}/api/students/{{student_id}}"
+          }
+        },
+        {
+          "name": "Add Group to Student",
+          "request": {
+            "method": "POST",
+            "url": "{{gateway_url}}/api/students/{{student_id}}/groups/{{group_id}}"
+          }
+        },
+        {
+          "name": "Remove Group from Student",
+          "request": {
+            "method": "DELETE",
+            "url": "{{gateway_url}}/api/students/{{student_id}}/groups/{{group_id}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Rooms",
+      "item": [
+        {
+          "name": "Create Room",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Room {{$timestamp}}\",\n  \"capacity\": 30,\n  \"type\": \"CLASSROOM\",\n  \"status\": \"ACTIVE\",\n  \"location\": \"Building A\",\n  \"description\": \"Main room\",\n  \"equipments\": [\"PROJECTOR\"]\n}"
+            },
+            "url": "{{gateway_url}}/api/rooms"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Room created', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.not.be.undefined;",
+                  "  pm.environment.set('room_id', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Rooms",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/rooms"
+          }
+        },
+        {
+          "name": "Get Room",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/rooms/{{room_id}}"
+          }
+        },
+        {
+          "name": "Update Room",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Room {{$timestamp}}\",\n  \"capacity\": 35,\n  \"type\": \"CLASSROOM\",\n  \"status\": \"ACTIVE\",\n  \"location\": \"Building A\",\n  \"description\": \"Updated\",\n  \"equipments\": [\"PROJECTOR\"]\n}"
+            },
+            "url": "{{gateway_url}}/api/rooms/{{room_id}}"
+          }
+        },
+        {
+          "name": "Available Rooms",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/rooms/available?start=2026-01-08T10:00:00&end=2026-01-08T12:00:00"
+          }
+        },
+        {
+          "name": "Reserve Room",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startTime\": \"2026-01-08T10:00:00\",\n  \"endTime\": \"2026-01-08T12:00:00\",\n  \"reservedByUserId\": {{user_id}},\n  \"purpose\": \"Defense\"\n}"
+            },
+            "url": "{{gateway_url}}/api/rooms/{{room_id}}/reserve"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Reservation created', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201, 409]);",
+                  "  if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    if (body && body.id) {",
+                  "      pm.environment.set('reservation_id', body.id);",
+                  "    }",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Room Reservations",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/rooms/{{room_id}}/reservations"
+          }
+        },
+        {
+          "name": "Cancel Reservation",
+          "request": {
+            "method": "DELETE",
+            "url": "{{gateway_url}}/api/rooms/{{room_id}}/reservations/{{reservation_id}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Resources",
+      "item": [
+        {
+          "name": "Create Resource",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Projector {{$timestamp}}\",\n  \"type\": \"PROJECTOR\",\n  \"quantityTotal\": 5,\n  \"quantityAvailable\": 4,\n  \"location\": \"Building A\",\n  \"description\": \"HD projector\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": "{{gateway_url}}/api/resources"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Resource created', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.not.be.undefined;",
+                  "  pm.environment.set('resource_id', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Resources",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/resources"
+          }
+        },
+        {
+          "name": "Get Resource",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/resources/{{resource_id}}"
+          }
+        },
+        {
+          "name": "Update Resource",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Projector {{$timestamp}}\",\n  \"type\": \"PROJECTOR\",\n  \"quantityTotal\": 6,\n  \"quantityAvailable\": 5,\n  \"location\": \"Building A\",\n  \"description\": \"Updated\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": "{{gateway_url}}/api/resources/{{resource_id}}"
+          }
+        },
+        {
+          "name": "Resource Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/resources/stats"
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Matieres",
+      "item": [
+        {
+          "name": "Create Matiere",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const stamp = Date.now();",
+                  "pm.environment.set('matiere_code', 'MAT' + stamp);",
+                  "pm.environment.set('matiere_nom', 'Matiere ' + stamp);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{matiere_code}}\",\n  \"nom\": \"{{matiere_nom}}\",\n  \"description\": \"Intro\",\n  \"schoolId\": {{school_id}},\n  \"filiereId\": {{filiere_id}},\n  \"teacherId\": {{teacher_id}},\n  \"credits\": 3,\n  \"hoursTotal\": 30,\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": "{{gateway_url}}/api/matieres"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Matiere created', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.not.be.undefined;",
+                  "  pm.environment.set('matiere_id', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Matieres",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/matieres"
+          }
+        },
+        {
+          "name": "Get Matiere",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/matieres/{{matiere_id}}"
+          }
+        },
+        {
+          "name": "Get Matiere By Code",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/matieres/code/{{matiere_code}}"
+          }
+        },
+        {
+          "name": "Get Matieres By School",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/matieres/school/{{school_id}}"
+          }
+        },
+        {
+          "name": "Get Matieres By Filiere",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/matieres/filiere/{{filiere_id}}"
+          }
+        },
+        {
+          "name": "Get Matieres By Teacher",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/matieres/teacher/{{teacher_id}}"
+          }
+        },
+        {
+          "name": "Update Matiere",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{matiere_code}}\",\n  \"nom\": \"{{matiere_nom}} Updated\",\n  \"description\": \"Updated\",\n  \"schoolId\": {{school_id}},\n  \"filiereId\": {{filiere_id}},\n  \"teacherId\": {{teacher_id}},\n  \"credits\": 4,\n  \"hoursTotal\": 40,\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": "{{gateway_url}}/api/matieres/{{matiere_id}}"
+          }
+        },
+        {
+          "name": "Matiere Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/matieres/stats"
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Courses",
+      "item": [
+        {
+          "name": "Create Course",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"matiereId\": {{matiere_id}},\n  \"type\": \"CM\",\n  \"title\": \"Intro Session\",\n  \"description\": \"Basics\",\n  \"date\": \"2026-01-08\",\n  \"startTime\": \"10:00\",\n  \"endTime\": \"12:00\",\n  \"roomId\": {{room_id}},\n  \"groupId\": {{group_id}},\n  \"teacherId\": {{teacher_id}},\n  \"status\": \"SCHEDULED\"\n}"
+            },
+            "url": "{{gateway_url}}/api/courses"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Course created', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.not.be.undefined;",
+                  "  pm.environment.set('course_id', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Courses",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/courses"
+          }
+        },
+        {
+          "name": "Get Course",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/courses/{{course_id}}"
+          }
+        },
+        {
+          "name": "Courses By Matiere",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/courses/matiere/{{matiere_id}}"
+          }
+        },
+        {
+          "name": "Courses By Date",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/courses/date/2026-01-08"
+          }
+        },
+        {
+          "name": "Courses By Date Range",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/courses/date-range?startDate=2026-01-07&endDate=2026-01-09"
+          }
+        },
+        {
+          "name": "Courses By Teacher and Date",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/courses/teacher/{{teacher_id}}/date/2026-01-08"
+          }
+        },
+        {
+          "name": "Courses By Room and Date",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/courses/room/{{room_id}}/date/2026-01-08"
+          }
+        },
+        {
+          "name": "Update Course",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"matiereId\": {{matiere_id}},\n  \"type\": \"CM\",\n  \"title\": \"Intro Session Updated\",\n  \"description\": \"Updated\",\n  \"date\": \"2026-01-08\",\n  \"startTime\": \"12:00\",\n  \"endTime\": \"13:00\",\n  \"roomId\": {{room_id}},\n  \"groupId\": {{group_id}},\n  \"teacherId\": {{teacher_id}},\n  \"status\": \"SCHEDULED\"\n}"
+            },
+            "url": "{{gateway_url}}/api/courses/{{course_id}}"
+          }
+        },
+        {
+          "name": "Course Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/courses/stats"
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Schedule",
+      "item": [
+        {
+          "name": "Create Schedule Entry",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"courseId\": {{course_id}},\n  \"teacherId\": {{teacher_id}},\n  \"roomId\": {{room_id}},\n  \"groupId\": {{group_id}},\n  \"startTime\": \"2026-01-08T10:00:00\",\n  \"endTime\": \"2026-01-08T12:00:00\",\n  \"status\": \"SCHEDULED\"\n}"
+            },
+            "url": "{{gateway_url}}/api/schedule"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Schedule created', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.not.be.undefined;",
+                  "  pm.environment.set('schedule_id', body.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Schedule",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/schedule"
+          }
+        },
+        {
+          "name": "Get Schedule Entry",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/schedule/{{schedule_id}}"
+          }
+        },
+        {
+          "name": "Update Schedule Entry",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"courseId\": {{course_id}},\n  \"teacherId\": {{teacher_id}},\n  \"roomId\": {{room_id}},\n  \"groupId\": {{group_id}},\n  \"startTime\": \"2026-01-08T12:00:00\",\n  \"endTime\": \"2026-01-08T13:00:00\",\n  \"status\": \"SCHEDULED\"\n}"
+            },
+            "url": "{{gateway_url}}/api/schedule/{{schedule_id}}"
+          }
+        },
+        {
+          "name": "Validate Schedule Entry",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"courseId\": {{course_id}},\n  \"teacherId\": {{teacher_id}},\n  \"roomId\": {{room_id}},\n  \"groupId\": {{group_id}},\n  \"startTime\": \"2026-01-08T10:00:00\",\n  \"endTime\": \"2026-01-08T12:00:00\",\n  \"status\": \"SCHEDULED\"\n}"
+            },
+            "url": "{{gateway_url}}/api/schedule/validate"
+          }
+        },
+        {
+          "name": "Schedule Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/schedule/stats"
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. Schedule Extras",
+      "item": [
+        {
+          "name": "Generate Schedule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startDate\": \"2026-01-08\",\n  \"endDate\": \"2026-01-15\"\n}"
+            },
+            "url": "{{gateway_url}}/api/schedule/generate"
+          }
+        },
+        {
+          "name": "Export Schedule PDF",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/schedule/{{schedule_id}}/export/pdf"
+          }
+        },
+        {
+          "name": "Export Schedule Excel",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/schedule/{{schedule_id}}/export/excel"
+          }
+        },
+        {
+          "name": "Cancel Schedule Entry",
+          "request": {
+            "method": "PUT",
+            "url": "{{gateway_url}}/api/schedule/{{schedule_id}}/cancel"
+          }
+        }
+      ]
+    },
+    {
+      "name": "13. Validation (Bad Requests)",
+      "item": [
+        {
+          "name": "Create Teacher Missing UserId",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"specialities\": [\"Math\"]\n}"
+            },
+            "url": "{{gateway_url}}/api/teachers"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Validation error', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400, 500]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Disponibilite Missing Date",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"heureDebut\": \"09:00\",\n  \"duree\": 60,\n  \"isAvailable\": true\n}"
+            },
+            "url": "{{gateway_url}}/api/teachers/{{user_id}}/disponibilites"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Validation error', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400, 500]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create School Missing Name",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address\": \"Street 123\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": "{{gateway_url}}/api/schools"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Validation error', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400, 500]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Group Missing SchoolId",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"L1-INFO\",\n  \"level\": \"L1\"\n}"
+            },
+            "url": "{{gateway_url}}/api/groups"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Validation error', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400, 500]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Student Missing Matricule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nom\": \"Doe\",\n  \"prenom\": \"Jane\",\n  \"dateNaissance\": \"2004-05-21\",\n  \"email\": \"bad@example.com\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": "{{gateway_url}}/api/students"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Validation error', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400, 500]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Room Missing Name",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"capacity\": 20,\n  \"type\": \"CLASSROOM\"\n}"
+            },
+            "url": "{{gateway_url}}/api/rooms"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Validation error', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400, 500]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Resource Missing Name",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"PROJECTOR\",\n  \"quantityTotal\": 1,\n  \"quantityAvailable\": 1\n}"
+            },
+            "url": "{{gateway_url}}/api/resources"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Validation error', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400, 500]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Matiere Missing Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nom\": \"Bad\",\n  \"schoolId\": {{school_id}},\n  \"filiereId\": {{filiere_id}},\n  \"credits\": 3,\n  \"hoursTotal\": 30\n}"
+            },
+            "url": "{{gateway_url}}/api/matieres"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Validation error', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400, 500]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Course Missing MatiereId",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2026-01-08\",\n  \"startTime\": \"10:00\",\n  \"endTime\": \"12:00\"\n}"
+            },
+            "url": "{{gateway_url}}/api/courses"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Validation error', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400, 500]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Schedule Missing RoomId",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"courseId\": {{course_id}},\n  \"teacherId\": {{teacher_id}},\n  \"groupId\": {{group_id}},\n  \"startTime\": \"2026-01-08T10:00:00\",\n  \"endTime\": \"2026-01-08T12:00:00\"\n}"
+            },
+            "url": "{{gateway_url}}/api/schedule"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Validation error', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400, 500]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get User Not Found",
+          "request": {
+            "method": "GET",
+            "url": "{{gateway_url}}/api/users/999999"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Not found', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([404, 400]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "99. Cleanup",
+      "item": [
+        {
+          "name": "Delete Schedule Entry",
+          "request": {
+            "method": "DELETE",
+            "url": "{{gateway_url}}/api/schedule/{{schedule_id}}"
+          }
+        },
+        {
+          "name": "Delete Course",
+          "request": {
+            "method": "DELETE",
+            "url": "{{gateway_url}}/api/courses/{{course_id}}"
+          }
+        },
+        {
+          "name": "Delete Matiere",
+          "request": {
+            "method": "DELETE",
+            "url": "{{gateway_url}}/api/matieres/{{matiere_id}}"
+          }
+        },
+        {
+          "name": "Delete Resource",
+          "request": {
+            "method": "DELETE",
+            "url": "{{gateway_url}}/api/resources/{{resource_id}}"
+          }
+        },
+        {
+          "name": "Delete Room",
+          "request": {
+            "method": "DELETE",
+            "url": "{{gateway_url}}/api/rooms/{{room_id}}"
+          }
+        },
+        {
+          "name": "Delete Student",
+          "request": {
+            "method": "DELETE",
+            "url": "{{gateway_url}}/api/students/{{student_id}}"
+          }
+        },
+        {
+          "name": "Delete Group",
+          "request": {
+            "method": "DELETE",
+            "url": "{{gateway_url}}/api/groups/{{group_id}}"
+          }
+        },
+        {
+          "name": "Delete Teacher",
+          "request": {
+            "method": "DELETE",
+            "url": "{{gateway_url}}/api/teachers/{{teacher_id}}"
+          }
+        },
+        {
+          "name": "Delete School",
+          "request": {
+            "method": "DELETE",
+            "url": "{{gateway_url}}/api/schools/{{school_id}}"
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "url": "{{gateway_url}}/api/users/{{user_id}}"
+          }
+        }
+      ]
+    }
+  ]
+}
