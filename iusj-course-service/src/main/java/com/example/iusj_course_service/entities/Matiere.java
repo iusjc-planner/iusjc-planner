@@ -23,10 +23,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Matière (Subject) - représente une matière enseignée
- * Le code de la matière sert d'identifiant unique (e.g., ISI4177)
- */
+
 @Entity
 @Table(name = "matieres", uniqueConstraints = {
         @UniqueConstraint(name = "uk_matiere_code", columnNames = "code")

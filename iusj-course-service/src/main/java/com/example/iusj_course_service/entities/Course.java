@@ -19,10 +19,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Course (Séance) - représente une séance de cours à insérer dans l'emploi du temps
- * Référence une Matière existante
- */
+
 @Entity
 @Table(name = "courses")
 @Data
