@@ -1,0 +1,107 @@
+<div class="container-fluid mt-4">
+  <!-- Loader pendant le chargement ou la sauvegarde -->
+  <app-loader [isLoading]="loading" message="Chargement de vos disponibilités..."></app-loader>
+  <app-loader [isLoading]="saving" message="Enregistrement de vos disponibilités..."></app-loader>
+
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header" style="background: linear-gradient(to right, #84d9d2, #07cdae);">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h4 class="mb-0 text-white">Mes Disponibilités Hebdomadaires</h4>
+              <small class="text-white mt-2 d-block" style="font-size: 1rem; font-weight: 500;">{{ weekDisplay }}</small>
+            </div>
+            <div class="week-navigation">
+              <button class="btn btn-sm btn-light me-2" (click)="goToPreviousWeek()">
+                <i class="mdi mdi-chevron-left me-1"></i>Précédente
+              </button>
+              <button class="btn btn-sm btn-light" (click)="goToCurrentWeek()" *ngIf="!isCurrentWeek()">
+                <i class="mdi mdi-calendar-today me-1"></i>Actuelle
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="card-body">
+          <!-- Bouton Enregistrer en haut -->
+          <div class="mb-4 d-flex justify-content-between align-items-center">
+            <div>
+              <p class="mb-0 text-muted small" *ngIf="hasChanges()">
+                <i class="mdi mdi-information-outline me-1"></i>
+                <span *ngIf="addedSlots.length > 0" class="text-success">{{ addedSlots.length }} ajout(s)</span>
+                <span *ngIf="addedSlots.length > 0 && removedSlots.length > 0"> | </span>
+                <span *ngIf="removedSlots.length > 0" class="text-danger">{{ removedSlots.length }} suppression(s)</span>
+              </p>
+            </div>
+            <button class="btn btn-lg" 
+                    style="background: linear-gradient(to right, #84d9d2, #07cdae); color: white; border: none;"
+                    (click)="saveAvailabilities()"
+                    [disabled]="saving || !hasChanges()">
+              <i class="mdi mdi-content-save me-2"></i>
+              <span *ngIf="!saving">Enregistrer</span>
+              <span *ngIf="saving">
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Enregistrement...
+              </span>
+            </button>
+          </div>
+
+          <!-- Calendrier en blocs -->
+          <div class="schedule-container">
+            <!-- En-têtes des jours -->
+            <div class="schedule-header">
+              <div class="time-column">
+                <div class="header-label">Horaires</div>
+              </div>
+              <div class="day-column" *ngFor="let day of days">
+                <div class="day-name">{{ day }}</div>
+              </div>
+            </div>
+
+            <!-- Grille horaire -->
+            <div class="schedule-grid">
+              <!-- Colonne des heures -->
+              <div class="time-column">
+                <div class="hour-slot" *ngFor="let hour of hours">
+                  <div class="hour-label">
+                    {{ hour.toString().padStart(2, '0') }}:00<br>
+                    <small>{{ (hour + 1).toString().padStart(2, '0') }}:00</small>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Colonnes des jours -->
+              <div class="day-column" *ngFor="let dayIndex of [0, 1, 2, 3, 4, 5]">
+                <div class="day-slots">
+                  <div class="hour-slot" *ngFor="let hour of hours; let hourIndex = index">
+                    <div class="slot-cell"
+                         [ngClass]="{'selected': timeSlots[dayIndex * hours.length + hourIndex]?.isSelected}"
+                         [attr.data-color]="timeSlots[dayIndex * hours.length + hourIndex]?.groupColor"
+                         (click)="toggleSlot(timeSlots[dayIndex * hours.length + hourIndex])"
+                         [title]="days[dayIndex] + ' ' + hour + ':00'">
+                      <span *ngIf="timeSlots[dayIndex * hours.length + hourIndex]?.isSelected" 
+                            class="slot-icon">✓</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Légende -->
+          <div class="mt-4">
+            <div class="alert alert-info mb-0" style="background-color: #f0f3ff; border-color: #667eea; color: #495057;">
+              <strong><i class="mdi mdi-information me-2"></i>Légende:</strong>
+              <ul class="mb-0 mt-2">
+                <li>Cliquez sur une case pour sélectionner/désélectionner un créneau</li>
+                <li>Les cases <span class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">colorées</span> indiquent vos créneaux de disponibilité</li>
+                <li>La pause déjeuner (12h-13h) est automatiquement exclue</li>
+                <li>Cliquez sur "Enregistrer" pour sauvegarder vos changements</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
