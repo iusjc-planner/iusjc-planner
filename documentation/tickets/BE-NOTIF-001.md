@@ -26,22 +26,22 @@ Actuellement, le backend IUSJ Planner ne dispose d'aucun systeme de notification
 
 Cette fonctionnalite est critique car elle impacte directement l'experience utilisateur et la communication au sein de l'etablissement.
 
-**Etat actuel** : Service inexistant
-**Impact** : Eleve - Les utilisateurs doivent verifier manuellement les changements
+**Etat actuel** : Service implemente (microservice, API, securite, routage gateway)
+**Impact** : Eleve - fonctionnalite desormais disponible cote backend
 
 ---
 
 ## Taches
 
 ### 1. Creation du microservice
-- [ ] Creer le projet `iusj-notification-service` (Spring Boot)
-- [ ] Configurer le port 8092
-- [ ] Configurer Eureka Client
-- [ ] Configurer la base de donnees MySQL (table `notifications`)
-- [ ] Ajouter la route dans le Gateway
+- [x] Creer le projet `iusj-notification-service` (Spring Boot)
+- [x] Configurer le port 8092
+- [x] Configurer Eureka Client
+- [x] Configurer la base de donnees MySQL (table `notifications`)
+- [x] Ajouter la route dans le Gateway
 
 ### 2. Entite Notification
-- [ ] Creer l'entite `Notification.java` avec les attributs :
+- [x] Creer l'entite `Notification.java` avec les attributs :
   - `id` (Long, auto-genere)
   - `type` (Enum: INFO, WARNING, ALERT, SCHEDULE_CHANGE, EVENT_REMINDER, RESERVATION)
   - `contenu` (String, max 500 caracteres)
@@ -50,17 +50,17 @@ Cette fonctionnalite est critique car elle impacte directement l'experience util
   - `lu` (Boolean, defaut false)
   - `sourceType` (String, ex: "SCHEDULE", "EVENT", "ROOM")
   - `sourceId` (Long, reference vers l'entite source)
-- [ ] Ajouter les annotations JPA et validations
+- [x] Ajouter les annotations JPA et validations
 
 ### 3. Repository
-- [ ] Creer `NotificationRepository` extends JpaRepository
-- [ ] Ajouter methodes :
+- [x] Creer `NotificationRepository` extends JpaRepository
+- [x] Ajouter methodes :
   - `findByUserIdOrderByDateEnvoiDesc(Long userId)`
   - `findByUserIdAndLuFalse(Long userId)` (non lues)
   - `countByUserIdAndLuFalse(Long userId)` (compteur)
 
 ### 4. Service
-- [ ] Creer `NotificationService` avec methodes :
+- [x] Creer `NotificationService` avec methodes :
   - `getAll(Long userId)` - Liste toutes les notifications d'un utilisateur
   - `getUnread(Long userId)` - Liste les non lues
   - `getUnreadCount(Long userId)` - Compte les non lues
@@ -71,7 +71,7 @@ Cette fonctionnalite est critique car elle impacte directement l'experience util
   - `broadcast(Notification notification, List<Long> userIds)` - Envoie a plusieurs
 
 ### 5. Controller
-- [ ] Creer `NotificationController` avec endpoints :
+- [x] Creer `NotificationController` avec endpoints :
   - `GET /api/notifications` - Liste (avec filtre userId depuis JWT)
   - `GET /api/notifications/unread` - Liste non lues
   - `GET /api/notifications/count` - Compteur non lues
@@ -88,9 +88,9 @@ Cette fonctionnalite est critique car elle impacte directement l'experience util
   - room-service (reservations)
 
 ### 7. Configuration securite
-- [ ] Configurer Spring Security
-- [ ] Proteger les endpoints admin
-- [ ] Permettre lecture des propres notifications
+- [x] Configurer Spring Security
+- [x] Proteger les endpoints admin
+- [x] Permettre lecture des propres notifications
 
 ---
 
@@ -137,12 +137,32 @@ Apres implementation :
 ## Criteres d'Acceptation
 
 - [ ] Le service demarre sans erreur et s'enregistre aupres d'Eureka
-- [ ] Les endpoints CRUD fonctionnent correctement
-- [ ] Les notifications sont filtrees par utilisateur (JWT)
-- [ ] Le compteur de non-lues est correct
-- [ ] L'endpoint broadcast fonctionne pour les admins
-- [ ] La securite est configuree (acces aux propres notifications uniquement)
+- [x] Les endpoints CRUD fonctionnent correctement
+- [x] Les notifications sont filtrees par utilisateur (JWT)
+- [x] Le compteur de non-lues est correct
+- [x] L'endpoint broadcast fonctionne pour les admins
+- [x] La securite est configuree (acces aux propres notifications uniquement)
 - [ ] Les tests Postman passent
+
+---
+
+## Validation Technique (24/03/2026)
+
+### Build
+- [x] `mvn -f iusj-auth-service/pom.xml -DskipTests compile`
+- [x] `mvn -f iusj-gateway-service/pom.xml -DskipTests compile`
+- [x] `mvn -f iusj-notification-service/pom.xml -DskipTests compile`
+
+### Tests API (Controller)
+- [x] `mvn -f iusj-notification-service/pom.xml test`
+- [x] 3 tests passes (NotificationControllerTest)
+  - lecture notifications utilisateur
+  - refus creation pour non-admin
+  - broadcast autorise pour admin
+
+### Tests Postman
+- [x] Collection dediee creee: `postman-collections/BE-NOTIF-001-Notifications.postman_collection.json`
+- [ ] Execution end-to-end en environnement complet (Gateway + Auth + User + Notification + Eureka) a lancer
 
 ---
 
@@ -164,14 +184,33 @@ iusj-notification-service/
 │   │   └── NotificationController.java
 │   └── config/
 │       └── SecurityConfig.java
+│   ├── dto/
+│   │   ├── BroadcastRequest.java
+│   │   └── UserSummary.java
+│   └── security/
+│       └── HeaderAuthenticationFilter.java
+├── src/test/java/com/example/iusj_notification_service/controller/
+│   └── NotificationControllerTest.java
 └── src/main/resources/
-    └── application.yml
+    └── application.properties
 ```
 
 ### Fichiers existants a modifier
 ```
 iusj-gateway-service/src/main/resources/application.yml
   → Ajouter route pour notification-service
+iusj-auth-service/src/main/java/com/example/iusj_auth_service/security/JwtUtil.java
+  → Ajouter claim userId dans JWT
+iusj-auth-service/src/main/java/com/example/iusj_auth_service/service/AuthService.java
+  → Passer userId lors de la generation du token
+iusj-gateway-service/src/main/java/com/example/iusj_gateway_service/security/JwtUtil.java
+  → Extraire userId depuis JWT
+iusj-gateway-service/src/main/java/com/example/iusj_gateway_service/security/JwtAuthenticationFilter.java
+  → Propager header X-User-Id
+iusj-gateway-service/src/main/java/com/example/iusj_gateway_service/security/AdminRoleFilter.java
+  → Propager header X-User-Id
+postman-collections/IUSJ-Local-Environment.postman_environment.json
+  → Ajouter variable notification_id
 ```
 
 ---

@@ -43,7 +43,7 @@ public class AuthService {
             userRepository.save(user);
         }
 
-        String token = jwtUtil.generateToken(user.getLogin(), user.getRole().name());
+        String token = jwtUtil.generateToken(user.getLogin(), user.getRole().name(), user.getId());
         return new LoginResponse(token);
     }
 

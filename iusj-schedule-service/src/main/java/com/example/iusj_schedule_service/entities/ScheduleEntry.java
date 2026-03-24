@@ -3,6 +3,7 @@ package com.example.iusj_schedule_service.entities;
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -10,6 +11,8 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -56,4 +59,9 @@ public class ScheduleEntry {
     @Enumerated(EnumType.STRING)
     @Column(length = 20)
     private Status status = Status.SCHEDULED;
+
+    @ManyToOne
+    @JoinColumn(name = "edt_id")
+    @JsonBackReference
+    private EDT edt;
 }

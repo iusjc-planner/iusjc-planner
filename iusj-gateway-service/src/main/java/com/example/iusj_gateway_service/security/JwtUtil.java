@@ -1,11 +1,13 @@
 package com.example.iusj_gateway_service.security;
 
-import io.jsonwebtoken.*;
-import io.jsonwebtoken.security.Keys;
-import org.springframework.stereotype.Component;
-
 import java.security.Key;
 import java.util.Date;
+
+import org.springframework.stereotype.Component;
+
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 
 @Component
 public class JwtUtil {
@@ -59,6 +61,22 @@ public class JwtUtil {
                 .parseClaimsJws(token)
                 .getBody()
                 .get("role", String.class);
+        } catch (JwtException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Extrait l'identifiant utilisateur du token.
+     */
+    public Long extractUserId(String token) {
+        try {
+            return Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("userId", Long.class);
         } catch (JwtException e) {
             return null;
         }

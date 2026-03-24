@@ -19,6 +19,35 @@ spring:
             - Path=/auth/**
           filters:
             - StripPrefix=0
+
+        # Route admin pour creation de notification
+        - id: notification-service-admin-create
+          uri: lb://iusj-notification-service
+          predicates:
+            - Path=/api/notifications
+            - Method=POST
+          filters:
+            - StripPrefix=0
+            - AdminRoleFilter
+
+        # Route admin pour diffusion de notifications
+        - id: notification-service-admin-broadcast
+          uri: lb://iusj-notification-service
+          predicates:
+            - Path=/api/notifications/broadcast
+            - Method=POST
+          filters:
+            - StripPrefix=0
+            - AdminRoleFilter
+
+        # Route pour le service notifications (AVEC validation JWT)
+        - id: notification-service-protected
+          uri: lb://iusj-notification-service
+          predicates:
+            - Path=/api/notifications/**
+          filters:
+            - StripPrefix=0
+            - JwtAuthenticationFilter
         
         # Route pour le service utilisateur (AVEC validation JWT)
         - id: user-service-protected
@@ -70,6 +99,15 @@ spring:
           uri: lb://iusj-schedule-service
           predicates:
             - Path=/api/schedule/**
+          filters:
+            - StripPrefix=0
+            - JwtAuthenticationFilter
+
+        # Route pour le service EDT (AVEC validation JWT)
+        - id: edt-service-protected
+          uri: lb://iusj-schedule-service
+          predicates:
+            - Path=/api/edt/**
           filters:
             - StripPrefix=0
             - JwtAuthenticationFilter

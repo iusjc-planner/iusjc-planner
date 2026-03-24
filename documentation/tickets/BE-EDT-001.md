@@ -47,7 +47,7 @@ Cette implementation differe du diagramme UML qui definit une entite EDT agregee
 ## Taches
 
 ### 1. Creation de l'entite EDT
-- [ ] Creer l'entite `EDT.java` dans schedule-service avec les attributs :
+- [x] Creer l'entite `EDT.java` dans schedule-service avec les attributs :
   - `id` (Long, auto-genere)
   - `semaine` (Integer, numero 1-52)
   - `annee` (Integer, ex: 2026)
@@ -59,15 +59,15 @@ Cette implementation differe du diagramme UML qui definit une entite EDT agregee
   - `dateCreation` (LocalDateTime)
   - `datePublication` (LocalDateTime, optionnel)
   - `entries` (List<ScheduleEntry>, relation OneToMany)
-- [ ] Ajouter les annotations JPA et validations
+- [x] Ajouter les annotations JPA et validations
 
 ### 2. Modification de ScheduleEntry
-- [ ] Ajouter champ `edtId` (Long, FK vers EDT, optionnel)
-- [ ] Modifier la relation pour permettre le lien avec EDT
+- [x] Ajouter champ `edtId` (Long, FK vers EDT, optionnel)
+- [x] Modifier la relation pour permettre le lien avec EDT
 
 ### 3. Repository EDT
-- [ ] Creer `EDTRepository` extends JpaRepository
-- [ ] Ajouter methodes :
+- [x] Creer `EDTRepository` extends JpaRepository
+- [x] Ajouter methodes :
   - `findBySemaineAndAnnee(Integer semaine, Integer annee)`
   - `findByVueAndTargetId(VueType vue, Long targetId)`
   - `findBySemaineAndAnneeAndVueAndTargetId(...)`
@@ -75,7 +75,7 @@ Cette implementation differe du diagramme UML qui definit une entite EDT agregee
   - `findByPeriodeAndAnnee(PeriodeType periode, Integer annee)`
 
 ### 4. Service EDT
-- [ ] Creer `EDTService` avec methodes :
+- [x] Creer `EDTService` avec methodes :
   - `getOrCreate(Integer semaine, Integer annee, VueType vue, Long targetId)` - Recupere ou cree EDT
   - `getByGroupe(Long groupeId, Integer semaine, Integer annee)` - EDT d'un groupe
   - `getByEnseignant(Long enseignantId, Integer semaine, Integer annee)` - EDT d'un enseignant
@@ -87,7 +87,7 @@ Cette implementation differe du diagramme UML qui definit une entite EDT agregee
   - `delete(Long edtId)` - Supprime l'EDT
 
 ### 5. Controller EDT
-- [ ] Creer `EDTController` avec endpoints :
+- [x] Creer `EDTController` avec endpoints :
   - `GET /api/edt` - Liste des EDT (avec filtres)
   - `GET /api/edt/{id}` - Detail d'un EDT avec ses entries
   - `GET /api/edt/groupe/{groupeId}?semaine=&annee=` - EDT d'un groupe
@@ -100,7 +100,7 @@ Cette implementation differe du diagramme UML qui definit une entite EDT agregee
   - `DELETE /api/edt/{id}` - Supprime
 
 ### 6. Vue agregee
-- [ ] Creer endpoint pour vue semaine complete :
+- [x] Creer endpoint pour vue semaine complete :
   - Aggrege toutes les seances par jour
   - Formate pour affichage grille horaire
   - Inclut les evenements si disponibles
@@ -144,16 +144,19 @@ Apres implementation :
 - Workflow de validation et publication
 - Lien entre EDT et ScheduleEntry
 - API REST complete pour la gestion des EDT
+- Export PDF implemente depuis les endpoints EDT (format planning hebdomadaire)
+- Route gateway `/api/edt/**` protegee par JWT et exposee via `iusj-gateway-service`
+- Build valide : `iusj-schedule-service` et `iusj-gateway-service` compilent avec succes
 
 ---
 
 ## Criteres d'Acceptation
 
-- [ ] L'entite EDT est creee avec tous les attributs du diagramme
-- [ ] La relation EDT-ScheduleEntry fonctionne
-- [ ] Les EDT sont filtrables par semaine, annee, vue
-- [ ] Les vues groupe/enseignant/salle fonctionnent
-- [ ] Le workflow DRAFT→VALIDATED→PUBLISHED fonctionne
+- [x] L'entite EDT est creee avec tous les attributs du diagramme
+- [x] La relation EDT-ScheduleEntry fonctionne
+- [x] Les EDT sont filtrables par semaine, annee, vue
+- [x] Les vues groupe/enseignant/salle fonctionnent
+- [x] Le workflow DRAFT→VALIDATED→PUBLISHED fonctionne
 - [ ] Les tests Postman passent
 
 ---
