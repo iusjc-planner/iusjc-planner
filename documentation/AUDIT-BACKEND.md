@@ -1028,3 +1028,109 @@ L'audit du backend IUSJ Planner revele une implementation solide des fonctionnal
 **Date** : 24 Mars 2026
 **Version** : 1.0
 **Statut** : Final
+
+---
+
+## Annexe : Diagramme de Dependances des Tickets d'Implementation
+
+Suite a cet audit, **17 tickets d'implementation** ont ete crees dans le dossier `documentation/tickets/`. Voici le diagramme de dependances :
+
+```
+                    ┌─────────────────┐
+                    │  BE-AUTH-001    │
+                    │  (standalone)   │
+                    └─────────────────┘
+
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  BE-NOTIF-001   │────>│  BE-EVENT-001   │────>│  BE-REPORT-001  │
+│  (Notification) │     │  (Evenement)    │     │  (Rapport)      │
+│      [P0]       │     │      [P0]       │     │      [P0]       │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+
+┌─────────────────┐     ┌─────────────────┐
+│  BE-SUPPORT-001 │────>│   BE-DOC-001    │
+│    (Support)    │     │   (Postman)     │
+│      [P0]       │     │      [P3]       │
+└─────────────────┘     └─────────────────┘
+
+┌─────────────────┐
+│   BE-EDT-001    │
+│  (Entite EDT)   │
+│      [P1]       │
+└────────┬────────┘
+         │
+    ┌────┴────┐
+    │         │
+    v         v
+┌─────────┐  ┌─────────────┐
+│BE-SCHED │  │ BE-SCHED    │
+│  -001   │  │   -002      │
+│(Generer)│  │ (Export)    │
+│  [P1]   │  │   [P1]      │
+└────┬────┘  └──────┬──────┘
+     │              │
+     v              v
+┌─────────┐  ┌─────────────┐
+│BE-VALID │  │ BE-VALID    │
+│  -001   │  │   -002      │
+│(Capacite│  │ (Publier)   │
+│  [P2]   │  │   [P2]      │
+└─────────┘  └─────────────┘
+
+┌─────────────────┐     ┌─────────────────┐
+│  BE-GROUP-001   │────>│  BE-GROUP-002   │
+│   (Filiere)     │     │   (Diviser)     │
+│      [P1]       │     │      [P1]       │
+└─────────────────┘     └─────────────────┘
+
+┌─────────────────┐     ┌─────────────────┐
+│  BE-ROOM-001    │────>│ BE-RESOURCE-001 │
+│  (Equipement)   │     │  (Reservation)  │
+│      [P2]       │     │      [P2]       │
+└─────────────────┘     └─────────────────┘
+
+┌─────────────────┐
+│  BE-AUDIT-001   │
+│  (standalone)   │
+│      [P3]       │
+└─────────────────┘
+
+        ┌─────────────────────────────────┐
+        │         BE-TEST-001             │
+        │   (depend de tous les autres)   │
+        │             [P3]                │
+        └─────────────────────────────────┘
+```
+
+### Resume des Tickets
+
+| Priorite | Tickets | Effort |
+|----------|---------|--------|
+| P0 - Critique | 4 | 14 jours |
+| P1 - Haute | 5 | 11.5 jours |
+| P2 - Moyenne | 5 | 7.5 jours |
+| P3 - Basse | 3 | 8 jours |
+| **TOTAL** | **17** | **41 jours** |
+
+### Acces aux Tickets
+
+Tous les tickets sont disponibles dans : `documentation/tickets/`
+
+- [Index des Tickets](./tickets/README.md)
+- [BE-NOTIF-001 - Notification Service](./tickets/BE-NOTIF-001.md)
+- [BE-EVENT-001 - Evenement Service](./tickets/BE-EVENT-001.md)
+- [BE-REPORT-001 - Rapport Service](./tickets/BE-REPORT-001.md)
+- [BE-SUPPORT-001 - Entite Support](./tickets/BE-SUPPORT-001.md)
+- [BE-EDT-001 - Entite EDT](./tickets/BE-EDT-001.md)
+- [BE-SCHED-001 - Generation EDT](./tickets/BE-SCHED-001.md)
+- [BE-SCHED-002 - Export PDF/Excel](./tickets/BE-SCHED-002.md)
+- [BE-GROUP-001 - Relation Groupe-Filiere](./tickets/BE-GROUP-001.md)
+- [BE-GROUP-002 - Methode Diviser](./tickets/BE-GROUP-002.md)
+- [BE-ROOM-001 - Relation Salle-Equipement](./tickets/BE-ROOM-001.md)
+- [BE-RESOURCE-001 - Reservation Equipements](./tickets/BE-RESOURCE-001.md)
+- [BE-VALID-001 - Validation Capacite](./tickets/BE-VALID-001.md)
+- [BE-VALID-002 - Publication EDT](./tickets/BE-VALID-002.md)
+- [BE-AUTH-001 - Harmonisation Roles](./tickets/BE-AUTH-001.md)
+- [BE-TEST-001 - Tests Unitaires](./tickets/BE-TEST-001.md)
+- [BE-DOC-001 - Collection Postman](./tickets/BE-DOC-001.md)
+- [BE-AUDIT-001 - Logs d'Audit](./tickets/BE-AUDIT-001.md)
