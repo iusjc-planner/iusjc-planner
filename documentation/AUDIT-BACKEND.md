@@ -98,16 +98,16 @@ Reference: dossier documentation/tickets
 
 | Ticket | Statut reel | Niveau de completion | Blocage principal |
 |---|---|---|---|
-| BE-NOTIF-001 | En cours | 55% | Integration metier transverse + canaux externes |
-| BE-EVENT-001 | A faire | 0% | Service/non fonctionnalites metier completes |
-| BE-REPORT-001 | A faire | 0% | Architecture/reporting/export non finalisee |
-| BE-SUPPORT-001 | A faire | 10% | Support encore majoritairement en liste simple |
-| BE-EDT-001 | En cours | 40% | Alignement EDM/entite EDT metier |
-| BE-SCHED-001 | En cours | 45% | Generation auto complete + contraintes avancees |
-| BE-SCHED-002 | A faire | 10% | Export operationnel absent |
-| BE-GROUP-001 | A faire | 20% | filiereId et relation metier incomplete |
-| BE-GROUP-002 | A faire | 0% | Diviser() non implemente |
-| BE-ROOM-001 | A faire | 25% | Equipements/reservations a normaliser |
+| ✅BE-NOTIF-001 | En cours | 55% | Integration metier transverse + canaux externes |
+| ✅BE-EVENT-001 | A faire | 0% | Service/non fonctionnalites metier completes |
+| ✅BE-REPORT-001 | A faire | 0% | Architecture/reporting/export non finalisee |
+| ✅BE-SUPPORT-001 | A faire | 10% | Support encore majoritairement en liste simple |
+| ✅BE-EDT-001 | En cours | 40% | Alignement EDM/entite EDT metier |
+| ✅BE-SCHED-001 | En cours | 45% | Generation auto complete + contraintes avancees |
+| ✅BE-SCHED-002 | A faire | 10% | Export operationnel absent |
+| ✅BE-GROUP-001 | A faire | 20% | filiereId et relation metier incomplete |
+| ✅BE-GROUP-002 | A faire | 0% | Diviser() non implemente |
+| ✅BE-ROOM-001 | A faire | 25% | Equipements/reservations a normaliser |
 | BE-RESOURCE-001 | A faire | 20% | Reservation equipements incomplete |
 | BE-VALID-001 | En cours | 50% | Regles de validation capacite/cas limites |
 | BE-VALID-002 | A faire | 20% | Publication EDT et validation globale |

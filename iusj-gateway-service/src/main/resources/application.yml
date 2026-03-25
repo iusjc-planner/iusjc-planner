@@ -147,6 +147,15 @@ spring:
           filters:
             - StripPrefix=0
             - JwtAuthenticationFilter
+
+        # Route pour le service evenements (AVEC validation JWT)
+        - id: event-service-protected
+          uri: lb://iusj-event-service
+          predicates:
+            - Path=/api/events/**
+          filters:
+            - StripPrefix=0
+            - JwtAuthenticationFilter
       
       # Configuration globale CORS - désactivée car gérée par CorsConfig.java
       # globalcors:
