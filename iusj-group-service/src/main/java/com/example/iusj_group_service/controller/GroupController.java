@@ -2,6 +2,8 @@ package com.example.iusj_group_service.controller;
 
 import java.util.List;
 
+import com.example.iusj_group_service.dto.SplitGroupRequest;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -53,6 +55,16 @@ public class GroupController {
         return service.update(id, group).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
+    @PostMapping("/{id}/split")
+    public ResponseEntity<List<Group>> split(@PathVariable Long id, @Valid @RequestBody SplitGroupRequest request) {
+        return ResponseEntity.ok(service.split(id, request.getCount(), request.getType()));
+    }
+
+    @GetMapping("/{id}/subgroups")
+    public ResponseEntity<List<Group>> subgroups(@PathVariable Long id) {
+        return ResponseEntity.ok(service.getSubGroups(id));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);
@@ -72,5 +84,10 @@ public class GroupController {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<String> handleIllegalArgument(IllegalArgumentException ex) {
         return ResponseEntity.badRequest().body(ex.getMessage());
+    }
+
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<String> handleEntityNotFound(EntityNotFoundException ex) {
+        return ResponseEntity.status(404).body(ex.getMessage());
     }
 }

@@ -14,4 +14,8 @@ public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecific
 	List<Group> findByFiliereIdOrderByNameAsc(Long filiereId);
 
 	long countByFiliereId(Long filiereId);
+
+	List<Group> findByParentGroupIdOrderByNameAsc(Long parentGroupId);
+
+	boolean existsByName(String name);
 }
