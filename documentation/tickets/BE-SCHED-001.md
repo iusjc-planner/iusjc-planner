@@ -54,13 +54,13 @@ Cela est fastidieux et source d'erreurs. Un algorithme de generation automatique
 
 ### 3. Algorithme de generation
 - [ ] Implementer `ScheduleGenerator` avec :
-  - Algorithme glouton (greedy) pour solution initiale
+  - utiliser les algorithmes adaptes definis dans le cahier de conception
   - (Optionnel) Optimisation par recuit simule ou genetique
   - Verification des contraintes a chaque placement
 - [ ] Gerer les cas ou aucune solution n'est trouvee
 
 ### 4. Algorithme de detection de conflits
-- [ ] Ameliorer `validateConflicts()` existant :
+- [ ] Ameliorer `validateConflicts()` existant (utiliser les algorithmes adaptes definis dans le cahier de conception):
   - Conflit enseignant (meme enseignant, meme creneau)
   - Conflit salle (meme salle, meme creneau)
   - Conflit groupe (meme groupe, meme creneau)
