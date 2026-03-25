@@ -156,6 +156,15 @@ spring:
           filters:
             - StripPrefix=0
             - JwtAuthenticationFilter
+
+        # Route pour le service rapports (AVEC validation JWT)
+        - id: report-service-protected
+          uri: lb://iusj-report-service
+          predicates:
+            - Path=/api/reports/**
+          filters:
+            - StripPrefix=0
+            - JwtAuthenticationFilter
       
       # Configuration globale CORS - désactivée car gérée par CorsConfig.java
       # globalcors:
