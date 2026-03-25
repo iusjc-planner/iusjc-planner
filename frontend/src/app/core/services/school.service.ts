@@ -2,13 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { School, SchoolStats, Filiere } from '../../shared/models/school.model';
-import { environment } from '../../../environments/environment';
+import { ApiEndpoints } from '../config/api-endpoints';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SchoolService {
-  private apiUrl = `${environment.apiUrl}/schools`;
+  private apiUrl = ApiEndpoints.schools;
 
   constructor(private http: HttpClient) { }
 

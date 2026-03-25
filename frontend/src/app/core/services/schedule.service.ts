@@ -1,12 +1,12 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../../environments/environment';
 import { ScheduleEntry, ScheduleFilters, ScheduleStats, ScheduleGenerateRequest, GenerationConfig, GenerationResult } from '../../shared/models/schedule.model';
+import { ApiEndpoints } from '../config/api-endpoints';
 
 @Injectable({ providedIn: 'root' })
 export class ScheduleService {
-  private apiUrl = `${environment.apiUrl}/schedule`;
+  private apiUrl = ApiEndpoints.schedule;
 
   constructor(private http: HttpClient) {}
 

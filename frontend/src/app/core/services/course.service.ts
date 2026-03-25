@@ -1,14 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../../environments/environment';
 import { Course, CourseFilters, CourseStats } from '../../shared/models/course.model';
+import { ApiEndpoints } from '../config/api-endpoints';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CourseService {
-  private apiUrl = `${environment.apiUrl}/courses`;
+  private apiUrl = ApiEndpoints.courses;
 
   constructor(private http: HttpClient) {}
 

@@ -4,7 +4,7 @@ import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { LoginRequest, LoginResponse, AuthUser } from '../../shared/models/user.model';
-import { environment } from '../../../environments/environment';
+import { ApiEndpoints } from '../config/api-endpoints';
 
 @Injectable({
   providedIn: 'root'
@@ -33,7 +33,7 @@ export class AuthService {
   }
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${environment.authUrl}/login`, credentials)
+    return this.http.post<LoginResponse>(`${ApiEndpoints.auth}/login`, credentials)
       .pipe(
         map(response => {
           if (response.token) {

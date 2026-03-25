@@ -1,12 +1,12 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../../environments/environment';
 import { Room, RoomStatus, RoomType } from '../../shared/models/room.model';
+import { ApiEndpoints } from '../config/api-endpoints';
 
 @Injectable({ providedIn: 'root' })
 export class RoomService {
-  private apiUrl = `${environment.apiUrl}/rooms`;
+  private apiUrl = ApiEndpoints.rooms;
 
   constructor(private http: HttpClient) {}
 
