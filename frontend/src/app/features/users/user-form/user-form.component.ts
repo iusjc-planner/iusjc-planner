@@ -2,8 +2,10 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UserService } from '../../../core/services/user.service';
+import { SchoolService } from '../../../core/services/school.service';
 import { NotificationService } from '../../../shared/services/notification.service';
 import { User, UserRole, UserStatus } from '../../../shared/models/user.model';
+import { School } from '../../../shared/models/school.model';
 
 @Component({
   selector: 'app-user-form',
@@ -16,6 +18,7 @@ export class UserFormComponent implements OnInit {
   userId?: number;
   loading = false;
   errorMessage = '';
+  schools: School[] = [];
   
   userRoles = Object.values(UserRole);
   userStatuses = Object.values(UserStatus);
@@ -25,6 +28,7 @@ export class UserFormComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private userService: UserService,
+    private schoolService: SchoolService,
     private notificationService: NotificationService
   ) { }
 
@@ -44,6 +48,8 @@ export class UserFormComponent implements OnInit {
         this.loadUser(this.userId);
       }
     });
+
+    this.loadSchools();
   }
 
   initForm(): void {
@@ -54,8 +60,39 @@ export class UserFormComponent implements OnInit {
       telephone: ['', Validators.required],
       login: ['', Validators.required],
       password: ['', this.isEditMode ? [] : [Validators.required, Validators.minLength(6)]],
+      schoolId: [null],
       role: [UserRole.ENSEIGNANT, Validators.required],
       status: [UserStatus.ACTIVE, Validators.required]
+    });
+
+    this.userForm.get('role')?.valueChanges.subscribe((role: UserRole) => {
+      this.applySchoolValidator(role);
+    });
+    this.applySchoolValidator(this.userForm.get('role')?.value);
+  }
+
+  private applySchoolValidator(role: UserRole): void {
+    const schoolControl = this.userForm.get('schoolId');
+    if (!schoolControl) {
+      return;
+    }
+
+    if (role === UserRole.ENSEIGNANT) {
+      schoolControl.setValidators([Validators.required]);
+    } else {
+      schoolControl.clearValidators();
+    }
+    schoolControl.updateValueAndValidity();
+  }
+
+  private loadSchools(): void {
+    this.schoolService.getAllSchools().subscribe({
+      next: (schools) => {
+        this.schools = schools;
+      },
+      error: () => {
+        this.notificationService.warning('Impossible de charger la liste des écoles.');
+      }
     });
   }
 
