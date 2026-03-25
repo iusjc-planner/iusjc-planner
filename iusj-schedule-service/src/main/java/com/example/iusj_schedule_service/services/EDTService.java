@@ -1,6 +1,7 @@
 package com.example.iusj_schedule_service.services;
 
 import com.example.iusj_schedule_service.dto.EDTExportData;
+import com.example.iusj_schedule_service.dto.ValidationReport;
 import com.example.iusj_schedule_service.entities.EDT;
 import com.example.iusj_schedule_service.entities.ScheduleEntry;
 import com.example.iusj_schedule_service.repositories.EDTRepository;
@@ -8,8 +9,11 @@ import com.example.iusj_schedule_service.repositories.ScheduleEntryRepository;
 import com.example.iusj_schedule_service.services.export.ExcelExportService;
 import com.example.iusj_schedule_service.services.export.PdfExportService;
 import jakarta.persistence.EntityNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -23,9 +27,13 @@ import java.util.Optional;
 @Transactional
 public class EDTService {
 
+    private static final Logger log = LoggerFactory.getLogger(EDTService.class);
+
     private final EDTRepository edtRepository;
     private final ScheduleEntryRepository scheduleEntryRepository;
     private final ScheduleService scheduleService;
+    private final EDTValidationService edtValidationService;
+    private final RestTemplate restTemplate;
     private final PdfExportService pdfExportService;
     private final ExcelExportService excelExportService;
 
@@ -33,11 +41,15 @@ public class EDTService {
             EDTRepository edtRepository,
             ScheduleEntryRepository scheduleEntryRepository,
             ScheduleService scheduleService,
+            EDTValidationService edtValidationService,
+            RestTemplate restTemplate,
             PdfExportService pdfExportService,
             ExcelExportService excelExportService) {
         this.edtRepository = edtRepository;
         this.scheduleEntryRepository = scheduleEntryRepository;
         this.scheduleService = scheduleService;
+        this.edtValidationService = edtValidationService;
+        this.restTemplate = restTemplate;
         this.pdfExportService = pdfExportService;
         this.excelExportService = excelExportService;
     }
@@ -64,28 +76,57 @@ public class EDTService {
             Long targetId,
             EDT.EDTStatus status,
             EDT.PeriodeType periode) {
+        return list(semaine, annee, vue, targetId, status, periode, null, null);
+        }
+
+        public List<EDT> list(
+            Integer semaine,
+            Integer annee,
+            EDT.VueType vue,
+            Long targetId,
+            EDT.EDTStatus status,
+            EDT.PeriodeType periode,
+            String userRole,
+            Long userId) {
 
         if (semaine != null && annee != null && vue != null && targetId != null) {
             return edtRepository.findBySemaineAndAnneeAndVueAndTargetId(semaine, annee, vue, targetId)
-                .stream().toList();
+                .stream()
+                .filter(edt -> canView(edt, userRole, userId))
+                .toList();
         }
         if (semaine != null && annee != null) {
-            return edtRepository.findBySemaineAndAnnee(semaine, annee);
+            return edtRepository.findBySemaineAndAnnee(semaine, annee).stream()
+                    .filter(edt -> canView(edt, userRole, userId))
+                    .toList();
         }
         if (vue != null && targetId != null) {
-            return edtRepository.findByVueAndTargetId(vue, targetId);
+            return edtRepository.findByVueAndTargetId(vue, targetId).stream()
+                    .filter(edt -> canView(edt, userRole, userId))
+                    .toList();
         }
         if (status != null) {
-            return edtRepository.findByStatus(status);
+            return edtRepository.findByStatus(status).stream()
+                    .filter(edt -> canView(edt, userRole, userId))
+                    .toList();
         }
         if (periode != null && annee != null) {
-            return edtRepository.findByPeriodeAndAnnee(periode, annee);
+            return edtRepository.findByPeriodeAndAnnee(periode, annee).stream()
+                    .filter(edt -> canView(edt, userRole, userId))
+                    .toList();
         }
-        return edtRepository.findAll();
+        return edtRepository.findAll().stream()
+                .filter(edt -> canView(edt, userRole, userId))
+                .toList();
     }
 
     public Optional<EDT> getById(Long id) {
         return edtRepository.findById(id);
+    }
+
+    public Optional<EDT> getByIdVisible(Long id, String userRole, Long userId) {
+        return edtRepository.findById(id)
+                .filter(edt -> canView(edt, userRole, userId));
     }
 
     public Optional<EDT> getByGroupe(Long groupeId, Integer semaine, Integer annee) {
@@ -122,32 +163,64 @@ public class EDTService {
         return scheduleService.create(entry);
     }
 
-    public EDT validate(Long edtId) {
+    public ValidationReport validate(Long edtId) {
         EDT edt = edtRepository.findById(edtId)
             .orElseThrow(() -> new EntityNotFoundException("EDT introuvable: " + edtId));
 
-        List<ScheduleEntry> entries = scheduleEntryRepository.findByEdtIdOrderByStartTimeAsc(edtId);
-        for (ScheduleEntry entry : entries) {
-            List<String> conflicts = scheduleService.validateConflicts(entry, entry.getId());
-            if (!conflicts.isEmpty()) {
-                throw new IllegalStateException("Conflits detectes: " + String.join("; ", conflicts));
-            }
+        if (edt.getStatus() == EDT.EDTStatus.PUBLISHED || edt.getStatus() == EDT.EDTStatus.ARCHIVED) {
+            throw new IllegalStateException("Validation impossible pour un EDT deja publie/archive");
         }
 
-        edt.setStatus(EDT.EDTStatus.VALIDATED);
-        return edtRepository.save(edt);
+        ValidationReport report = edtValidationService.generateReport(edt);
+        if (report.isValid()) {
+            edt.setStatus(EDT.EDTStatus.VALIDATED);
+            edtRepository.save(edt);
+        }
+        return report;
+    }
+
+    public ValidationReport getValidationReport(Long edtId) {
+        EDT edt = edtRepository.findById(edtId)
+                .orElseThrow(() -> new EntityNotFoundException("EDT introuvable: " + edtId));
+        return edtValidationService.generateReport(edt);
     }
 
     public EDT publish(Long edtId) {
         EDT edt = edtRepository.findById(edtId)
             .orElseThrow(() -> new EntityNotFoundException("EDT introuvable: " + edtId));
 
-        if (edt.getStatus() == EDT.EDTStatus.DRAFT) {
+        if (edt.getStatus() != EDT.EDTStatus.VALIDATED) {
             throw new IllegalStateException("Validation requise avant publication");
         }
 
         edt.setStatus(EDT.EDTStatus.PUBLISHED);
         edt.setDatePublication(LocalDateTime.now());
+        EDT published = edtRepository.save(edt);
+        notifyPublication(published);
+        return published;
+    }
+
+    public EDT unpublish(Long edtId) {
+        EDT edt = edtRepository.findById(edtId)
+                .orElseThrow(() -> new EntityNotFoundException("EDT introuvable: " + edtId));
+
+        if (edt.getStatus() != EDT.EDTStatus.PUBLISHED) {
+            throw new IllegalStateException("Seul un EDT publie peut etre depublie");
+        }
+
+        edt.setStatus(EDT.EDTStatus.VALIDATED);
+        return edtRepository.save(edt);
+    }
+
+    public EDT archive(Long edtId) {
+        EDT edt = edtRepository.findById(edtId)
+                .orElseThrow(() -> new EntityNotFoundException("EDT introuvable: " + edtId));
+
+        if (edt.getStatus() != EDT.EDTStatus.PUBLISHED) {
+            throw new IllegalStateException("Seul un EDT publie peut etre archive");
+        }
+
+        edt.setStatus(EDT.EDTStatus.ARCHIVED);
         return edtRepository.save(edt);
     }
 
@@ -264,5 +337,55 @@ public class EDTService {
         result.put("evenements", List.of());
         result.put("meta", List.of());
         return result;
+    }
+
+    private boolean canView(EDT edt, String userRole, Long userId) {
+        if (edt.getStatus() == EDT.EDTStatus.PUBLISHED) {
+            return true;
+        }
+
+        String normalizedRole = normalizeRole(userRole);
+        boolean isAdmin = "ADMIN".equals(normalizedRole);
+        boolean isTeacher = "ENSEIGNANT".equals(normalizedRole);
+
+        if (edt.getStatus() == EDT.EDTStatus.DRAFT) {
+            return isAdmin;
+        }
+
+        if (edt.getStatus() == EDT.EDTStatus.VALIDATED) {
+            if (isAdmin) {
+                return true;
+            }
+            if (isTeacher && userId != null) {
+                if (edt.getVue() == EDT.VueType.ENSEIGNANT && userId.equals(edt.getTargetId())) {
+                    return true;
+                }
+                return scheduleEntryRepository.findByEdtIdOrderByStartTimeAsc(edt.getId()).stream()
+                        .anyMatch(entry -> userId.equals(entry.getTeacherId()));
+            }
+        }
+
+        return false;
+    }
+
+    private String normalizeRole(String role) {
+        if (role == null) {
+            return "";
+        }
+        return role.toUpperCase().replace("ROLE_", "");
+    }
+
+    private void notifyPublication(EDT edt) {
+        try {
+            Map<String, Object> payload = Map.of(
+                    "type", "EDT_PUBLISHED",
+                    "message", "Un emploi du temps a ete publie",
+                    "title", "Publication EDT",
+                    "metadata", Map.of("edtId", edt.getId(), "status", edt.getStatus().name())
+            );
+            restTemplate.postForEntity("http://iusj-notification-service/api/notifications/broadcast", payload, Void.class);
+        } catch (Exception ex) {
+            log.warn("Notification publication EDT non envoyee (service indisponible): edtId={}", edt.getId());
+        }
     }
 }

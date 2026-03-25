@@ -46,7 +46,8 @@ public class EDT {
     public enum EDTStatus {
         DRAFT,
         VALIDATED,
-        PUBLISHED
+        PUBLISHED,
+        ARCHIVED
     }
 
     @Id

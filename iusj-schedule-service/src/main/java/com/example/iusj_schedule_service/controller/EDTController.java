@@ -4,6 +4,7 @@ import com.example.iusj_schedule_service.dto.GenerationRequest;
 import com.example.iusj_schedule_service.dto.GenerationResult;
 import com.example.iusj_schedule_service.dto.SlotSuggestion;
 import com.example.iusj_schedule_service.dto.ValidationRequest;
+import com.example.iusj_schedule_service.dto.ValidationReport;
 import com.example.iusj_schedule_service.dto.ValidationResult;
 import com.example.iusj_schedule_service.entities.EDT;
 import com.example.iusj_schedule_service.entities.ScheduleEntry;
@@ -48,13 +49,18 @@ public class EDTController {
             @RequestParam(required = false) EDT.VueType vue,
             @RequestParam(required = false) Long targetId,
             @RequestParam(required = false) EDT.EDTStatus status,
-            @RequestParam(required = false) EDT.PeriodeType periode) {
-        return edtService.list(semaine, annee, vue, targetId, status, periode);
+            @RequestParam(required = false) EDT.PeriodeType periode,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole,
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+        return edtService.list(semaine, annee, vue, targetId, status, periode, userRole, userId);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<EDT> get(@PathVariable Long id) {
-        return edtService.getById(id)
+    public ResponseEntity<EDT> get(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole,
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+        return edtService.getByIdVisible(id, userRole, userId)
             .map(ResponseEntity::ok)
             .orElse(ResponseEntity.notFound().build());
     }
@@ -115,13 +121,23 @@ public class EDTController {
     }
 
     @PutMapping("/{id}/validate")
-    public ResponseEntity<EDT> validate(@PathVariable Long id) {
+    public ResponseEntity<ValidationReport> validate(@PathVariable Long id) {
         return ResponseEntity.ok(edtService.validate(id));
     }
 
     @PutMapping("/{id}/publish")
     public ResponseEntity<EDT> publish(@PathVariable Long id) {
         return ResponseEntity.ok(edtService.publish(id));
+    }
+
+    @PutMapping("/{id}/unpublish")
+    public ResponseEntity<EDT> unpublish(@PathVariable Long id) {
+        return ResponseEntity.ok(edtService.unpublish(id));
+    }
+
+    @GetMapping("/{id}/validation-report")
+    public ResponseEntity<ValidationReport> getValidationReport(@PathVariable Long id) {
+        return ResponseEntity.ok(edtService.getValidationReport(id));
     }
 
     @DeleteMapping("/{id}")
