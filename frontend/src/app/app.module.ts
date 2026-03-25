@@ -16,10 +16,12 @@ import { SharedModule } from './shared/shared.module';
 import { CoreModule } from './core/core.module';
 import { AuthInterceptor } from './core/interceptors/auth.interceptor';
 import { ErrorInterceptor } from './core/interceptors/error.interceptor';
+import { ForbiddenComponent } from './shared/pages/forbidden/forbidden.component';
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    ForbiddenComponent
   ],
   imports: [
     BrowserModule,
