@@ -42,6 +42,11 @@ public class NotificationController {
         return ResponseEntity.ok(notificationService.getUnreadCount(userId));
     }
 
+    @GetMapping("/unread-count")
+    public ResponseEntity<Long> getUnreadCountAlias(@RequestHeader("X-User-Id") Long userId) {
+        return ResponseEntity.ok(notificationService.getUnreadCount(userId));
+    }
+
     @PostMapping
     public ResponseEntity<?> create(
             @Valid @RequestBody Notification notification,

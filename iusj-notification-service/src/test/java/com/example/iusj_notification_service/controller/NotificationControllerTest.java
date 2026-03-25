@@ -72,6 +72,16 @@ class NotificationControllerTest {
             .andExpect(jsonPath("$.error").value("Acces refuse - Role ADMIN requis"));
     }
 
+            @Test
+            void unreadCountAliasShouldReturnCount() throws Exception {
+            when(notificationService.getUnreadCount(1L)).thenReturn(3L);
+
+            mockMvc.perform(get("/api/notifications/unread-count")
+                .header("X-User-Id", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").value(3));
+            }
+
     @Test
     void broadcastShouldReturnCreatedForAdmin() throws Exception {
         BroadcastRequest request = new BroadcastRequest();
