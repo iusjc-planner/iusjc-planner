@@ -106,6 +106,34 @@
     </div>
   </div>
 
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row align-items-end g-2">
+        <div class="col-md-3">
+          <label class="form-label">Date cible</label>
+          <input class="form-control" type="date" [(ngModel)]="dropDate">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Heure de début cible</label>
+          <input class="form-control" type="time" [(ngModel)]="dropStartTime">
+        </div>
+        <div class="col-md-6">
+          <div
+            class="border border-2 border-primary rounded p-3 text-center bg-light"
+            pDroppable="schedule-slot"
+            (onDrop)="onSessionDrop($event)">
+            <strong>Déposez une séance ici pour la déplacer</strong>
+            <small class="d-block text-muted" *ngIf="!dropping">Le déplacement est bloqué automatiquement en cas de conflit backend.</small>
+            <small class="d-block text-primary" *ngIf="dropping">Déplacement en cours...</small>
+          </div>
+        </div>
+      </div>
+      <div class="alert alert-danger mt-3 mb-0" *ngIf="conflictMessage">
+        {{ conflictMessage }}
+      </div>
+    </div>
+  </div>
+
   <!-- Loading -->
   <div *ngIf="loading" class="text-center py-5">
     <div class="spinner-border text-primary" role="status">
@@ -145,7 +173,7 @@
                 </a>
               </td>
             </tr>
-            <tr *ngFor="let e of entries">
+            <tr *ngFor="let e of entries" pDraggable="schedule-slot" [dragData]="e" dragEffect="move">
               <td>{{ e.courseName || e.courseId }}</td>
               <td>{{ e.teacherName || e.teacherId }}</td>
               <td>{{ e.roomName || e.roomId }}</td>

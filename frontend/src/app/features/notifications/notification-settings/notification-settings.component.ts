@@ -1,11 +1,13 @@
 import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-notification-settings',
   standalone: true,
-  imports: [],
+  imports: [CommonModule, RouterModule],
   templateUrl: './notification-settings.component.html',
-  styleUrl: './notification-settings.component.css'
+  styleUrls: ['./notification-settings.component.css']
 })
 export class NotificationSettingsComponent {
 
