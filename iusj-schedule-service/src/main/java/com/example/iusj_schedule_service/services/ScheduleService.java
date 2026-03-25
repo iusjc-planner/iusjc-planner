@@ -73,6 +73,10 @@ public class ScheduleService {
     }
 
     public List<String> validateConflicts(ScheduleEntry entry, Long excludeId) {
+        return validateConflicts(entry, excludeId, null, null);
+    }
+
+    public List<String> validateConflicts(ScheduleEntry entry, Long excludeId, Integer groupSize, Integer roomCapacity) {
         List<String> conflicts = new ArrayList<>();
         boolean roomConflict = excludeId == null
                 ? repository.existsByRoomIdAndStatusNotAndStartTimeLessThanAndEndTimeGreaterThan(
@@ -101,6 +105,11 @@ public class ScheduleService {
         if (groupConflict) {
             conflicts.add("Group already booked for this time range");
         }
+
+        if (groupSize != null && roomCapacity != null && groupSize > roomCapacity) {
+            conflicts.add("Room capacity conflict: group size exceeds room capacity");
+        }
+
         return conflicts;
     }
 

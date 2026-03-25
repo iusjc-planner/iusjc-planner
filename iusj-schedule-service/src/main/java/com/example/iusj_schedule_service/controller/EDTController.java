@@ -1,8 +1,14 @@
 package com.example.iusj_schedule_service.controller;
 
+import com.example.iusj_schedule_service.dto.GenerationRequest;
+import com.example.iusj_schedule_service.dto.GenerationResult;
+import com.example.iusj_schedule_service.dto.SlotSuggestion;
+import com.example.iusj_schedule_service.dto.ValidationRequest;
+import com.example.iusj_schedule_service.dto.ValidationResult;
 import com.example.iusj_schedule_service.entities.EDT;
 import com.example.iusj_schedule_service.entities.ScheduleEntry;
 import com.example.iusj_schedule_service.services.EDTService;
+import com.example.iusj_schedule_service.services.ScheduleGeneratorService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -19,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -27,9 +34,11 @@ import java.util.Map;
 public class EDTController {
 
     private final EDTService edtService;
+    private final ScheduleGeneratorService scheduleGeneratorService;
 
-    public EDTController(EDTService edtService) {
+    public EDTController(EDTService edtService, ScheduleGeneratorService scheduleGeneratorService) {
         this.edtService = edtService;
+        this.scheduleGeneratorService = scheduleGeneratorService;
     }
 
     @GetMapping
@@ -119,6 +128,40 @@ public class EDTController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         edtService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/generate")
+    public ResponseEntity<GenerationResult> generate(
+            @Valid @RequestBody GenerationRequest request,
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+        if (request.getCreePar() == null) {
+            request.setCreePar(userId);
+        }
+        return ResponseEntity.ok(scheduleGeneratorService.generate(request));
+    }
+
+    @GetMapping("/suggestions")
+    public ResponseEntity<List<SlotSuggestion>> suggestions(
+            @RequestParam Long teacherId,
+            @RequestParam LocalDate date,
+            @RequestParam(required = false) Long groupId,
+            @RequestParam(required = false) Long matiereId,
+            @RequestParam(required = false) Integer effectif,
+            @RequestParam(required = false) List<String> equipments) {
+        List<SlotSuggestion> suggestions = scheduleGeneratorService.getAvailableSlots(teacherId, date);
+        List<Long> roomIds = scheduleGeneratorService.getSuggestedRooms(effectif, equipments);
+        if (!roomIds.isEmpty()) {
+            Long preferred = roomIds.get(0);
+            for (SlotSuggestion suggestion : suggestions) {
+                suggestion.setRoomId(preferred);
+            }
+        }
+        return ResponseEntity.ok(suggestions);
+    }
+
+    @PostMapping("/validate-entry")
+    public ResponseEntity<ValidationResult> validateEntry(@Valid @RequestBody ValidationRequest request) {
+        return ResponseEntity.ok(scheduleGeneratorService.validateEntry(request));
     }
 
     @GetMapping("/{id}/weekly-view")
