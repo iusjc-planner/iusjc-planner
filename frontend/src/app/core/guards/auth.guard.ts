@@ -42,7 +42,7 @@ export class AuthGuard implements CanActivate {
           return true;
         }
         
-        if (currentUser.role === 'USER') {
+        if (currentUser.role === 'ENSEIGNANT') {
           // Les utilisateurs ne peuvent accéder qu'aux routes user
           const hasAccess = userRoutes.some(route => currentPath.startsWith(route));
           if (!hasAccess) {

@@ -19,7 +19,7 @@ export class AdminGuard implements CanActivate {
 
     // Rediriger vers le dashboard approprié selon le rôle
     const currentUser = this.authService.getCurrentUser();
-    if (currentUser?.role === 'USER') {
+    if (currentUser?.role === 'ENSEIGNANT') {
       this.router.navigate(['/app/dashboard-teacher']);
     } else {
       this.router.navigate(['/app/dashboard']);

@@ -21,21 +21,21 @@ Perimetre: nouveau frontend cible /web
 
 | ID | Titre | Estimation | Dependances |
 |---|---|---|---|
-| [FE-CORE-001](./FE-CORE-001.md) | Auth JWT et session | 3j | - |
-| [FE-CORE-002](./FE-CORE-002.md) | Guards RBAC | 2j | FE-CORE-001 |
-| [FE-CORE-003](./FE-CORE-003.md) | Interceptors HTTP et gestion erreurs | 2j | FE-CORE-001 |
-| [FE-CORE-004](./FE-CORE-004.md) | Service layer API metier | 4j | FE-CORE-003 |
+|. [FE-CORE-001](./FE-CORE-001.md) | Auth JWT et session | 3j | - |
+|. [FE-CORE-002](./FE-CORE-002.md) | Guards RBAC | 2j | FE-CORE-001 |
+|. [FE-CORE-003](./FE-CORE-003.md) | Interceptors HTTP et gestion erreurs | 2j | FE-CORE-001 |
+|. [FE-CORE-004](./FE-CORE-004.md) | Service layer API metier | 4j | FE-CORE-003 |
 | [FE-REL-001](./FE-REL-001.md) | Cutover Big-bang vers /web | 2j | FE-QUAL-001 |
 
 ### P1 - Haute
 
 | ID | Titre | Estimation | Dependances |
 |---|---|---|---|
-| [FE-PAGE-001](./FE-PAGE-001.md) | Dashboard et navigation metier | 3j | FE-CORE-002, FE-CORE-004 |
-| [FE-PAGE-002](./FE-PAGE-002.md) | Module utilisateurs (liste, form, detail) | 4j | FE-CORE-004 |
-| [FE-PAGE-003](./FE-PAGE-003.md) | Planning + drag and drop metier | 5j | FE-CORE-004 |
-| [FE-PAGE-004](./FE-PAGE-004.md) | Centre de notifications | 2j | FE-CORE-004 |
-| [FE-PAGE-005](./FE-PAGE-005.md) | Rapports et exports UI | 3j | BE-REPORT-001, FE-CORE-004 |
+|. [FE-PAGE-001](./FE-PAGE-001.md) | Dashboard et navigation metier | 3j | FE-CORE-002, FE-CORE-004 |
+|. [FE-PAGE-002](./FE-PAGE-002.md) | Module utilisateurs (liste, form, detail) | 4j | FE-CORE-004 |
+|. [FE-PAGE-003](./FE-PAGE-003.md) | Planning + drag and drop metier | 5j | FE-CORE-004 |
+|. [FE-PAGE-004](./FE-PAGE-004.md) | Centre de notifications | 2j | FE-CORE-004 |
+|. [FE-PAGE-005](./FE-PAGE-005.md) | Rapports et exports UI | 3j | BE-REPORT-001, FE-CORE-004 |
 
 ### P2 - Moyenne
 

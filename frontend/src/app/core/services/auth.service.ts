@@ -13,6 +13,7 @@ export class AuthService {
   private readonly TOKEN_KEY = 'iusj_token';
   private currentUserSubject = new BehaviorSubject<AuthUser | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
+  private tokenExpirationTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private http: HttpClient,
@@ -23,9 +24,11 @@ export class AuthService {
     if (token && !this.isTokenExpired(token)) {
       const user = this.decodeToken(token);
       this.currentUserSubject.next(user);
+      this.startExpirationTimer(token);
     } else if (token) {
       // Token expiré, le supprimer
-      this.logout();
+      this.clearSession();
+      this.router.navigate(['/login']);
     }
   }
 
@@ -40,6 +43,7 @@ export class AuthService {
             // Décoder et stocker les informations utilisateur
             const user = this.decodeToken(response.token);
             this.currentUserSubject.next(user);
+            this.startExpirationTimer(response.token);
           }
           return response;
         }),
@@ -66,7 +70,7 @@ export class AuthService {
       switch (user.role) {
         case 'ADMIN':
           return '/app/dashboard';
-        case 'USER':
+        case 'ENSEIGNANT':
           return '/app/dashboard-teacher';
         default:
           return '/app/dashboard';
@@ -76,19 +80,36 @@ export class AuthService {
   }
 
   logout(): void {
-    // Supprimer le token
-    localStorage.removeItem(this.TOKEN_KEY);
-    
-    // Réinitialiser l'utilisateur courant
-    this.currentUserSubject.next(null);
-    
+    this.clearSession();
+
     // Rediriger vers la page de connexion
     this.router.navigate(['/login']);
   }
 
+  private clearSession(): void {
+    // Supprimer le token
+    localStorage.removeItem(this.TOKEN_KEY);
+    if (this.tokenExpirationTimer) {
+      clearTimeout(this.tokenExpirationTimer);
+      this.tokenExpirationTimer = null;
+    }
+    
+    // Réinitialiser l'utilisateur courant
+    this.currentUserSubject.next(null);
+  }
+
   isAuthenticated(): boolean {
     const token = this.getToken();
-    return token !== null && !this.isTokenExpired(token);
+    if (!token) {
+      return false;
+    }
+
+    if (this.isTokenExpired(token)) {
+      this.clearSession();
+      return false;
+    }
+
+    return true;
   }
 
   getToken(): string | null {
@@ -129,6 +150,33 @@ export class AuthService {
       return payload.exp < currentTime;
     } catch (error) {
       return true;
+    }
+  }
+
+  private startExpirationTimer(token: string): void {
+    if (this.tokenExpirationTimer) {
+      clearTimeout(this.tokenExpirationTimer);
+      this.tokenExpirationTimer = null;
+    }
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const exp = payload.exp as number | undefined;
+      if (!exp) {
+        return;
+      }
+
+      const expiresInMs = exp * 1000 - Date.now();
+      if (expiresInMs <= 0) {
+        this.logout();
+        return;
+      }
+
+      this.tokenExpirationTimer = setTimeout(() => {
+        this.logout();
+      }, expiresInMs);
+    } catch {
+      this.logout();
     }
   }
 }

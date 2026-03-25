@@ -115,43 +115,43 @@ export class NavigationService {
       title: 'Dashboard Enseignant',
       icon: 'mdi mdi-view-dashboard',
       link: '/app/dashboard-teacher',
-      roles: ['USER']
+      roles: ['ENSEIGNANT']
     },
     {
       title: 'Mon Emploi du Temps',
       icon: 'mdi mdi-calendar-clock',
       link: '/app/my-schedule',
-      roles: ['USER']
+      roles: ['ENSEIGNANT']
     },
     {
       title: 'Mes Matières',
       icon: 'mdi mdi-book-open-variant',
       link: '/app/my-courses',
-      roles: ['USER']
+      roles: ['ENSEIGNANT']
     },
     {
       title: 'Mes Groupes',
       icon: 'mdi mdi-account-group',
       link: '/app/my-groups',
-      roles: ['USER']
+      roles: ['ENSEIGNANT']
     },
     {
       title: 'Réservations de Salles',
       icon: 'mdi mdi-door',
       link: '/app/room-reservations',
-      roles: ['USER']
+      roles: ['ENSEIGNANT']
     },
     {
       title: 'Mes Disponibilités',
       icon: 'mdi mdi-calendar-check',
       link: '/app/my-availability',
-      roles: ['USER']
+      roles: ['ENSEIGNANT']
     },
     {
       title: 'Mon Profil',
       icon: 'mdi mdi-account',
       link: '/app/my-profile',
-      roles: ['USER']
+      roles: ['ENSEIGNANT']
     }
   ];
 
@@ -168,7 +168,7 @@ export class NavigationService {
     switch (currentUser.role) {
       case 'ADMIN':
         return this.adminMenuItems;
-      case 'USER':
+      case 'ENSEIGNANT':
         return this.teacherMenuItems;
       default:
         return [];
@@ -179,7 +179,7 @@ export class NavigationService {
     switch (role) {
       case 'ADMIN':
         return this.adminMenuItems;
-      case 'USER':
+      case 'ENSEIGNANT':
         return this.teacherMenuItems;
       default:
         return [];
