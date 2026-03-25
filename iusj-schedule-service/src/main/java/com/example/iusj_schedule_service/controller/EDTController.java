@@ -65,6 +65,16 @@ public class EDTController {
             .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/groups/{groupId}/edt")
+    public ResponseEntity<EDT> getByGroupCompatibility(
+            @PathVariable Long groupId,
+            @RequestParam Integer semaine,
+            @RequestParam Integer annee) {
+        return edtService.getByGroupe(groupId, semaine, annee)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/enseignant/{teacherId}")
     public ResponseEntity<EDT> getByEnseignant(
             @PathVariable Long teacherId,

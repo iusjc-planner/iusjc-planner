@@ -206,6 +206,7 @@ public class EDTService {
         result.put("jeudi", entries.stream().filter(e -> e.getStartTime().getDayOfWeek().getValue() == 4).toList());
         result.put("vendredi", entries.stream().filter(e -> e.getStartTime().getDayOfWeek().getValue() == 5).toList());
         result.put("samedi", entries.stream().filter(e -> e.getStartTime().getDayOfWeek().getValue() == 6).toList());
+        result.put("evenements", List.of());
         result.put("meta", List.of());
         return result;
     }

@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -64,4 +65,9 @@ public class ScheduleEntry {
     @JoinColumn(name = "edt_id")
     @JsonBackReference
     private EDT edt;
+
+    @JsonProperty("edtId")
+    public Long getEdtId() {
+        return edt != null ? edt.getId() : null;
+    }
 }
