@@ -37,8 +37,10 @@ public class Group {
     @Size(max = 50)
     private String level;
 
-    @NotNull
     private Long schoolId;
+
+    @NotNull
+    private Long filiereId;
 
     private Integer size;
 

@@ -173,13 +173,17 @@ public class EDTController {
     public ResponseEntity<byte[]> exportById(
             @PathVariable Long id,
             @RequestParam(defaultValue = "pdf") String format) {
-        if (!"pdf".equalsIgnoreCase(format)) {
+        ExportConfig exportConfig = resolveExportConfig(format);
+        if (exportConfig == null) {
             return ResponseEntity.badRequest().build();
         }
-        byte[] content = edtService.exportPdfByEdtId(id);
+        byte[] content = switch (exportConfig.format) {
+            case PDF -> edtService.exportPdfByEdtId(id);
+            case EXCEL -> edtService.exportExcelByEdtId(id);
+        };
         return ResponseEntity.ok()
-            .contentType(MediaType.APPLICATION_PDF)
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=EDT_" + id + ".pdf")
+            .contentType(exportConfig.mediaType)
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=EDT_" + id + exportConfig.extension)
             .body(content);
     }
 
@@ -220,14 +224,40 @@ public class EDTController {
             Integer annee,
             String format,
             Long creePar) {
-        if (!"pdf".equalsIgnoreCase(format)) {
+        ExportConfig exportConfig = resolveExportConfig(format);
+        if (exportConfig == null) {
             return ResponseEntity.badRequest().build();
         }
-        byte[] content = edtService.exportPdfForView(vue, targetId, semaine, annee, creePar);
-        String filename = String.format("EDT_%s_%d_S%d_%d.pdf", vue.name(), targetId, semaine, annee);
+        byte[] content = switch (exportConfig.format) {
+            case PDF -> edtService.exportPdfForView(vue, targetId, semaine, annee, creePar);
+            case EXCEL -> edtService.exportExcelForView(vue, targetId, semaine, annee, creePar);
+        };
+        String filename = String.format("EDT_%s_%d_S%d_%d%s", vue.name(), targetId, semaine, annee, exportConfig.extension);
         return ResponseEntity.ok()
-            .contentType(MediaType.APPLICATION_PDF)
+            .contentType(exportConfig.mediaType)
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
             .body(content);
+    }
+
+    private ExportConfig resolveExportConfig(String format) {
+        if ("pdf".equalsIgnoreCase(format)) {
+            return new ExportConfig(ExportFormat.PDF, MediaType.APPLICATION_PDF, ".pdf");
+        }
+        if ("excel".equalsIgnoreCase(format) || "xlsx".equalsIgnoreCase(format)) {
+            return new ExportConfig(
+                ExportFormat.EXCEL,
+                MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+                ".xlsx"
+            );
+        }
+        return null;
+    }
+
+    private enum ExportFormat {
+        PDF,
+        EXCEL
+    }
+
+    private record ExportConfig(ExportFormat format, MediaType mediaType, String extension) {
     }
 }

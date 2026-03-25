@@ -1,9 +1,11 @@
 package com.example.iusj_schedule_service.services;
 
+import com.example.iusj_schedule_service.dto.EDTExportData;
 import com.example.iusj_schedule_service.entities.EDT;
 import com.example.iusj_schedule_service.entities.ScheduleEntry;
 import com.example.iusj_schedule_service.repositories.EDTRepository;
 import com.example.iusj_schedule_service.repositories.ScheduleEntryRepository;
+import com.example.iusj_schedule_service.services.export.ExcelExportService;
 import com.example.iusj_schedule_service.services.export.PdfExportService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
@@ -25,16 +27,19 @@ public class EDTService {
     private final ScheduleEntryRepository scheduleEntryRepository;
     private final ScheduleService scheduleService;
     private final PdfExportService pdfExportService;
+    private final ExcelExportService excelExportService;
 
     public EDTService(
             EDTRepository edtRepository,
             ScheduleEntryRepository scheduleEntryRepository,
             ScheduleService scheduleService,
-            PdfExportService pdfExportService) {
+            PdfExportService pdfExportService,
+            ExcelExportService excelExportService) {
         this.edtRepository = edtRepository;
         this.scheduleEntryRepository = scheduleEntryRepository;
         this.scheduleService = scheduleService;
         this.pdfExportService = pdfExportService;
+        this.excelExportService = excelExportService;
     }
 
     public EDT getOrCreate(Integer semaine, Integer annee, EDT.VueType vue, Long targetId, Long creePar) {
@@ -168,6 +173,14 @@ public class EDTService {
         return pdfExportService.exportWeeklyEdtPdf(edt, entries);
     }
 
+    public byte[] exportExcelByEdtId(Long edtId) {
+        EDT edt = edtRepository.findById(edtId)
+            .orElseThrow(() -> new EntityNotFoundException("EDT introuvable: " + edtId));
+        List<ScheduleEntry> entries = scheduleEntryRepository.findByEdtIdOrderByStartTimeAsc(edtId);
+        EDTExportData exportData = toExportData(edt, entries);
+        return excelExportService.exportWeeklyEdtExcel(exportData);
+    }
+
     public byte[] exportPdfForView(EDT.VueType vue, Long targetId, Integer semaine, Integer annee, Long creePar) {
         EDT edt = getOrCreate(semaine, annee, vue, targetId, creePar);
 
@@ -182,6 +195,48 @@ public class EDTService {
         };
 
         return pdfExportService.exportWeeklyEdtPdf(edt, entries);
+    }
+
+    public byte[] exportExcelForView(EDT.VueType vue, Long targetId, Integer semaine, Integer annee, Long creePar) {
+        EDT edt = getOrCreate(semaine, annee, vue, targetId, creePar);
+
+        LocalDate start = isoWeekStart(annee, semaine);
+        LocalDateTime from = start.atStartOfDay();
+        LocalDateTime to = start.plusDays(6).atTime(23, 59, 59);
+
+        List<ScheduleEntry> entries = switch (vue) {
+            case GROUPE -> scheduleEntryRepository.findByGroupIdAndStartTimeBetweenOrderByStartTimeAsc(targetId, from, to);
+            case ENSEIGNANT -> scheduleEntryRepository.findByTeacherIdAndStartTimeBetweenOrderByStartTimeAsc(targetId, from, to);
+            case SALLE -> scheduleEntryRepository.findByRoomIdAndStartTimeBetweenOrderByStartTimeAsc(targetId, from, to);
+        };
+
+        EDTExportData exportData = toExportData(edt, entries);
+        return excelExportService.exportWeeklyEdtExcel(exportData);
+    }
+
+    private EDTExportData toExportData(EDT edt, List<ScheduleEntry> entries) {
+        List<EDTExportData.ExportEntry> exportEntries = entries.stream()
+            .map(entry -> EDTExportData.ExportEntry.builder()
+                .courseId(entry.getCourseId())
+                .teacherId(entry.getTeacherId())
+                .roomId(entry.getRoomId())
+                .groupId(entry.getGroupId())
+                .startTime(entry.getStartTime())
+                .endTime(entry.getEndTime())
+                .status(entry.getStatus() == null ? null : entry.getStatus().name())
+                .build())
+            .toList();
+
+        return EDTExportData.builder()
+            .edtId(edt.getId())
+            .semaine(edt.getSemaine())
+            .annee(edt.getAnnee())
+            .vue(edt.getVue().name())
+            .targetId(edt.getTargetId())
+            .generatedBy(edt.getCreePar())
+            .generatedAt(LocalDateTime.now())
+            .entries(exportEntries)
+            .build();
     }
 
     private EDT.PeriodeType inferPeriode(Integer semaine) {

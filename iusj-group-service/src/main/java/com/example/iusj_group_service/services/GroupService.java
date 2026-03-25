@@ -19,9 +19,13 @@ public class GroupService {
         this.repository = repository;
     }
 
-    public List<Group> getAll(String name, String level, Long schoolId, Group.Status status) {
-        Specification<Group> spec = GroupSpecifications.withFilters(name, level, schoolId, status);
+    public List<Group> getAll(String name, String level, Long schoolId, Long filiereId, Group.Status status) {
+        Specification<Group> spec = GroupSpecifications.withFilters(name, level, schoolId, filiereId, status);
         return repository.findAll(spec, Sort.by(Sort.Direction.ASC, "name"));
+    }
+
+    public List<Group> getByFiliere(Long filiereId) {
+        return repository.findByFiliereIdOrderByNameAsc(filiereId);
     }
 
     public Optional<Group> getById(Long id) {
@@ -29,12 +33,14 @@ public class GroupService {
     }
 
     public Group create(Group group) {
+        validateFiliere(group);
         return repository.save(group);
     }
 
     public Optional<Group> update(Long id, Group group) {
         return repository.findById(id).map(existing -> {
             group.setId(id);
+            validateFiliere(group);
             return repository.save(group);
         });
     }
@@ -48,6 +54,12 @@ public class GroupService {
         long active = repository.countByStatus(Group.Status.ACTIVE);
         long inactive = repository.countByStatus(Group.Status.INACTIVE);
         return new GroupStats(total, active, inactive);
+    }
+
+    private void validateFiliere(Group group) {
+        if (group.getFiliereId() == null) {
+            throw new IllegalArgumentException("filiereId est requis");
+        }
     }
 
     public record GroupStats(long total, long active, long inactive) {}

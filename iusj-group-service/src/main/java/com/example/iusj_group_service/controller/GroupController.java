@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,8 +33,9 @@ public class GroupController {
     public List<Group> list(@RequestParam(required = false) String name,
                             @RequestParam(required = false) String level,
                             @RequestParam(required = false) Long schoolId,
+                            @RequestParam(required = false) Long filiereId,
                             @RequestParam(required = false) Group.Status status) {
-        return service.getAll(name, level, schoolId, status);
+        return service.getAll(name, level, schoolId, filiereId, status);
     }
 
     @GetMapping("/{id}")
@@ -60,5 +62,15 @@ public class GroupController {
     @GetMapping("/stats")
     public GroupService.GroupStats stats() {
         return service.stats();
+    }
+
+    @GetMapping("/filiere/{filiereId}")
+    public List<Group> getByFiliere(@PathVariable Long filiereId) {
+        return service.getByFiliere(filiereId);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<String> handleIllegalArgument(IllegalArgumentException ex) {
+        return ResponseEntity.badRequest().body(ex.getMessage());
     }
 }
