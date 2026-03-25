@@ -111,7 +111,7 @@ Reference: dossier documentation/tickets
 | BE-RESOURCE-001 | A faire | 20% | Reservation equipements incomplete |
 | BE-VALID-001 | En cours | 50% | Regles de validation capacite/cas limites |
 | BE-VALID-002 | A faire | 20% | Publication EDT et validation globale |
-| BE-AUTH-001 | En cours | 60% | Harmonisation roles + reset password |
+| ✅BE-AUTH-001 | En cours | 60% | Harmonisation roles + reset password |
 | BE-TEST-001 | A faire | 15% | Couverture insuffisante |
 | BE-DOC-001 | En cours | 50% | Collection Postman et scenarios manquants |
 | BE-AUDIT-001 | A faire | 20% | Journalisation d'audit inegale |
