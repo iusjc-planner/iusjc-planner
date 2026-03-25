@@ -1,13 +1,13 @@
 package com.example.iusj_room_service.controller;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
+import com.example.iusj_room_service.dto.RoomEquipmentRequest;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,9 +19,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.iusj_room_service.dto.RoomReservationRequest;
 import com.example.iusj_room_service.entities.Room;
+import com.example.iusj_room_service.entities.RoomEquipment;
 import com.example.iusj_room_service.entities.RoomReservation;
 import com.example.iusj_room_service.services.RoomService;
 
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 
 @RestController
@@ -39,11 +41,8 @@ public class RoomController {
                                 @RequestParam(required = false) Room.RoomType type,
                                 @RequestParam(required = false) Room.RoomStatus status,
                                 @RequestParam(required = false) Integer minCapacity,
-                                @RequestParam(required = false) String equipments) {
-        List<String> equipmentsList = equipments != null && !equipments.isEmpty()
-                ? Arrays.asList(equipments.split(","))
-                : Collections.emptyList();
-        return roomService.getAll(name, type, status, minCapacity, equipmentsList);
+                                @RequestParam(required = false) Long equipmentId) {
+        return roomService.getAll(name, type, status, minCapacity, equipmentId);
     }
 
     @GetMapping("/{id}")
@@ -75,11 +74,37 @@ public class RoomController {
     public List<Room> availableRooms(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
                                      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end,
                                      @RequestParam(required = false) Integer minCapacity,
-                                     @RequestParam(required = false) String equipments) {
-        List<String> equipmentsList = equipments != null && !equipments.isEmpty()
-                ? Arrays.asList(equipments.split(","))
-                : Collections.emptyList();
-        return roomService.findAvailable(start, end, minCapacity, equipmentsList);
+                                     @RequestParam(required = false) Long equipmentId) {
+        return roomService.findAvailable(start, end, minCapacity, equipmentId);
+    }
+
+    @GetMapping("/{id}/equipments")
+    public List<RoomEquipment> listRoomEquipments(@PathVariable Long id) {
+        return roomService.getEquipments(id);
+    }
+
+    @PostMapping("/{id}/equipments")
+    public ResponseEntity<RoomEquipment> addEquipment(@PathVariable Long id, @Valid @RequestBody RoomEquipmentRequest request) {
+        return ResponseEntity.status(201).body(roomService.addEquipment(id, request.getResourceId(), request.getQuantite()));
+    }
+
+    @PutMapping("/{id}/equipments/{resourceId}")
+    public ResponseEntity<RoomEquipment> updateEquipmentQuantity(
+            @PathVariable Long id,
+            @PathVariable Long resourceId,
+            @Valid @RequestBody RoomEquipmentRequest request) {
+        return ResponseEntity.ok(roomService.updateEquipmentQuantity(id, resourceId, request.getQuantite()));
+    }
+
+    @DeleteMapping("/{id}/equipments/{resourceId}")
+    public ResponseEntity<Void> removeEquipment(@PathVariable Long id, @PathVariable Long resourceId) {
+        roomService.removeEquipment(id, resourceId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/with-equipment/{resourceId}")
+    public List<Room> getRoomsByEquipment(@PathVariable Long resourceId) {
+        return roomService.getRoomsByEquipment(resourceId);
     }
 
     @GetMapping("/{id}/reservations")
@@ -101,5 +126,15 @@ public class RoomController {
     public ResponseEntity<Void> cancelReservation(@PathVariable Long id, @PathVariable Long reservationId) {
         roomService.cancelReservation(id, reservationId);
         return ResponseEntity.noContent().build();
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<String> handleBadRequest(IllegalArgumentException ex) {
+        return ResponseEntity.badRequest().body(ex.getMessage());
+    }
+
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<String> handleNotFound(EntityNotFoundException ex) {
+        return ResponseEntity.status(404).body(ex.getMessage());
     }
 }
