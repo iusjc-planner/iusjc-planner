@@ -9,6 +9,8 @@ export interface User {
     role: string;
     statut?: string;
     status?: 'ACTIVE' | 'INACTIVE';
+    ecoles?: string[];
+    matieres?: string[];
 }
 
 export interface UserFilters {

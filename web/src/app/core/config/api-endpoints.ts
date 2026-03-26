@@ -5,6 +5,7 @@ export const ApiEndpoints = {
     teachers: `${API_BASE_URL}/teachers`,
     rooms: `${API_BASE_URL}/rooms`,
     courses: `${API_BASE_URL}/courses`,
+    matieres: `${API_BASE_URL}/matieres`,
     schedule: `${API_BASE_URL}/schedule`,
     groups: `${API_BASE_URL}/groups`,
     schools: `${API_BASE_URL}/schools`,

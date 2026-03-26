@@ -8,10 +8,14 @@ import { DialogModule } from 'primeng/dialog';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { TooltipModule } from 'primeng/tooltip';
+import { SelectModule } from 'primeng/select';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { HttpErrorResponse } from '@angular/common/http';
+import { catchError, map, Observable, of, switchMap } from 'rxjs';
 import { UserService } from '../../core/services/user.service';
 import { User } from '../../core/models/user.model';
 import { SchoolService } from '../../core/services/school.service';
+import { TeacherService } from '../../core/services/teacher.service';
 
 interface Utilisateur {
     id?: number;
@@ -25,17 +29,22 @@ interface Utilisateur {
     ecoles: string[];
 }
 
+interface OptionItem {
+    label: string;
+    value: string;
+}
+
 @Component({
     selector: 'app-utilisateurs',
     standalone: true,
-    imports: [CommonModule, ButtonModule, TableModule, InputTextModule, FormsModule, ReactiveFormsModule, DialogModule, ToastModule, TooltipModule],
+    imports: [CommonModule, ButtonModule, TableModule, InputTextModule, FormsModule, ReactiveFormsModule, DialogModule, ToastModule, TooltipModule, SelectModule, MultiSelectModule],
     providers: [MessageService],
     template: `
         <p-toast></p-toast>
         <div class="card">
             <div class="flex justify-between items-center mb-6">
                 <h5 class="text-2xl font-bold">Gestion des utilisateurs</h5>
-                <button pButton type="button" label="Créer utilisateur" icon="pi pi-plus" class="p-button-rounded p-button-text" (click)="openCreateDialog()"></button>
+                <button pButton type="button" label="Creer utilisateur" icon="pi pi-plus" class="p-button-rounded p-button-text" (click)="openCreateDialog()"></button>
             </div>
 
             <div class="mb-4 relative">
@@ -70,7 +79,7 @@ interface Utilisateur {
                     <tr>
                         <th pSortableColumn="nom">Nom <p-sortIcon field="nom"></p-sortIcon></th>
                         <th pSortableColumn="email">Email <p-sortIcon field="email"></p-sortIcon></th>
-                        <th pSortableColumn="role">Rôle <p-sortIcon field="role"></p-sortIcon></th>
+                        <th pSortableColumn="role">Role <p-sortIcon field="role"></p-sortIcon></th>
                         <th pSortableColumn="statut">Statut <p-sortIcon field="statut"></p-sortIcon></th>
                         <th>Actions</th>
                     </tr>
@@ -99,15 +108,21 @@ interface Utilisateur {
             </p-table>
         </div>
 
-        <!-- Dialog Créer/Modifier -->
-        <p-dialog [(visible)]="displayDialog" [header]="isEditMode ? 'Modifier utilisateur' : 'Créer utilisateur'" [modal]="true" [style]="{width: '50vw'}" [breakpoints]="{'960px': '75vw', '640px': '90vw'}">
+        <p-dialog
+            [(visible)]="displayDialog"
+            [header]="isEditMode ? 'Modifier utilisateur' : 'Creer utilisateur'"
+            [modal]="true"
+            [style]="{ width: '68vw', maxWidth: '1200px' }"
+            [contentStyle]="{ maxHeight: '78vh', overflow: 'auto' }"
+            [breakpoints]="{ '1400px': '75vw', '1100px': '85vw', '640px': '96vw' }"
+        >
             <form [formGroup]="userForm" class="grid grid-cols-12 gap-4">
                 <div class="col-span-12 md:col-span-6">
                     <label class="block mb-2 font-medium">Nom</label>
                     <input pInputText type="text" formControlName="nom" class="w-full" />
                 </div>
                 <div class="col-span-12 md:col-span-6">
-                    <label class="block mb-2 font-medium">Prénom</label>
+                    <label class="block mb-2 font-medium">Prenom</label>
                     <input pInputText type="text" formControlName="prenom" class="w-full" />
                 </div>
                 <div class="col-span-12 md:col-span-6">
@@ -115,49 +130,53 @@ interface Utilisateur {
                     <input pInputText type="email" formControlName="email" class="w-full" />
                 </div>
                 <div class="col-span-12 md:col-span-6">
-                    <label class="block mb-2 font-medium">Téléphone</label>
+                    <label class="block mb-2 font-medium">Telephone</label>
                     <input pInputText type="tel" formControlName="telephone" class="w-full" />
                 </div>
                 <div class="col-span-12 md:col-span-6">
                     <label class="block mb-2 font-medium">Login</label>
                     <input pInputText type="text" formControlName="login" class="w-full" />
                 </div>
-                <div class="col-span-12 md:col-span-6">
-                    <label class="block mb-2 font-medium">Rôle</label>
-                    <select formControlName="role" class="w-full px-3 py-2 border rounded">
-                        <option value="Administrateur">Administrateur</option>
-                        <option value="Enseignant">Enseignant</option>
-                    </select>
+                <div class="col-span-12 md:col-span-3">
+                    <label class="block mb-2 font-medium">Role</label>
+                    <p-select formControlName="role" [options]="roleOptions" optionLabel="label" optionValue="value" appendTo="body" class="w-full" />
                 </div>
-                <div class="col-span-12 md:col-span-6">
+                <div class="col-span-12 md:col-span-3">
                     <label class="block mb-2 font-medium">Statut</label>
-                    <select formControlName="statut" class="w-full px-3 py-2 border rounded">
-                        <option value="Actif">Actif</option>
-                        <option value="Inactif">Inactif</option>
-                    </select>
+                    <p-select formControlName="statut" [options]="statusOptions" optionLabel="label" optionValue="value" appendTo="body" class="w-full" />
                 </div>
-                <div class="col-span-12">
+
+                <div class="col-span-12" *ngIf="isTeacherRoleSelected()">
                     <label class="block mb-2 font-medium">Ecoles</label>
-                    <select formControlName="ecoles" multiple class="w-full px-3 py-2 border rounded min-h-28">
-                        <option *ngFor="let schoolName of schoolOptions" [value]="schoolName">{{ schoolName }}</option>
-                    </select>
+                    <p-multiSelect
+                        formControlName="ecoles"
+                        [options]="schoolOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        [filter]="true"
+                        filterBy="label"
+                        placeholder="Selectionner une ou plusieurs ecoles"
+                        display="chip"
+                        appendTo="body"
+                        class="w-full"
+                    />
                 </div>
+
             </form>
             <ng-template pTemplate="footer">
                 <button pButton type="button" label="Annuler" (click)="displayDialog = false" class="p-button-text"></button>
-                <button pButton type="button" [label]="isEditMode ? 'Modifier' : 'Créer'" (click)="saveUtilisateur()" class="p-button-rounded p-button-text"></button>
+                <button pButton type="button" [label]="isEditMode ? 'Modifier' : 'Creer'" (click)="saveUtilisateur()" class="p-button-rounded p-button-text"></button>
             </ng-template>
         </p-dialog>
 
-        <!-- Dialog Voir -->
-        <p-dialog [(visible)]="displayViewDialog" header="Détails utilisateur" [modal]="true" [style]="{width: '50vw'}" [breakpoints]="{'960px': '75vw', '640px': '90vw'}">
+        <p-dialog [(visible)]="displayViewDialog" header="Details utilisateur" [modal]="true" [style]="{ width: '50vw' }" [breakpoints]="{ '960px': '75vw', '640px': '90vw' }">
             <div class="grid grid-cols-12 gap-4">
                 <div class="col-span-12 md:col-span-6">
                     <label class="block mb-2 font-medium">Nom</label>
                     <p class="text-surface-900 dark:text-surface-0">{{ selectedUtilisateur.nom }}</p>
                 </div>
                 <div class="col-span-12 md:col-span-6">
-                    <label class="block mb-2 font-medium">Prénom</label>
+                    <label class="block mb-2 font-medium">Prenom</label>
                     <p class="text-surface-900 dark:text-surface-0">{{ selectedUtilisateur.prenom }}</p>
                 </div>
                 <div class="col-span-12 md:col-span-6">
@@ -165,7 +184,7 @@ interface Utilisateur {
                     <p class="text-surface-900 dark:text-surface-0">{{ selectedUtilisateur.email }}</p>
                 </div>
                 <div class="col-span-12 md:col-span-6">
-                    <label class="block mb-2 font-medium">Téléphone</label>
+                    <label class="block mb-2 font-medium">Telephone</label>
                     <p class="text-surface-900 dark:text-surface-0">{{ selectedUtilisateur.telephone }}</p>
                 </div>
                 <div class="col-span-12 md:col-span-6">
@@ -173,14 +192,14 @@ interface Utilisateur {
                     <p class="text-surface-900 dark:text-surface-0">{{ selectedUtilisateur.login }}</p>
                 </div>
                 <div class="col-span-12 md:col-span-6">
-                    <label class="block mb-2 font-medium">Rôle</label>
+                    <label class="block mb-2 font-medium">Role</label>
                     <p class="text-surface-900 dark:text-surface-0">{{ selectedUtilisateur.role }}</p>
                 </div>
                 <div class="col-span-12 md:col-span-6">
                     <label class="block mb-2 font-medium">Statut</label>
                     <p [ngClass]="selectedUtilisateur.statut === 'Actif' ? 'text-green-600' : 'text-red-600'">{{ selectedUtilisateur.statut }}</p>
                 </div>
-                <div class="col-span-12">
+                <div class="col-span-12" *ngIf="selectedUtilisateur.role === 'Enseignant'">
                     <label class="block mb-2 font-medium">Ecoles</label>
                     <p class="text-surface-900 dark:text-surface-0">{{ selectedUtilisateur.ecoles.join(', ') || '-' }}</p>
                 </div>
@@ -190,9 +209,8 @@ interface Utilisateur {
             </ng-template>
         </p-dialog>
 
-        <!-- Dialog Supprimer -->
-        <p-dialog [(visible)]="displayDeleteDialog" header="Confirmer la suppression" [modal]="true" [style]="{width: '40vw'}" [breakpoints]="{'960px': '75vw', '640px': '90vw'}">
-            <p>Êtes-vous sûr de vouloir supprimer l'utilisateur <strong>{{ selectedUtilisateur.nom }} {{ selectedUtilisateur.prenom }}</strong> ?</p>
+        <p-dialog [(visible)]="displayDeleteDialog" header="Confirmer la suppression" [modal]="true" [style]="{ width: '40vw' }" [breakpoints]="{ '960px': '75vw', '640px': '90vw' }">
+            <p>Etes-vous sur de vouloir supprimer l'utilisateur <strong>{{ selectedUtilisateur.nom }} {{ selectedUtilisateur.prenom }}</strong> ?</p>
             <ng-template pTemplate="footer">
                 <button pButton type="button" label="Annuler" (click)="displayDeleteDialog = false" class="p-button-text"></button>
                 <button pButton type="button" label="Supprimer" (click)="deleteUtilisateur()" class="p-button-danger"></button>
@@ -208,21 +226,22 @@ export class UtilisateursPage {
     displayViewDialog = false;
     displayDeleteDialog = false;
     isEditMode = false;
-    schoolOptions: string[] = [];
     editingId?: number;
-    userForm: ReturnType<FormBuilder['group']>;
-    
-    selectedUtilisateur: Utilisateur = {
-        nom: '',
-        prenom: '',
-        email: '',
-        telephone: '',
-        login: '',
-        role: 'Enseignant',
-        statut: 'Actif',
-        ecoles: []
-    };
 
+    roleOptions = [
+        { label: 'Administrateur', value: 'Administrateur' },
+        { label: 'Enseignant', value: 'Enseignant' }
+    ];
+
+    statusOptions = [
+        { label: 'Actif', value: 'Actif' },
+        { label: 'Inactif', value: 'Inactif' }
+    ];
+
+    schoolOptions: OptionItem[] = [];
+    userForm: ReturnType<FormBuilder['group']>;
+
+    selectedUtilisateur: Utilisateur = this.getEmptyUtilisateur();
     private allUtilisateurs: Utilisateur[] = [];
 
     get utilisateurs(): Utilisateur[] {
@@ -244,10 +263,11 @@ export class UtilisateursPage {
     }
 
     constructor(
-        private formBuilder: FormBuilder,
-        private messageService: MessageService,
-        private userService: UserService,
-        private schoolService: SchoolService
+        private readonly formBuilder: FormBuilder,
+        private readonly messageService: MessageService,
+        private readonly userService: UserService,
+        private readonly schoolService: SchoolService,
+        private readonly teacherService: TeacherService
     ) {
         this.userForm = this.formBuilder.group({
             nom: ['', Validators.required],
@@ -266,42 +286,15 @@ export class UtilisateursPage {
         this.loadUsers();
     }
 
-    private loadSchools() {
-        this.schoolService.getAll().subscribe({
-            next: (schools) => {
-                this.schoolOptions = schools.map((school) => school.nom);
-            },
-            error: () => {
-                this.messageService.add({ severity: 'warn', summary: 'Avertissement', detail: 'Chargement des ecoles indisponible' });
-            }
-        });
-    }
-
-    private loadUsers() {
-        this.userService.getAll().subscribe({
-            next: (users) => {
-                this.allUtilisateurs = users.map((user) => this.fromApiUser(user));
-            },
-            error: () => {
-                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Chargement des utilisateurs impossible' });
-            }
-        });
+    isTeacherRoleSelected(): boolean {
+        return this.userForm.get('role')?.value === 'Enseignant';
     }
 
     openCreateDialog() {
         this.isEditMode = false;
-        this.selectedUtilisateur = {
-            nom: '',
-            prenom: '',
-            email: '',
-            telephone: '',
-            login: '',
-            role: 'Enseignant',
-            statut: 'Actif',
-            ecoles: []
-        };
+        this.selectedUtilisateur = this.getEmptyUtilisateur();
         this.editingId = undefined;
-        this.userForm.reset(this.selectedUtilisateur);
+        this.userForm.reset({ ...this.selectedUtilisateur, ecoles: [] });
         this.displayDialog = true;
     }
 
@@ -331,30 +324,44 @@ export class UtilisateursPage {
         }
 
         const utilisateur = this.toUtilisateurFromForm();
+        const request$ = this.isEditMode && this.editingId
+            ? this.userService.update(this.editingId, this.toApiUser({ ...utilisateur, id: this.editingId }))
+            : this.userService.create(this.toApiUser(utilisateur));
 
-        if (this.isEditMode) {
-            this.userService.update(this.editingId!, this.toApiUser({ ...utilisateur, id: this.editingId })).subscribe({
+        request$
+            .pipe(
+                switchMap((savedUser) =>
+                    this.syncTeacherProfileIfNeeded(savedUser, utilisateur.role).pipe(
+                        catchError((error: unknown) => {
+                            this.messageService.add({
+                                severity: 'warn',
+                                summary: 'Avertissement',
+                                detail: this.getErrorMessage(error, 'Utilisateur enregistre, mais profil enseignant partiellement synchronise')
+                            });
+                            return of(void 0);
+                        }),
+                        map(() => savedUser)
+                    )
+                )
+            )
+            .subscribe({
                 next: () => {
-                    this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Utilisateur modifié avec succès' });
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Succes',
+                        detail: this.isEditMode ? 'Utilisateur modifie avec succes' : 'Utilisateur cree avec succes'
+                    });
                     this.displayDialog = false;
                     this.loadUsers();
                 },
                 error: (error: unknown) => {
-                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: this.getErrorMessage(error, 'Echec de modification utilisateur') });
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Erreur',
+                        detail: this.getErrorMessage(error, this.isEditMode ? 'Echec de modification utilisateur' : 'Echec de creation utilisateur')
+                    });
                 }
             });
-        } else {
-            this.userService.create(this.toApiUser(utilisateur)).subscribe({
-                next: () => {
-                    this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Utilisateur créé avec succès' });
-                    this.displayDialog = false;
-                    this.loadUsers();
-                },
-                error: (error: unknown) => {
-                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: this.getErrorMessage(error, 'Echec de creation utilisateur') });
-                }
-            });
-        }
     }
 
     deleteUtilisateur() {
@@ -364,7 +371,7 @@ export class UtilisateursPage {
 
         this.userService.delete(this.selectedUtilisateur.id).subscribe({
             next: () => {
-                this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Utilisateur supprimé avec succès' });
+                this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Utilisateur supprime avec succes' });
                 this.displayDeleteDialog = false;
                 this.loadUsers();
             },
@@ -374,8 +381,53 @@ export class UtilisateursPage {
         });
     }
 
+    private loadSchools() {
+        this.schoolService.getAll().subscribe({
+            next: (schools) => {
+                this.schoolOptions = schools
+                    .map((school) => school.nom?.trim())
+                    .filter((name): name is string => Boolean(name))
+                    .map((name) => ({ label: name, value: name }));
+            },
+            error: () => {
+                this.messageService.add({ severity: 'warn', summary: 'Avertissement', detail: 'Chargement des ecoles indisponible' });
+            }
+        });
+    }
+
+    private loadUsers() {
+        this.userService.getAll().subscribe({
+            next: (users) => {
+                this.allUtilisateurs = users.map((user) => this.fromApiUser(user));
+            },
+            error: () => {
+                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Chargement des utilisateurs impossible' });
+            }
+        });
+    }
+
+    private syncTeacherProfileIfNeeded(savedUser: User, role: Utilisateur['role']): Observable<void> {
+        if (role !== 'Enseignant' || !savedUser.id) {
+            return of(void 0);
+        }
+
+        return this.teacherService.getByUserId(savedUser.id).pipe(
+            map(() => void 0),
+            catchError((error: unknown) => {
+                if (!(error instanceof HttpErrorResponse) || error.status !== 404) {
+                    return of(void 0);
+                }
+
+                return this.teacherService.createForUser(savedUser.id as number, []).pipe(
+                    map(() => void 0),
+                    catchError(() => of(void 0))
+                );
+            })
+        );
+    }
+
     private toApiUser(utilisateur: Utilisateur): User {
-        const payload: User & { ecoles?: string[] } = {
+        return {
             id: utilisateur.id,
             nom: utilisateur.nom,
             prenom: utilisateur.prenom,
@@ -384,15 +436,11 @@ export class UtilisateursPage {
             login: utilisateur.login,
             role: utilisateur.role,
             statut: utilisateur.statut,
-            ecoles: utilisateur.ecoles
+            ecoles: utilisateur.role === 'Enseignant' ? utilisateur.ecoles : []
         };
-
-        return payload;
     }
 
     private fromApiUser(user: User): Utilisateur {
-        const extendedUser = user as User & { ecoles?: string[] };
-
         return {
             id: user.id,
             nom: user.nom,
@@ -402,7 +450,7 @@ export class UtilisateursPage {
             login: user.login,
             role: this.fromApiRole(user.role),
             statut: this.fromApiStatus(user.status || user.statut),
-            ecoles: extendedUser.ecoles ?? []
+            ecoles: user.ecoles ?? []
         };
     }
 
@@ -450,11 +498,23 @@ export class UtilisateursPage {
         return normalized === 'INACTIVE' || normalized === 'INACTIF' ? 'Inactif' : 'Actif';
     }
 
+    private getEmptyUtilisateur(): Utilisateur {
+        return {
+            nom: '',
+            prenom: '',
+            email: '',
+            telephone: '',
+            login: '',
+            role: 'Enseignant',
+            statut: 'Actif',
+            ecoles: []
+        };
+    }
+
     getRoleClass(role: string): string {
         const classes: { [key: string]: string } = {
-            'Administrateur': 'bg-red-100 text-red-800 px-2 py-1 rounded',
-            'Enseignant': 'bg-blue-100 text-blue-800 px-2 py-1 rounded',
-            'Support': 'bg-green-100 text-green-800 px-2 py-1 rounded'
+            Administrateur: 'bg-red-100 text-red-800 px-2 py-1 rounded',
+            Enseignant: 'bg-blue-100 text-blue-800 px-2 py-1 rounded'
         };
         return classes[role] || '';
     }
