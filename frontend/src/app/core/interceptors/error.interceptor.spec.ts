@@ -35,7 +35,7 @@ describe('ErrorInterceptor', () => {
   });
 
   it('should not logout when receiving 401 on public endpoint', (done) => {
-    const req = new HttpRequest('POST', '/auth/login');
+    const req = new HttpRequest('GET', '/auth/login');
     const handler: HttpHandler = {
       handle: () => throwError(() => new HttpErrorResponse({ status: 401, statusText: 'Unauthorized' }))
     };

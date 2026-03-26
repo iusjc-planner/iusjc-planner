@@ -28,7 +28,7 @@ describe('AuthInterceptor', () => {
 
   it('should not add Authorization header for public endpoints', () => {
     authServiceSpy.getToken.and.returnValue('jwt-token');
-    const req = new HttpRequest('POST', '/auth/login');
+    const req = new HttpRequest('GET', '/auth/login');
 
     const handler: HttpHandler = {
       handle: (request: HttpRequest<any>) => {

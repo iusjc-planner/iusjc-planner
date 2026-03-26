@@ -7,9 +7,11 @@
     "build": "ng build",
     "build:prod": "ng build --configuration production",
     "test": "ng test",
-    "test:ci": "ng test --watch=false --browsers=ChromeHeadless --code-coverage",
+    "test:ci": "ng test --watch=false --browsers=ChromeHeadlessNoSandbox --code-coverage",
+    "test:coverage": "ng test --watch=false --browsers=ChromeHeadlessNoSandbox --code-coverage",
     "lint": "ng lint",
-    "e2e": "ng e2e"
+    "e2e": "playwright test",
+    "e2e:ci": "playwright test --reporter=html"
   },
   "private": true,
   "dependencies": {
@@ -34,6 +36,7 @@
     "zone.js": "~0.13.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.54.2",
     "@angular-devkit/build-angular": "^16.2.0",
     "@angular/cli": "^16.2.0",
     "@angular/compiler-cli": "^16.2.0",

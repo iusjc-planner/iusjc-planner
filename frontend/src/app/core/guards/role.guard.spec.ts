@@ -37,7 +37,7 @@ describe('RoleGuard', () => {
   it('should allow access when user role is authorized', () => {
     authServiceSpy.getCurrentUser.and.returnValue({ login: 'admin', role: 'ADMIN', exp: 9999999999 });
 
-    const route = { data: { roles: ['ADMIN'] } } as ActivatedRouteSnapshot;
+    const route = { data: { roles: ['ADMIN'] } } as unknown as ActivatedRouteSnapshot;
     const state = { url: '/app/users' } as RouterStateSnapshot;
     const result = guard.canActivate(route, state);
 
@@ -48,7 +48,7 @@ describe('RoleGuard', () => {
   it('should redirect to forbidden when role is not authorized', () => {
     authServiceSpy.getCurrentUser.and.returnValue({ login: 'teacher', role: 'ENSEIGNANT', exp: 9999999999 });
 
-    const route = { data: { roles: ['ADMIN'] } } as ActivatedRouteSnapshot;
+    const route = { data: { roles: ['ADMIN'] } } as unknown as ActivatedRouteSnapshot;
     const state = { url: '/app/users' } as RouterStateSnapshot;
     const result = guard.canActivate(route, state);
 
@@ -59,7 +59,7 @@ describe('RoleGuard', () => {
   it('should redirect to login when user is missing on protected route', () => {
     authServiceSpy.getCurrentUser.and.returnValue(null);
 
-    const route = { data: { roles: ['ADMIN'] } } as ActivatedRouteSnapshot;
+    const route = { data: { roles: ['ADMIN'] } } as unknown as ActivatedRouteSnapshot;
     const state = { url: '/app/dashboard' } as RouterStateSnapshot;
     const result = guard.canActivate(route, state);
 
