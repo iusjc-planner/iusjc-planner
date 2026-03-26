@@ -102,6 +102,12 @@ const routes: Routes = [
         loadChildren: () => import('./features/notifications/notifications.module').then(m => m.NotificationsModule)
       },
       {
+        path: 'reports',
+        canActivate: [RoleGuard],
+        data: { roles: ['ADMIN'] },
+        loadChildren: () => import('./features/reports/reports.module').then(m => m.ReportsModule)
+      },
+      {
         path: 'search',
         canActivate: [RoleGuard],
         data: { roles: ['ADMIN', 'ENSEIGNANT'] },

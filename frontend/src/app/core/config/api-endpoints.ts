@@ -10,5 +10,6 @@ export const ApiEndpoints = {
   groups: `${environment.apiUrl}/groups`,
   schools: `${environment.apiUrl}/schools`,
   matieres: `${environment.apiUrl}/matieres`,
-  notifications: `${environment.apiUrl}/notifications`
+  notifications: `${environment.apiUrl}/notifications`,
+  reports: `${environment.apiUrl}/reports`
 };

@@ -4,16 +4,9 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 
 import { ReportsRoutingModule } from './reports-routing.module';
-import { ReportDashboardComponent } from './report-dashboard/report-dashboard.component';
-import { ReportRoomsComponent } from './report-rooms/report-rooms.component';
-import { ReportTeachersComponent } from './report-teachers/report-teachers.component';
 
 @NgModule({
-  declarations: [
-    ReportDashboardComponent,
-    ReportRoomsComponent,
-    ReportTeachersComponent
-  ],
+  declarations: [],
   imports: [
     CommonModule,
     FormsModule,

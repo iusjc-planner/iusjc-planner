@@ -93,6 +93,12 @@ export class NavigationService {
       roles: ['ADMIN']
     },
     {
+      title: 'Rapports',
+      icon: 'mdi mdi-file-chart',
+      link: '/app/reports',
+      roles: ['ADMIN']
+    },
+    {
       title: 'Paramètres',
       icon: 'mdi mdi-cog',
       link: '/app/settings',
