@@ -8,6 +8,7 @@ import { DialogModule } from 'primeng/dialog';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { TooltipModule } from 'primeng/tooltip';
+import { HttpErrorResponse } from '@angular/common/http';
 import { UserService } from '../../core/services/user.service';
 import { User } from '../../core/models/user.model';
 import { SchoolService } from '../../core/services/school.service';
@@ -19,8 +20,8 @@ interface Utilisateur {
     email: string;
     telephone: string;
     login: string;
-    role: string;
-    statut: string;
+    role: 'Administrateur' | 'Enseignant';
+    statut: 'Actif' | 'Inactif';
     ecoles: string[];
 }
 
@@ -49,7 +50,6 @@ interface Utilisateur {
                         <option value="">Tous les roles</option>
                         <option value="Administrateur">Administrateur</option>
                         <option value="Enseignant">Enseignant</option>
-                        <option value="Support">Support</option>
                     </select>
                 </div>
                 <div class="col-span-12 md:col-span-4">
@@ -127,7 +127,6 @@ interface Utilisateur {
                     <select formControlName="role" class="w-full px-3 py-2 border rounded">
                         <option value="Administrateur">Administrateur</option>
                         <option value="Enseignant">Enseignant</option>
-                        <option value="Support">Support</option>
                     </select>
                 </div>
                 <div class="col-span-12 md:col-span-6">
@@ -381,7 +380,7 @@ export class UtilisateursPage {
             nom: utilisateur.nom,
             prenom: utilisateur.prenom,
             email: utilisateur.email,
-            telephone: utilisateur.telephone,
+            telephone: utilisateur.telephone ? Number(utilisateur.telephone) : undefined,
             login: utilisateur.login,
             role: utilisateur.role,
             statut: utilisateur.statut,
@@ -399,10 +398,10 @@ export class UtilisateursPage {
             nom: user.nom,
             prenom: user.prenom,
             email: user.email,
-            telephone: user.telephone ?? '',
+            telephone: user.telephone !== undefined ? String(user.telephone) : '',
             login: user.login,
-            role: user.role,
-            statut: user.statut,
+            role: this.fromApiRole(user.role),
+            statut: this.fromApiStatus(user.status || user.statut),
             ecoles: extendedUser.ecoles ?? []
         };
     }
@@ -416,18 +415,39 @@ export class UtilisateursPage {
             email: value.email || '',
             telephone: value.telephone || '',
             login: value.login || '',
-            role: value.role || 'Enseignant',
-            statut: value.statut || 'Actif',
+            role: (value.role || 'Enseignant') as 'Administrateur' | 'Enseignant',
+            statut: (value.statut || 'Actif') as 'Actif' | 'Inactif',
             ecoles: value.ecoles || []
         };
     }
 
     private getErrorMessage(error: unknown, fallback: string): string {
+        if (error instanceof HttpErrorResponse) {
+            if (typeof error.error === 'string' && error.error.trim()) {
+                return error.error;
+            }
+
+            const message = (error.error as { message?: string } | null)?.message;
+            if (message && message.trim()) {
+                return message;
+            }
+        }
+
         if (error instanceof Error && error.message) {
             return error.message;
         }
 
         return fallback;
+    }
+
+    private fromApiRole(role?: string): 'Administrateur' | 'Enseignant' {
+        const normalized = (role || '').toUpperCase();
+        return normalized === 'ADMIN' ? 'Administrateur' : 'Enseignant';
+    }
+
+    private fromApiStatus(status?: string): 'Actif' | 'Inactif' {
+        const normalized = (status || '').toUpperCase();
+        return normalized === 'INACTIVE' || normalized === 'INACTIF' ? 'Inactif' : 'Actif';
     }
 
     getRoleClass(role: string): string {

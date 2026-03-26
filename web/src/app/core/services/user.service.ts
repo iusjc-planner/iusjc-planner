@@ -26,21 +26,23 @@ export class UserService {
     }
 
     create(payload: User): Observable<User> {
-        const validationError = this.validatePayload(payload);
+        const normalizedPayload = this.normalizePayload(payload, false);
+        const validationError = this.validatePayload(normalizedPayload);
         if (validationError) {
             return throwError(() => new Error(validationError));
         }
 
-        return this.http.post<User>(this.endpoint, payload);
+        return this.http.post<User>(this.endpoint, normalizedPayload);
     }
 
     update(id: number, payload: User): Observable<User> {
-        const validationError = this.validatePayload(payload);
+        const normalizedPayload = this.normalizePayload(payload, true);
+        const validationError = this.validatePayload(normalizedPayload);
         if (validationError) {
             return throwError(() => new Error(validationError));
         }
 
-        return this.http.put<User>(`${this.endpoint}/${id}`, payload);
+        return this.http.put<User>(`${this.endpoint}/${id}`, normalizedPayload);
     }
 
     delete(id: number): Observable<void> {
@@ -69,5 +71,37 @@ export class UserService {
         }
 
         return null;
+    }
+
+    private normalizePayload(payload: User, isUpdate: boolean): User {
+        const roleMap: Record<string, string> = {
+            administrateur: 'ADMIN',
+            admin: 'ADMIN',
+            enseignant: 'ENSEIGNANT',
+            support: 'ENSEIGNANT'
+        };
+
+        const statusMap: Record<string, 'ACTIVE' | 'INACTIVE'> = {
+            actif: 'ACTIVE',
+            active: 'ACTIVE',
+            inactif: 'INACTIVE',
+            inactive: 'INACTIVE'
+        };
+
+        const roleKey = (payload.role || '').trim().toLowerCase();
+        const normalizedRole = roleMap[roleKey] || payload.role;
+
+        const sourceStatus = payload.status || payload.statut || 'ACTIVE';
+        const statusKey = sourceStatus.trim().toLowerCase();
+        const normalizedStatus = statusMap[statusKey] || (sourceStatus as 'ACTIVE' | 'INACTIVE');
+
+        return {
+            ...payload,
+            role: normalizedRole,
+            status: normalizedStatus,
+            statut: sourceStatus,
+            telephone: payload.telephone,
+            password: isUpdate ? payload.password : payload.password || 'ADmin123!'
+        };
     }
 }

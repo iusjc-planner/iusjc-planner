@@ -3,10 +3,12 @@ export interface User {
     nom: string;
     prenom: string;
     email: string;
-    telephone?: string;
+    telephone?: number;
     login: string;
+    password?: string;
     role: string;
-    statut: string;
+    statut?: string;
+    status?: 'ACTIVE' | 'INACTIVE';
 }
 
 export interface UserFilters {

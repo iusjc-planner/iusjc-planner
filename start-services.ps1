@@ -82,7 +82,7 @@ Write-Host "Variables chargees." -ForegroundColor Green
 Write-Host ""
 
 # Demarrage ordre: registry -> services metier -> gateway
-Start-IusjService -ServiceName "iusj-eureka-service" -ServicePath "iusj-eureka-service" -Port 8761 -WaitSeconds 30
+Start-IusjService -ServiceName "iusj-eureka-service" -ServicePath "iusj-eureka-service" -Port 8761 -WaitSeconds 50
 Start-IusjService -ServiceName "iusj-auth-service" -ServicePath "iusj-auth-service" -Port 8082
 Start-IusjService -ServiceName "iusj-user-service" -ServicePath "iusj-user-service" -Port 8081
 Start-IusjService -ServiceName "iusj-teacher-service" -ServicePath "iusj-teacher-service" -Port 8083

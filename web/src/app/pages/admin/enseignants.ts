@@ -10,6 +10,8 @@ import { MessageService } from 'primeng/api';
 import { TooltipModule } from 'primeng/tooltip';
 import { TeacherService } from '../../core/services/teacher.service';
 import { Teacher } from '../../core/models/teacher.model';
+import { UserService } from '../../core/services/user.service';
+import { User } from '../../core/models/user.model';
 
 type Enseignant = Teacher & {
     telephone: string;
@@ -101,6 +103,14 @@ interface CreneauHoraire {
                 <div class="border-t pt-6">
                     <h6 class="text-lg font-bold mb-4 text-surface-900 dark:text-surface-0">Accès</h6>
                     <div class="grid grid-cols-12 gap-4">
+                        <div class="col-span-12">
+                            <label class="block mb-2 font-medium text-sm">Utilisateur enseignant existant <span class="text-red-500">*</span></label>
+                            <select [(ngModel)]="selectedUserId" class="w-full px-3 py-2 border rounded bg-surface-0 dark:bg-surface-800">
+                                <option [ngValue]="undefined">Selectionnez un utilisateur</option>
+                                <option *ngFor="let user of teacherUsers" [ngValue]="user.id">{{ user.nom }} {{ user.prenom }} - {{ user.login }}</option>
+                            </select>
+                            <small class="text-muted-color">Ce champ est obligatoire pour creer le profil enseignant.</small>
+                        </div>
                         <div class="col-span-12 md:col-span-6">
                             <label class="block mb-2 font-medium text-sm">Login <span class="text-red-500">*</span></label>
                             <input pInputText type="text" [(ngModel)]="selectedEnseignant.login" class="w-full" placeholder="Entrez le login" />
@@ -275,6 +285,8 @@ export class EnseignantsPage {
     isEditMode = false;
     ecolesInput = '';
     matieresInput = '';
+    selectedUserId?: number;
+    teacherUsers: User[] = [];
     
     selectedEnseignant: Enseignant = {
         nom: '',
@@ -309,19 +321,32 @@ export class EnseignantsPage {
             const fullname = `${enseignant.nom} ${enseignant.prenom}`.toLowerCase();
             return (
                 fullname.includes(term) ||
-                enseignant.email.toLowerCase().includes(term) ||
-                enseignant.login.toLowerCase().includes(term)
+                (enseignant.email || '').toLowerCase().includes(term) ||
+                (enseignant.login || '').toLowerCase().includes(term)
             );
         });
     }
 
     constructor(
         private messageService: MessageService,
-        private teacherService: TeacherService
+        private teacherService: TeacherService,
+        private userService: UserService
     ) {}
 
     ngOnInit() {
         this.loadTeachers();
+        this.loadTeacherUsers();
+    }
+
+    private loadTeacherUsers() {
+        this.userService.getAll({ role: 'Enseignant' }).subscribe({
+            next: (users) => {
+                this.teacherUsers = users.filter((user) => (user.role || '').toUpperCase().includes('ENSEIGNANT'));
+            },
+            error: () => {
+                this.messageService.add({ severity: 'warn', summary: 'Avertissement', detail: 'Chargement des utilisateurs enseignants indisponible' });
+            }
+        });
     }
 
     private loadTeachers() {
@@ -349,6 +374,7 @@ export class EnseignantsPage {
         };
         this.ecolesInput = '';
         this.matieresInput = '';
+        this.selectedUserId = undefined;
         this.displayDialog = true;
     }
 
@@ -378,13 +404,17 @@ export class EnseignantsPage {
     saveEnseignant() {
         this.selectedEnseignant.ecoles = this.ecolesInput.split(',').map(e => e.trim()).filter(e => e);
         this.selectedEnseignant.matieres = this.matieresInput.split(',').map(m => m.trim()).filter(m => m);
+        const payload = {
+            userId: this.selectedUserId,
+            specialities: this.selectedEnseignant.matieres
+        };
 
         if (this.isEditMode) {
             if (!this.selectedEnseignant.id) {
                 return;
             }
 
-            this.teacherService.update(this.selectedEnseignant.id, this.toApiTeacher(this.selectedEnseignant)).subscribe({
+            this.teacherService.update(this.selectedEnseignant.id, payload as unknown as Teacher).subscribe({
                 next: () => {
                     this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Enseignant modifié avec succès' });
                     this.displayDialog = false;
@@ -395,7 +425,12 @@ export class EnseignantsPage {
                 }
             });
         } else {
-            this.teacherService.create(this.toApiTeacher(this.selectedEnseignant)).subscribe({
+            if (!this.selectedUserId) {
+                this.messageService.add({ severity: 'warn', summary: 'Validation', detail: 'Selectionnez un utilisateur enseignant' });
+                return;
+            }
+
+            this.teacherService.create(payload as unknown as Teacher).subscribe({
                 next: () => {
                     this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Enseignant créé avec succès' });
                     this.displayDialog = false;
@@ -425,31 +460,19 @@ export class EnseignantsPage {
         });
     }
 
-    private toApiTeacher(enseignant: Enseignant): Teacher {
-        return {
-            id: enseignant.id,
-            nom: enseignant.nom,
-            prenom: enseignant.prenom,
-            email: enseignant.email,
-            telephone: enseignant.telephone,
-            login: enseignant.login,
-            ecoles: enseignant.ecoles,
-            matieres: enseignant.matieres,
-            statut: enseignant.statut
-        };
-    }
-
     private fromApiTeacher(teacher: Teacher): Enseignant {
+        const linkedUser = this.teacherUsers.find((user) => user.id === teacher.userId);
         return {
             id: teacher.id,
-            nom: teacher.nom,
-            prenom: teacher.prenom,
-            email: teacher.email,
-            telephone: teacher.telephone || '',
-            login: teacher.login,
+            userId: teacher.userId,
+            nom: teacher.nom || linkedUser?.nom || '',
+            prenom: teacher.prenom || linkedUser?.prenom || '',
+            email: teacher.email || linkedUser?.email || '',
+            telephone: teacher.telephone || (linkedUser?.telephone !== undefined ? String(linkedUser.telephone) : ''),
+            login: teacher.login || linkedUser?.login || '',
             ecoles: teacher.ecoles || [],
-            matieres: teacher.matieres || [],
-            statut: teacher.statut
+            matieres: teacher.specialities || teacher.matieres || [],
+            statut: teacher.statut || linkedUser?.statut || 'Actif'
         };
     }
 
