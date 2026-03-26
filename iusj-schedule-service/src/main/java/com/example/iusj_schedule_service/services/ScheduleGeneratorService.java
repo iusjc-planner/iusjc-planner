@@ -19,8 +19,11 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 @Service
 @Transactional
@@ -46,97 +49,76 @@ public class ScheduleGeneratorService {
     public GenerationResult generate(GenerationRequest request) {
         long startTime = System.currentTimeMillis();
         int week = request.getSemaine() != null ? request.getSemaine() : 1;
-        List<GenerationCourseInput> candidates = dataCollector.collectCandidates(request);
+
+        ScheduleDataCollector.CandidateCollection collection = dataCollector.collectCandidates(request);
+        List<GenerationCourseInput> candidates = collection.candidates();
         List<TimeSlot> slots = dataCollector.buildWeekSlots(request.getAnnee(), week);
         List<Long> roomPool = dataCollector.collectRoomPool(request);
 
-        String requestedAlgorithm = request.getAlgorithmType() == null ? "GREEDY" : request.getAlgorithmType();
-        ScheduleAlgorithm algorithm = scheduleAlgorithmFactory.create(requestedAlgorithm);
+        Set<Long> targetGroupIds = resolveTargetGroups(request, collection, candidates);
+        boolean dryRun = Boolean.TRUE.equals(request.getDryRun());
+        long replacedEntries = 0L;
 
-        GreedyScheduler.PlacementResult placementResult;
+        if (!dryRun && !targetGroupIds.isEmpty()) {
+            replacedEntries = edtService.clearEntriesForGroups(request.getAnnee(), week, targetGroupIds);
+        }
+
+        List<GenerationCourseInput> fixedCandidates = candidates.stream()
+                .filter(GenerationCourseInput::hasFixedSlot)
+                .sorted((a, b) -> a.getFixedStartTime().compareTo(b.getFixedStartTime()))
+                .toList();
+        List<GenerationCourseInput> flexibleCandidates = candidates.stream()
+                .filter(c -> !c.hasFixedSlot())
+                .toList();
+
+        List<GreedyScheduler.PlacedCandidate> accepted = new ArrayList<>();
+        List<GenerationCourseInput> unplaced = new ArrayList<>();
+        List<String> conflicts = new ArrayList<>(collection.rejected());
+        List<ScheduleEntry> alreadyPlaced = new ArrayList<>();
+
+        placeFixedCandidates(fixedCandidates, roomPool, alreadyPlaced, accepted, unplaced, conflicts, request);
+
+        String requestedAlgorithm = request.getAlgorithmType() == null ? "GREEDY" : request.getAlgorithmType();
         String usedAlgorithm = requestedAlgorithm.toUpperCase();
 
-        try {
-            placementResult = algorithm.place(candidates, slots, roomPool, (course, slot, roomId, alreadyPlaced) -> {
-                ScheduleEntry probe = new ScheduleEntry();
-                probe.setCourseId(course.getCourseId());
-                probe.setTeacherId(course.getTeacherId());
-                probe.setGroupId(course.getGroupId());
-                probe.setRoomId(roomId);
-                probe.setStartTime(slot.getStart());
-                probe.setEndTime(slot.getEnd());
-
-                Integer groupSize = course.getGroupSize() != null ? course.getGroupSize() : request.getDefaultGroupSize();
-                Integer roomCapacity = course.getRoomCapacity() != null ? course.getRoomCapacity() : request.getDefaultRoomCapacity();
-                List<String> conflicts = scheduleService.validateConflicts(probe, null, groupSize, roomCapacity);
-
-                // Check in-memory conflicts for generated candidates to avoid overlapping tentative placements.
-                for (ScheduleEntry existing : alreadyPlaced) {
-                    boolean overlaps = existing.getStartTime().isBefore(probe.getEndTime())
-                            && probe.getStartTime().isBefore(existing.getEndTime());
-                    if (!overlaps) {
-                        continue;
-                    }
-                    if (existing.getTeacherId().equals(probe.getTeacherId())) {
-                        conflicts.add("Teacher already tentatively booked for this time range");
-                    }
-                    if (existing.getGroupId().equals(probe.getGroupId())) {
-                        conflicts.add("Group already tentatively booked for this time range");
-                    }
-                    if (existing.getRoomId().equals(probe.getRoomId())) {
-                        conflicts.add("Room already tentatively booked for this time range");
-                    }
-                }
-                return conflicts;
-            });
-        } catch (Exception ex) {
-            ScheduleAlgorithm fallback = new GreedyScheduler();
-            placementResult = fallback.place(candidates, slots, roomPool, (course, slot, roomId, alreadyPlaced) -> {
-                ScheduleEntry probe = new ScheduleEntry();
-                probe.setCourseId(course.getCourseId());
-                probe.setTeacherId(course.getTeacherId());
-                probe.setGroupId(course.getGroupId());
-                probe.setRoomId(roomId);
-                probe.setStartTime(slot.getStart());
-                probe.setEndTime(slot.getEnd());
-                Integer groupSize = course.getGroupSize() != null ? course.getGroupSize() : request.getDefaultGroupSize();
-                Integer roomCapacity = course.getRoomCapacity() != null ? course.getRoomCapacity() : request.getDefaultRoomCapacity();
-                return scheduleService.validateConflicts(probe, null, groupSize, roomCapacity);
-            });
-            usedAlgorithm = "GREEDY";
-            placementResult.getConflicts().add("Fallback to GREEDY: " + ex.getMessage());
-        }
-
-        List<Long> edtIds = new ArrayList<>();
-        boolean dryRun = Boolean.TRUE.equals(request.getDryRun());
-
-        for (Long groupId : request.getGroupIds()) {
-            EDT edt = edtService.getOrCreate(week, request.getAnnee(), EDT.VueType.GROUPE, groupId, request.getCreePar());
-            edtIds.add(edt.getId());
-
-            if (!dryRun) {
-                for (GreedyScheduler.PlacedCandidate placed : placementResult.getPlaced()) {
-                    if (!groupId.equals(placed.getCourse().getGroupId())) {
-                        continue;
-                    }
-                    ScheduleEntry entry = new ScheduleEntry();
-                    entry.setCourseId(placed.getCourse().getCourseId());
-                    entry.setTeacherId(placed.getCourse().getTeacherId());
-                    entry.setGroupId(placed.getCourse().getGroupId());
-                    entry.setRoomId(placed.getRoomId());
-                    entry.setStartTime(placed.getSlot().getStart());
-                    entry.setEndTime(placed.getSlot().getEnd());
-                    edtService.addEntry(edt.getId(), entry);
-                }
+        if (!flexibleCandidates.isEmpty()) {
+            ScheduleAlgorithm algorithm = scheduleAlgorithmFactory.create(requestedAlgorithm);
+            GreedyScheduler.PlacementResult placementResult;
+            try {
+                placementResult = algorithm.place(flexibleCandidates, slots, roomPool, (course, slot, roomId, tentative) -> {
+                    List<ScheduleEntry> combined = new ArrayList<>(alreadyPlaced);
+                    combined.addAll(tentative);
+                    List<String> rawErrors = validateCandidateRaw(course, slot, roomId, combined, request);
+                    return prefixConflicts(course.getCourseId(), rawErrors);
+                });
+            } catch (Exception ex) {
+                ScheduleAlgorithm fallback = new GreedyScheduler();
+                placementResult = fallback.place(flexibleCandidates, slots, roomPool, (course, slot, roomId, tentative) -> {
+                    List<ScheduleEntry> combined = new ArrayList<>(alreadyPlaced);
+                    combined.addAll(tentative);
+                    List<String> rawErrors = validateCandidateRaw(course, slot, roomId, combined, request);
+                    return prefixConflicts(course.getCourseId(), rawErrors);
+                });
+                usedAlgorithm = "GREEDY";
+                placementResult.getConflicts().add("generation=fallback algorithm=GREEDY reason=" + ex.getMessage());
             }
+
+            for (GreedyScheduler.PlacedCandidate placed : placementResult.getPlaced()) {
+                accepted.add(placed);
+                alreadyPlaced.add(toScheduleEntry(placed.getCourse(), placed.getSlot(), placed.getRoomId()));
+            }
+            unplaced.addAll(placementResult.getUnplaced());
+            conflicts.addAll(placementResult.getConflicts());
         }
+
+        List<Long> edtIds = persistGeneration(request, week, dryRun, targetGroupIds, accepted);
 
         GenerationResult result = new GenerationResult();
         result.setEdtIds(edtIds);
-        result.setRequested(candidates.size());
-        result.setPlaced(placementResult.getPlaced().size());
-        result.setUnplaced(placementResult.getUnplaced().size());
-        result.setConflicts(placementResult.getConflicts());
+        result.setRequested(collection.requestedCount());
+        result.setPlaced(accepted.size());
+        result.setUnplaced(Math.max(0, collection.requestedCount() - accepted.size()));
+        result.setConflicts(deduplicate(conflicts));
         result.setAlgorithmUsed(usedAlgorithm);
 
         Map<String, Object> metrics = new HashMap<>();
@@ -144,6 +126,11 @@ public class ScheduleGeneratorService {
         metrics.put("slotCount", slots.size());
         metrics.put("courseCount", candidates.size());
         metrics.put("roomPoolSize", roomPool.size());
+        metrics.put("fixedCount", fixedCandidates.size());
+        metrics.put("flexibleCount", flexibleCandidates.size());
+        metrics.put("rejectedCount", collection.rejected().size());
+        metrics.put("replacedEntries", replacedEntries);
+        metrics.put("targetGroupCount", targetGroupIds.size());
         result.setOptimizationMetrics(metrics);
 
         return result;
@@ -180,7 +167,6 @@ public class ScheduleGeneratorService {
     }
 
     public List<Long> getSuggestedRooms(Integer effectif, List<String> equipments) {
-        // Placeholder strategy: returns deterministic room IDs until room-service capability filtering is wired.
         if (effectif != null && effectif > 60) {
             return List.of(3L, 2L, 1L);
         }
@@ -230,6 +216,195 @@ public class ScheduleGeneratorService {
         result.setConflicts(conflicts);
         result.setWarnings(warnings);
         return result;
+    }
+
+    private void placeFixedCandidates(
+            List<GenerationCourseInput> fixedCandidates,
+            List<Long> roomPool,
+            List<ScheduleEntry> alreadyPlaced,
+            List<GreedyScheduler.PlacedCandidate> accepted,
+            List<GenerationCourseInput> unplaced,
+            List<String> conflicts,
+            GenerationRequest request
+    ) {
+        for (GenerationCourseInput candidate : fixedCandidates) {
+            TimeSlot fixedSlot = new TimeSlot(candidate.getFixedStartTime(), candidate.getFixedEndTime());
+            if (candidate.getPreferredRoomId() != null) {
+                List<String> rawErrors = validateCandidateRaw(
+                        candidate,
+                        fixedSlot,
+                        candidate.getPreferredRoomId(),
+                        alreadyPlaced,
+                        request
+                );
+                if (rawErrors.isEmpty()) {
+                    GreedyScheduler.PlacedCandidate placed = new GreedyScheduler.PlacedCandidate(candidate, fixedSlot, candidate.getPreferredRoomId());
+                    accepted.add(placed);
+                    alreadyPlaced.add(toScheduleEntry(candidate, fixedSlot, candidate.getPreferredRoomId()));
+                } else {
+                    unplaced.add(candidate);
+                    conflicts.addAll(prefixConflicts(candidate.getCourseId(), rawErrors));
+                }
+                continue;
+            }
+
+            Long selectedRoom = null;
+            List<String> mergedErrors = new ArrayList<>();
+            for (Long roomId : roomPool) {
+                List<String> rawErrors = validateCandidateRaw(candidate, fixedSlot, roomId, alreadyPlaced, request);
+                if (rawErrors.isEmpty()) {
+                    selectedRoom = roomId;
+                    break;
+                }
+                mergedErrors.addAll(rawErrors);
+            }
+
+            if (selectedRoom == null) {
+                unplaced.add(candidate);
+                if (mergedErrors.isEmpty()) {
+                    mergedErrors.add("fixed_slot_no_available_room");
+                }
+                conflicts.addAll(prefixConflicts(candidate.getCourseId(), mergedErrors));
+                continue;
+            }
+
+            GreedyScheduler.PlacedCandidate placed = new GreedyScheduler.PlacedCandidate(candidate, fixedSlot, selectedRoom);
+            accepted.add(placed);
+            alreadyPlaced.add(toScheduleEntry(candidate, fixedSlot, selectedRoom));
+        }
+    }
+
+    private List<Long> persistGeneration(
+            GenerationRequest request,
+            int week,
+            boolean dryRun,
+            Set<Long> targetGroupIds,
+            List<GreedyScheduler.PlacedCandidate> accepted
+    ) {
+        if (dryRun) {
+            return List.of();
+        }
+
+        Set<Long> groups = new TreeSet<>(targetGroupIds);
+        for (GreedyScheduler.PlacedCandidate placed : accepted) {
+            if (placed.getCourse().getGroupId() != null) {
+                groups.add(placed.getCourse().getGroupId());
+            }
+        }
+
+        Map<Long, EDT> groupEdts = new HashMap<>();
+        Set<Long> edtIds = new HashSet<>();
+        for (Long groupId : groups) {
+            EDT edt = edtService.getOrCreate(week, request.getAnnee(), EDT.VueType.GROUPE, groupId, request.getCreePar());
+            groupEdts.put(groupId, edt);
+            edtIds.add(edt.getId());
+        }
+
+        Set<Long> teacherIds = new TreeSet<>();
+        Set<Long> roomIds = new TreeSet<>();
+        for (GreedyScheduler.PlacedCandidate placed : accepted) {
+            GenerationCourseInput course = placed.getCourse();
+            EDT groupEdt = groupEdts.get(course.getGroupId());
+            if (groupEdt == null) {
+                continue;
+            }
+            edtService.addEntry(groupEdt.getId(), toScheduleEntry(course, placed.getSlot(), placed.getRoomId()));
+            if (course.getTeacherId() != null) {
+                teacherIds.add(course.getTeacherId());
+            }
+            if (placed.getRoomId() != null) {
+                roomIds.add(placed.getRoomId());
+            }
+        }
+
+        for (Long teacherId : teacherIds) {
+            EDT edt = edtService.getOrCreate(week, request.getAnnee(), EDT.VueType.ENSEIGNANT, teacherId, request.getCreePar());
+            edtIds.add(edt.getId());
+        }
+        for (Long roomId : roomIds) {
+            EDT edt = edtService.getOrCreate(week, request.getAnnee(), EDT.VueType.SALLE, roomId, request.getCreePar());
+            edtIds.add(edt.getId());
+        }
+
+        List<Long> sorted = new ArrayList<>(edtIds);
+        sorted.sort(Long::compareTo);
+        return sorted;
+    }
+
+    private Set<Long> resolveTargetGroups(
+            GenerationRequest request,
+            ScheduleDataCollector.CandidateCollection collection,
+            List<GenerationCourseInput> candidates
+    ) {
+        Set<Long> groups = new TreeSet<>();
+        if (request.getGroupIds() != null && !request.getGroupIds().isEmpty()) {
+            groups.addAll(request.getGroupIds());
+        }
+        groups.addAll(collection.discoveredGroupIds());
+        for (GenerationCourseInput candidate : candidates) {
+            if (candidate.getGroupId() != null) {
+                groups.add(candidate.getGroupId());
+            }
+        }
+        return groups;
+    }
+
+    private List<String> validateCandidateRaw(
+            GenerationCourseInput course,
+            TimeSlot slot,
+            Long roomId,
+            List<ScheduleEntry> alreadyPlaced,
+            GenerationRequest request
+    ) {
+        ScheduleEntry probe = toScheduleEntry(course, slot, roomId);
+        Integer groupSize = course.getGroupSize() != null ? course.getGroupSize() : request.getDefaultGroupSize();
+        Integer roomCapacity = course.getRoomCapacity() != null ? course.getRoomCapacity() : request.getDefaultRoomCapacity();
+        List<String> conflicts = scheduleService.validateConflicts(probe, null, groupSize, roomCapacity);
+
+        for (ScheduleEntry existing : alreadyPlaced) {
+            boolean overlaps = overlaps(existing.getStartTime(), existing.getEndTime(), probe.getStartTime(), probe.getEndTime());
+            if (!overlaps) {
+                continue;
+            }
+
+            if (existing.getTeacherId() != null && existing.getTeacherId().equals(probe.getTeacherId())) {
+                conflicts.add("teacher_conflict_tentative");
+            }
+            if (existing.getGroupId() != null && existing.getGroupId().equals(probe.getGroupId())) {
+                conflicts.add("group_conflict_tentative");
+            }
+            if (existing.getRoomId() != null && existing.getRoomId().equals(probe.getRoomId())) {
+                conflicts.add("room_conflict_tentative");
+            }
+        }
+
+        return deduplicate(conflicts);
+    }
+
+    private ScheduleEntry toScheduleEntry(GenerationCourseInput course, TimeSlot slot, Long roomId) {
+        ScheduleEntry entry = new ScheduleEntry();
+        entry.setCourseId(course.getCourseId());
+        entry.setTeacherId(course.getTeacherId());
+        entry.setGroupId(course.getGroupId());
+        entry.setRoomId(roomId);
+        entry.setStartTime(slot.getStart());
+        entry.setEndTime(slot.getEnd());
+        return entry;
+    }
+
+    private List<String> prefixConflicts(Long courseId, List<String> errors) {
+        if (errors.isEmpty()) {
+            return List.of();
+        }
+        List<String> prefixed = new ArrayList<>();
+        for (String error : errors) {
+            prefixed.add("courseId=" + courseId + " reason=" + error);
+        }
+        return prefixed;
+    }
+
+    private List<String> deduplicate(List<String> values) {
+        return new ArrayList<>(new TreeSet<>(values));
     }
 
     private boolean overlaps(LocalDateTime aStart, LocalDateTime aEnd, LocalDateTime bStart, LocalDateTime bEnd) {

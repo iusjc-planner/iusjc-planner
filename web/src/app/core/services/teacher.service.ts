@@ -4,11 +4,15 @@ import { Observable, throwError } from 'rxjs';
 import { ApiEndpoints } from '../config/api-endpoints';
 import { Teacher } from '../models/teacher.model';
 
+interface TeacherRequest {
+    userId: number;
+    specialities: string[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class TeacherService {
     private readonly http = inject(HttpClient);
     private readonly endpoint = ApiEndpoints.teachers;
-    private readonly emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     getAll(): Observable<Teacher[]> {
         return this.http.get<Teacher[]>(this.endpoint);
@@ -18,45 +22,42 @@ export class TeacherService {
         return this.http.get<Teacher>(`${this.endpoint}/${id}`);
     }
 
+    getByUserId(userId: number): Observable<Teacher> {
+        return this.http.get<Teacher>(`${this.endpoint}/by-user/${userId}`);
+    }
+
     create(payload: Teacher): Observable<Teacher> {
-        const validationError = this.validatePayload(payload);
-        if (validationError) {
-            return throwError(() => new Error(validationError));
+        if (!payload.userId) {
+            return throwError(() => new Error('userId est obligatoire pour creer un enseignant'));
         }
 
-        return this.http.post<Teacher>(this.endpoint, payload);
+        return this.createForUser(payload.userId, payload.specialities || []);
+    }
+
+    createForUser(userId: number, specialities: string[]): Observable<Teacher> {
+        return this.http.post<Teacher>(this.endpoint, this.toRequest(userId, specialities));
     }
 
     update(id: number, payload: Teacher): Observable<Teacher> {
-        const validationError = this.validatePayload(payload);
-        if (validationError) {
-            return throwError(() => new Error(validationError));
+        if (!payload.userId) {
+            return throwError(() => new Error('userId est obligatoire pour mettre a jour un enseignant'));
         }
 
-        return this.http.put<Teacher>(`${this.endpoint}/${id}`, payload);
+        return this.updateSpecialities(id, payload.userId, payload.specialities || []);
+    }
+
+    updateSpecialities(id: number, userId: number, specialities: string[]): Observable<Teacher> {
+        return this.http.put<Teacher>(`${this.endpoint}/${id}`, this.toRequest(userId, specialities));
     }
 
     delete(id: number): Observable<void> {
         return this.http.delete<void>(`${this.endpoint}/${id}`);
     }
 
-    private validatePayload(payload: Teacher): string | null {
-        if (!payload.nom?.trim()) {
-            return 'Le nom est obligatoire';
-        }
-
-        if (!payload.prenom?.trim()) {
-            return 'Le prenom est obligatoire';
-        }
-
-        if (!payload.login?.trim()) {
-            return 'Le login est obligatoire';
-        }
-
-        if (!payload.email?.trim() || !this.emailRegex.test(payload.email)) {
-            return 'Email invalide';
-        }
-
-        return null;
+    private toRequest(userId: number, specialities: string[]): TeacherRequest {
+        return {
+            userId,
+            specialities: Array.from(new Set((specialities || []).map((item) => item.trim()).filter((item) => item.length > 0)))
+        };
     }
 }

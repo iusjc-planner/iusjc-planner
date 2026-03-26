@@ -32,6 +32,11 @@ public class EDTExportData {
         private Long teacherId;
         private Long roomId;
         private Long groupId;
+        private String courseLabel;
+        private String courseType;
+        private String teacherLabel;
+        private String roomLabel;
+        private String groupLabel;
         private LocalDateTime startTime;
         private LocalDateTime endTime;
         private String status;

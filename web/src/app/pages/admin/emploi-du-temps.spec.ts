@@ -1,123 +1,199 @@
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 // @ts-ignore - tooling false positive: module resolves correctly during Angular test compilation
 import { EmploiDuTempsPage } from './emploi-du-temps';
+import { CourseService } from '../../core/services/course.service';
+import { EdtService } from '../../core/services/edt.service';
+import { GroupService } from '../../core/services/group.service';
+import { NotificationService } from '../../core/services/notification.service';
+import { RoomService } from '../../core/services/room.service';
 import { ScheduleService } from '../../core/services/schedule.service';
 import { TeacherService } from '../../core/services/teacher.service';
-import { RoomService } from '../../core/services/room.service';
-import { NotificationService } from '../../core/services/notification.service';
 
 describe('EmploiDuTempsPage', () => {
+    let edtService: jasmine.SpyObj<EdtService>;
     let scheduleService: jasmine.SpyObj<ScheduleService>;
+    let courseService: jasmine.SpyObj<CourseService>;
+    let groupService: jasmine.SpyObj<GroupService>;
     let teacherService: jasmine.SpyObj<TeacherService>;
     let roomService: jasmine.SpyObj<RoomService>;
     let notificationService: jasmine.SpyObj<NotificationService>;
     let page: EmploiDuTempsPage;
 
     beforeEach(() => {
-        scheduleService = jasmine.createSpyObj<ScheduleService>('ScheduleService', ['getAll', 'create', 'update']);
+        edtService = jasmine.createSpyObj<EdtService>('EdtService', [
+            'listEdt',
+            'getByGroupe',
+            'getByEnseignant',
+            'getBySalle',
+            'getEntries',
+            'weeklyView',
+            'generate',
+            'validateEdt',
+            'publishEdt',
+            'unpublishEdt',
+            'validationReport',
+            'validateEntry',
+            'addEntry',
+            'suggestions',
+            'exportByView',
+            'createEdt'
+        ]);
+        scheduleService = jasmine.createSpyObj<ScheduleService>('ScheduleService', ['update', 'delete']);
+        courseService = jasmine.createSpyObj<CourseService>('CourseService', ['getAll']);
+        groupService = jasmine.createSpyObj<GroupService>('GroupService', ['getAll']);
         teacherService = jasmine.createSpyObj<TeacherService>('TeacherService', ['getAll']);
         roomService = jasmine.createSpyObj<RoomService>('RoomService', ['getAll']);
         notificationService = jasmine.createSpyObj<NotificationService>('NotificationService', ['info', 'warn', 'error']);
 
-        scheduleService.getAll.and.returnValue(
-            of([
-                { id: 1, courseId: 10, teacherId: 2, roomId: 3, groupId: 4, day: 'MONDAY', startTime: '08:00', endTime: '10:00', statut: 'conflit' }
-            ])
-        );
-        scheduleService.create.and.returnValue(
-            of({ id: 2, courseId: 11, teacherId: 5, roomId: 6, groupId: 7, day: 'TUESDAY', startTime: '10:00', endTime: '12:00' })
-        );
-        scheduleService.update.and.returnValue(
-            of({ id: 1, courseId: 10, teacherId: 2, roomId: 3, groupId: 4, day: 'TUESDAY', startTime: '10:00', endTime: '12:00' })
-        );
+        const edt = { id: 101, semaine: 12, annee: 2026, periode: 'ANNUEL', vue: 'GROUPE', targetId: 1, status: 'DRAFT' };
+        const entry = { id: 501, courseId: 11, teacherId: 21, roomId: 31, groupId: 1, day: 'MONDAY', startTime: '2026-03-23T08:00:00', endTime: '2026-03-23T10:00:00', status: 'SCHEDULED' };
+        const generation = { edtIds: [101], requested: 1, placed: 1, unplaced: 0, conflicts: [], algorithmUsed: 'GREEDY' };
+        const report = { edtId: 101, status: 'VALID', errors: [], warnings: [] };
 
-        teacherService.getAll.and.returnValue(of([{ id: 2, nom: 'Dupont', prenom: 'Jean', email: 'j@iusjc.cm', login: 'dupont', statut: 'Actif' }]));
-        roomService.getAll.and.returnValue(of([{ id: 3, code: 'A1', nom: 'Salle A1', capacite: 30, statut: 'Disponible' }]));
+        courseService.getAll.and.returnValue(of([{ id: 11, nom: 'Maths', matiereId: 44 }]));
+        groupService.getAll.and.returnValue(of([{ id: 1, nom: 'G1', effectif: 30 }]));
+        teacherService.getAll.and.returnValue(of([{ id: 21, nom: 'Dupont', prenom: 'Jean' }]));
+        roomService.getAll.and.returnValue(of([{ id: 31, code: 'A1', nom: 'Salle A1', capacite: 40 }]));
 
-        page = new EmploiDuTempsPage(scheduleService, teacherService, roomService, notificationService);
+        edtService.listEdt.and.returnValue(of([edt] as any));
+        edtService.getByGroupe.and.returnValue(of(edt as any));
+        edtService.getByEnseignant.and.returnValue(of({ ...edt, vue: 'ENSEIGNANT', targetId: 21 } as any));
+        edtService.getBySalle.and.returnValue(of({ ...edt, vue: 'SALLE', targetId: 31 } as any));
+        edtService.getEntries.and.returnValue(of([entry] as any));
+        edtService.weeklyView.and.returnValue(of({ lundi: [entry], mardi: [], mercredi: [], jeudi: [], vendredi: [], samedi: [] } as any));
+        edtService.generate.and.returnValue(of(generation as any));
+        edtService.validateEdt.and.returnValue(of(report as any));
+        edtService.publishEdt.and.returnValue(of({ ...edt, status: 'PUBLISHED' } as any));
+        edtService.unpublishEdt.and.returnValue(of({ ...edt, status: 'VALIDATED' } as any));
+        edtService.validationReport.and.returnValue(of(report as any));
+        edtService.validateEntry.and.returnValue(of({ valid: true, conflicts: [], warnings: [] } as any));
+        edtService.addEntry.and.returnValue(of(entry as any));
+        edtService.suggestions.and.returnValue(of([{ startTime: '2026-03-24T10:00:00', endTime: '2026-03-24T12:00:00', roomId: 31 } as any]));
+        edtService.exportByView.and.returnValue(of(new Blob(['test'], { type: 'application/pdf' })));
+        edtService.createEdt.and.returnValue(of(edt as any));
+
+        scheduleService.update.and.returnValue(of(entry as any));
+        scheduleService.delete.and.returnValue(of(void 0));
+
+        page = new EmploiDuTempsPage(edtService, scheduleService, courseService, groupService, teacherService, roomService, notificationService);
     });
 
-    it('loads filters and computes schedule stats', () => {
+    it('loads global EDT view and computes rows', () => {
         page.ngOnInit();
 
-        expect(teacherService.getAll).toHaveBeenCalled();
-        expect(roomService.getAll).toHaveBeenCalled();
-        expect(scheduleService.getAll).toHaveBeenCalled();
-        expect(page.stats.coursPlanifies).toBe(1);
-        expect(page.stats.conflitsDetectes).toBe(1);
-        expect(page.groupes.length).toBe(1);
+        expect(edtService.listEdt).toHaveBeenCalled();
+        expect(edtService.getEntries).toHaveBeenCalled();
+        expect(page.entryRows.length).toBe(1);
+        expect(page.stats.totalEntries).toBe(1);
     });
 
-    it('filters sessions in teacher view mode', () => {
+    it('loads target EDT in group mode', () => {
         page.ngOnInit();
-        page.viewMode = 'teacher';
-        page.selectedEnseignant = '2';
-        page.computeViewData();
+        page.viewMode = 'group';
+        page.selectedTargetId = 1;
 
-        expect(page.coursDuJour.length).toBe(1);
-        expect(page.getViewLabel()).toBe('Planning enseignant');
+        page.refreshView();
+
+        expect(edtService.getByGroupe).toHaveBeenCalled();
+        expect(page.selectedEdt?.id).toBe(101);
     });
 
-    it('blocks session creation when a conflict is detected', () => {
+    it('runs generation and keeps result panel', () => {
         page.ngOnInit();
-        page.newSession = {
-            courseId: 20,
-            teacherId: 2,
-            roomId: 3,
-            groupId: 8,
-            day: 'MONDAY',
-            startTime: '09:00',
-            endTime: '11:00'
+        page.openGenerateDialog();
+        page.runGeneration();
+
+        expect(edtService.generate).toHaveBeenCalled();
+        expect(page.generationResult?.placed).toBe(1);
+        expect(notificationService.info).toHaveBeenCalled();
+    });
+
+    it('executes validate/publish/unpublish/report workflow', () => {
+        page.ngOnInit();
+        page.selectedEdt = { id: 101 } as any;
+
+        page.validateSelectedEdt();
+        page.publishSelectedEdt();
+        page.unpublishSelectedEdt();
+        page.loadValidationReport();
+
+        expect(edtService.validateEdt).toHaveBeenCalledWith(101);
+        expect(edtService.publishEdt).toHaveBeenCalledWith(101);
+        expect(edtService.unpublishEdt).toHaveBeenCalledWith(101);
+        expect(edtService.validationReport).toHaveBeenCalledWith(101);
+    });
+
+    it('creates entry through validateEntry then addEntry', () => {
+        page.ngOnInit();
+        page.viewMode = 'group';
+        page.selectedEdt = { id: 101, vue: 'GROUPE', targetId: 1 } as any;
+        page.openCreateEntryDialog();
+
+        page.entryForm = {
+            courseId: 11,
+            teacherId: 21,
+            roomId: 31,
+            groupId: 1,
+            date: '2026-03-23',
+            startTime: '08:00',
+            endTime: '10:00',
+            status: 'SCHEDULED'
         };
 
-        page.createSession();
+        page.saveEntry();
 
-        expect(scheduleService.create).not.toHaveBeenCalled();
-        expect(page.conflictMessages.length).toBeGreaterThan(0);
+        expect(edtService.validateEntry).toHaveBeenCalled();
+        expect(edtService.addEntry).toHaveBeenCalledWith(101, jasmine.anything());
+    });
+
+    it('blocks drag and drop move when validation reports conflicts', () => {
+        page.ngOnInit();
+        edtService.validateEntry.and.returnValue(of({ valid: false, conflicts: ['conflict'], warnings: [] } as any));
+        page.entries = [{ id: 501, courseId: 11, teacherId: 21, roomId: 31, groupId: 1, day: 'MONDAY', startTime: '2026-03-23T08:00:00', endTime: '2026-03-23T10:00:00' }];
+
+        page.onDragStart(501);
+        page.onDropToSlot({ label: 'A', dayOffset: 0, startTime: '10:00', endTime: '12:00' });
+
+        expect(scheduleService.update).not.toHaveBeenCalled();
         expect(notificationService.error).toHaveBeenCalled();
     });
 
-    it('creates session when no conflict is found', () => {
+    it('moves entry through drag and drop when validation succeeds', () => {
         page.ngOnInit();
-        page.newSession = {
-            courseId: 20,
-            teacherId: 9,
-            roomId: 10,
-            groupId: 8,
-            day: 'TUESDAY',
-            startTime: '09:00',
-            endTime: '11:00'
-        };
+        page.entries = [{ id: 501, courseId: 11, teacherId: 21, roomId: 31, groupId: 1, day: 'MONDAY', startTime: '2026-03-23T08:00:00', endTime: '2026-03-23T10:00:00' }];
 
-        page.createSession();
-
-        expect(scheduleService.create).toHaveBeenCalled();
-        expect(notificationService.info).toHaveBeenCalled();
-    });
-
-    it('blocks drag-drop move when conflict is detected', () => {
-        page.ngOnInit();
-        page.onDragStart(1);
-
-        // Existing session with same teacher in target slot => conflict.
-        (page as any).schedules = [
-            { id: 1, courseId: 10, teacherId: 2, roomId: 3, groupId: 4, day: 'MONDAY', startTime: '08:00', endTime: '10:00' },
-            { id: 2, courseId: 12, teacherId: 2, roomId: 7, groupId: 9, day: 'TUESDAY', startTime: '10:00', endTime: '12:00' }
-        ];
-
-        page.onDropToSlot({ day: 'TUESDAY', startTime: '10:00', endTime: '12:00' });
-
-        expect(scheduleService.update).not.toHaveBeenCalled();
-        expect(page.conflictMessages.length).toBeGreaterThan(0);
-    });
-
-    it('moves a session through drag-drop when no conflict', () => {
-        page.ngOnInit();
-        page.onDragStart(1);
-
-        page.onDropToSlot({ day: 'THURSDAY', startTime: '14:00', endTime: '16:00' });
+        page.onDragStart(501);
+        page.onDropToSlot({ label: 'A', dayOffset: 0, startTime: '10:00', endTime: '12:00' });
 
         expect(scheduleService.update).toHaveBeenCalled();
-        expect(notificationService.info).toHaveBeenCalled();
+    });
+
+    it('exports EDT by selected view/target', () => {
+        const anchor = document.createElement('a');
+        spyOn(anchor, 'click');
+        spyOn(document, 'createElement').and.returnValue(anchor);
+        spyOn(URL, 'createObjectURL').and.returnValue('blob:mock');
+        spyOn(URL, 'revokeObjectURL');
+
+        page.ngOnInit();
+        page.viewMode = 'group';
+        page.selectedTargetId = 1;
+
+        page.exportEdt('pdf');
+
+        expect(edtService.exportByView).toHaveBeenCalled();
+        expect(anchor.click).toHaveBeenCalled();
+    });
+
+    it('shows no-target state when backend returns 404 for target view', () => {
+        page.ngOnInit();
+        page.viewMode = 'group';
+        page.selectedTargetId = 22;
+        edtService.getByGroupe.and.returnValue(throwError(() => ({ status: 404 })));
+
+        page.refreshView();
+
+        expect(page.noTargetEdt).toBeTrue();
+        expect(page.entryRows.length).toBe(0);
     });
 });

@@ -7,20 +7,29 @@ import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
+import { SelectModule } from 'primeng/select';
 import { GroupService } from '../../core/services/group.service';
 import { Group } from '../../core/models/group.model';
+import { School, SchoolFiliere } from '../../core/models/school.model';
+import { SchoolService } from '../../core/services/school.service';
+
+type GroupeItem = Group & {
+    etudiants: number;
+    ecoleLabel: string;
+    filiereLabel: string;
+};
 
 @Component({
     selector: 'app-groupes',
     standalone: true,
-    imports: [CommonModule, ButtonModule, DialogModule, TableModule, InputTextModule, FormsModule, ToastModule],
+    imports: [CommonModule, ButtonModule, DialogModule, TableModule, InputTextModule, FormsModule, ToastModule, SelectModule],
     providers: [MessageService],
     template: `
         <p-toast></p-toast>
         <div class="card">
             <div class="flex justify-between items-center mb-6">
-                <h5 class="text-2xl font-bold">Gestion des groupes d'étudiants</h5>
-                <button pButton type="button" label="Créer groupe" icon="pi pi-plus" class="p-button-rounded p-button-text" (click)="openCreateDialog()"></button>
+                <h5 class="text-2xl font-bold">Gestion des groupes d'etudiants</h5>
+                <button pButton type="button" label="Creer groupe" icon="pi pi-plus" class="p-button-rounded p-button-text" (click)="openCreateDialog()"></button>
             </div>
 
             <div class="mb-4">
@@ -34,20 +43,21 @@ import { Group } from '../../core/models/group.model';
                 <ng-template pTemplate="header">
                     <tr>
                         <th pSortableColumn="nom">Nom du groupe <p-sortIcon field="nom"></p-sortIcon></th>
-                        <th pSortableColumn="filiere">Filière <p-sortIcon field="filiere"></p-sortIcon></th>
+                        <th pSortableColumn="ecoleLabel">Ecole <p-sortIcon field="ecoleLabel"></p-sortIcon></th>
+                        <th pSortableColumn="filiereLabel">Filiere <p-sortIcon field="filiereLabel"></p-sortIcon></th>
                         <th pSortableColumn="niveau">Niveau <p-sortIcon field="niveau"></p-sortIcon></th>
-                        <th pSortableColumn="etudiants">Étudiants <p-sortIcon field="etudiants"></p-sortIcon></th>
+                        <th pSortableColumn="etudiants">Etudiants <p-sortIcon field="etudiants"></p-sortIcon></th>
                         <th>Actions</th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-groupe>
                     <tr>
                         <td>{{ groupe.nom }}</td>
-                        <td>{{ groupe.filiere }}</td>
-                        <td>{{ groupe.niveau }}</td>
+                        <td>{{ groupe.ecoleLabel }}</td>
+                        <td>{{ groupe.filiereLabel }}</td>
+                        <td>{{ groupe.niveau || '-' }}</td>
                         <td>{{ groupe.etudiants }}</td>
                         <td>
-                            <button pButton type="button" icon="pi pi-pencil" class="p-button-rounded p-button-text mr-2"></button>
                             <button pButton type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" (click)="deleteGroupe(groupe)"></button>
                         </td>
                     </tr>
@@ -55,7 +65,14 @@ import { Group } from '../../core/models/group.model';
             </p-table>
         </div>
 
-        <p-dialog [(visible)]="displayCreateDialog" header="Créer un groupe" [modal]="true" [style]="{ width: '42vw' }" [breakpoints]="{ '960px': '75vw', '640px': '90vw' }">
+        <p-dialog
+            [(visible)]="displayCreateDialog"
+            header="Creer un groupe"
+            [modal]="true"
+            [style]="{ width: '62vw', maxWidth: '1100px' }"
+            [contentStyle]="{ maxHeight: '76vh', overflow: 'auto' }"
+            [breakpoints]="{ '1400px': '75vw', '1100px': '85vw', '640px': '96vw' }"
+        >
             <div class="grid grid-cols-12 gap-4">
                 <div class="col-span-12 md:col-span-6">
                     <label class="block mb-2 font-medium">Nom du groupe</label>
@@ -70,12 +87,33 @@ import { Group } from '../../core/models/group.model';
                     <input pInputText type="number" [(ngModel)]="createForm.effectif" class="w-full" />
                 </div>
                 <div class="col-span-12 md:col-span-6">
-                    <label class="block mb-2 font-medium">Filiere ID</label>
-                    <input pInputText type="number" [(ngModel)]="createForm.filiereId" class="w-full" />
+                    <label class="block mb-2 font-medium">Ecole</label>
+                    <p-select
+                        [(ngModel)]="createForm.schoolId"
+                        [options]="schoolSelectOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        [filter]="true"
+                        filterBy="label"
+                        placeholder="Choisir une ecole"
+                        appendTo="body"
+                        class="w-full"
+                        (ngModelChange)="onSchoolChange()"
+                    />
                 </div>
                 <div class="col-span-12 md:col-span-6">
-                    <label class="block mb-2 font-medium">Ecole ID (optionnel)</label>
-                    <input pInputText type="number" [(ngModel)]="createForm.schoolId" class="w-full" />
+                    <label class="block mb-2 font-medium">Filiere</label>
+                    <p-select
+                        [(ngModel)]="createForm.filiereId"
+                        [options]="filiereSelectOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        [filter]="true"
+                        filterBy="label"
+                        placeholder="Choisir une filiere"
+                        appendTo="body"
+                        class="w-full"
+                    />
                 </div>
             </div>
             <ng-template pTemplate="footer">
@@ -88,6 +126,10 @@ import { Group } from '../../core/models/group.model';
 export class GroupesPage {
     searchValue = '';
     displayCreateDialog = false;
+
+    schools: School[] = [];
+    schoolSelectOptions: Array<{ label: string; value: number }> = [];
+
     createForm: {
         nom: string;
         niveau: string;
@@ -96,15 +138,34 @@ export class GroupesPage {
         schoolId?: number;
     } = this.getEmptyCreateForm();
 
-    private allGroupes: Array<Group & { etudiants: number }> = [];
+    private rawGroupes: Group[] = [];
+    private allGroupes: GroupeItem[] = [];
 
     constructor(
-        private messageService: MessageService,
-        private groupService: GroupService
+        private readonly messageService: MessageService,
+        private readonly groupService: GroupService,
+        private readonly schoolService: SchoolService
     ) {}
 
     ngOnInit() {
+        this.loadSchools();
         this.loadGroupes();
+    }
+
+    get filiereSelectOptions(): Array<{ label: string; value: number }> {
+        if (!this.createForm.schoolId) {
+            return [];
+        }
+
+        const school = this.schools.find((item) => item.id === this.createForm.schoolId);
+        if (!school?.filieres) {
+            return [];
+        }
+
+        return school.filieres.map((filiere) => ({
+            label: `${filiere.code} - ${filiere.nom}`,
+            value: filiere.id || Number.NaN
+        })).filter((item) => !Number.isNaN(item.value));
     }
 
     openCreateDialog() {
@@ -112,9 +173,13 @@ export class GroupesPage {
         this.displayCreateDialog = true;
     }
 
+    onSchoolChange() {
+        this.createForm.filiereId = undefined;
+    }
+
     createGroupe() {
-        if (!this.createForm.nom.trim() || !this.createForm.filiereId) {
-            this.messageService.add({ severity: 'warn', summary: 'Validation', detail: 'Nom et filiere ID sont obligatoires' });
+        if (!this.createForm.nom.trim() || !this.createForm.schoolId || !this.createForm.filiereId) {
+            this.messageService.add({ severity: 'warn', summary: 'Validation', detail: 'Nom, ecole et filiere sont obligatoires' });
             return;
         }
 
@@ -138,7 +203,7 @@ export class GroupesPage {
         });
     }
 
-    get groupes(): Array<Group & { etudiants: number }> {
+    get groupes(): GroupeItem[] {
         const term = this.searchValue.trim().toLowerCase();
         if (!term) {
             return this.allGroupes;
@@ -147,23 +212,10 @@ export class GroupesPage {
         return this.allGroupes.filter((groupe) => {
             return (
                 groupe.nom.toLowerCase().includes(term) ||
-                (groupe.filiere || '').toLowerCase().includes(term) ||
+                groupe.ecoleLabel.toLowerCase().includes(term) ||
+                groupe.filiereLabel.toLowerCase().includes(term) ||
                 (groupe.niveau || '').toLowerCase().includes(term)
             );
-        });
-    }
-
-    private loadGroupes() {
-        this.groupService.getAll().subscribe({
-            next: (groupes) => {
-                this.allGroupes = groupes.map((groupe) => ({
-                    ...groupe,
-                    etudiants: groupe.effectif || 0
-                }));
-            },
-            error: () => {
-                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Chargement des groupes impossible' });
-            }
         });
     }
 
@@ -181,6 +233,70 @@ export class GroupesPage {
                 this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Echec de suppression du groupe' });
             }
         });
+    }
+
+    private loadSchools() {
+        this.schoolService.getAll().subscribe({
+            next: (schools) => {
+                this.schools = schools;
+                this.schoolSelectOptions = schools
+                    .filter((school) => school.id !== undefined)
+                    .map((school) => ({ label: school.nom, value: school.id as number }));
+                this.remapGroups();
+            },
+            error: () => {
+                this.messageService.add({ severity: 'warn', summary: 'Avertissement', detail: 'Chargement des ecoles indisponible' });
+            }
+        });
+    }
+
+    private loadGroupes() {
+        this.groupService.getAll().subscribe({
+            next: (groupes) => {
+                this.rawGroupes = groupes;
+                this.remapGroups();
+            },
+            error: () => {
+                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Chargement des groupes impossible' });
+            }
+        });
+    }
+
+    private remapGroups() {
+        this.allGroupes = this.rawGroupes.map((groupe) => {
+            const filiereId = Number(groupe.filiere || 0);
+            return {
+                ...groupe,
+                etudiants: groupe.effectif || 0,
+                ecoleLabel: this.resolveSchoolLabel(groupe.schoolId),
+                filiereLabel: this.resolveFiliereLabel(filiereId, groupe.schoolId)
+            };
+        });
+    }
+
+    private resolveSchoolLabel(schoolId?: number): string {
+        if (!schoolId) {
+            return '-';
+        }
+
+        const school = this.schools.find((item) => item.id === schoolId);
+        return school?.nom || `Ecole #${schoolId}`;
+    }
+
+    private resolveFiliereLabel(filiereId: number, schoolId?: number): string {
+        if (!filiereId) {
+            return '-';
+        }
+
+        const schoolsToScan = schoolId ? this.schools.filter((item) => item.id === schoolId) : this.schools;
+        for (const school of schoolsToScan) {
+            const filiere = (school.filieres || []).find((item: SchoolFiliere) => item.id === filiereId);
+            if (filiere) {
+                return `${filiere.code} - ${filiere.nom}`;
+            }
+        }
+
+        return `Filiere #${filiereId}`;
     }
 
     private getEmptyCreateForm() {

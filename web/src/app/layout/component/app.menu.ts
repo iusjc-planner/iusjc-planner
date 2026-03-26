@@ -37,9 +37,9 @@ export class AppMenu {
                     label: 'Gestion',
                     items: [
                         { label: 'Utilisateurs', icon: 'pi pi-fw pi-user', routerLink: ['/pages/admin/utilisateurs'] },
-                        { label: 'Enseignants', icon: 'pi pi-fw pi-users', routerLink: ['/pages/admin/enseignants'] },
                         { label: 'Ecoles', icon: 'pi pi-fw pi-building', routerLink: ['/pages/admin/ecoles'] },
                         { label: 'Groupes d\'étudiants', icon: 'pi pi-fw pi-users', routerLink: ['/pages/admin/groupes'] },
+                        { label: 'Matieres', icon: 'pi pi-fw pi-bookmark', routerLink: ['/pages/admin/matieres'] },
                         { label: 'Cours', icon: 'pi pi-fw pi-book', routerLink: ['/pages/admin/cours'] },
                         { label: 'Salles', icon: 'pi pi-fw pi-building', routerLink: ['/pages/admin/salles'] },
                         { label: 'Ressources', icon: 'pi pi-fw pi-server', routerLink: ['/pages/admin/ressources'] }

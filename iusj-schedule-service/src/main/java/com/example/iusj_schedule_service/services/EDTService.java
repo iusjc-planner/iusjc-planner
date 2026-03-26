@@ -1,5 +1,9 @@
 package com.example.iusj_schedule_service.services;
 
+import com.example.iusj_schedule_service.client.CourseCatalogClient;
+import com.example.iusj_schedule_service.client.GroupServiceClient;
+import com.example.iusj_schedule_service.client.IdentityDirectoryClient;
+import com.example.iusj_schedule_service.client.RoomServiceClient;
 import com.example.iusj_schedule_service.dto.EDTExportData;
 import com.example.iusj_schedule_service.dto.ValidationReport;
 import com.example.iusj_schedule_service.entities.EDT;
@@ -18,10 +22,12 @@ import org.springframework.web.client.RestTemplate;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.WeekFields;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @Transactional
@@ -36,6 +42,10 @@ public class EDTService {
     private final RestTemplate restTemplate;
     private final PdfExportService pdfExportService;
     private final ExcelExportService excelExportService;
+    private final CourseCatalogClient courseCatalogClient;
+    private final IdentityDirectoryClient identityDirectoryClient;
+    private final RoomServiceClient roomServiceClient;
+    private final GroupServiceClient groupServiceClient;
 
     public EDTService(
             EDTRepository edtRepository,
@@ -44,7 +54,11 @@ public class EDTService {
             EDTValidationService edtValidationService,
             RestTemplate restTemplate,
             PdfExportService pdfExportService,
-            ExcelExportService excelExportService) {
+            ExcelExportService excelExportService,
+            CourseCatalogClient courseCatalogClient,
+            IdentityDirectoryClient identityDirectoryClient,
+            RoomServiceClient roomServiceClient,
+            GroupServiceClient groupServiceClient) {
         this.edtRepository = edtRepository;
         this.scheduleEntryRepository = scheduleEntryRepository;
         this.scheduleService = scheduleService;
@@ -52,6 +66,10 @@ public class EDTService {
         this.restTemplate = restTemplate;
         this.pdfExportService = pdfExportService;
         this.excelExportService = excelExportService;
+        this.courseCatalogClient = courseCatalogClient;
+        this.identityDirectoryClient = identityDirectoryClient;
+        this.roomServiceClient = roomServiceClient;
+        this.groupServiceClient = groupServiceClient;
     }
 
     public EDT getOrCreate(Integer semaine, Integer annee, EDT.VueType vue, Long targetId, Long creePar) {
@@ -152,7 +170,9 @@ public class EDTService {
     }
 
     public List<ScheduleEntry> getEntries(Long edtId) {
-        return scheduleEntryRepository.findByEdt_IdOrderByStartTimeAsc(edtId);
+        EDT edt = edtRepository.findById(edtId)
+                .orElseThrow(() -> new EntityNotFoundException("EDT introuvable: " + edtId));
+        return resolveEntriesForEdt(edt);
     }
 
     public ScheduleEntry addEntry(Long edtId, ScheduleEntry entry) {
@@ -235,21 +255,22 @@ public class EDTService {
         EDT edt = edtRepository.findById(edtId)
             .orElseThrow(() -> new EntityNotFoundException("EDT introuvable: " + edtId));
 
-        List<ScheduleEntry> entries = scheduleEntryRepository.findByEdt_IdOrderByStartTimeAsc(edtId);
+        List<ScheduleEntry> entries = resolveEntriesForEdt(edt);
         return aggregateByDay(entries, edt.getAnnee(), edt.getSemaine());
     }
 
     public byte[] exportPdfByEdtId(Long edtId) {
         EDT edt = edtRepository.findById(edtId)
             .orElseThrow(() -> new EntityNotFoundException("EDT introuvable: " + edtId));
-        List<ScheduleEntry> entries = scheduleEntryRepository.findByEdt_IdOrderByStartTimeAsc(edtId);
-        return pdfExportService.exportWeeklyEdtPdf(edt, entries);
+        List<ScheduleEntry> entries = resolveEntriesForEdt(edt);
+        EDTExportData exportData = toExportData(edt, entries);
+        return pdfExportService.exportWeeklyEdtPdf(edt, exportData);
     }
 
     public byte[] exportExcelByEdtId(Long edtId) {
         EDT edt = edtRepository.findById(edtId)
             .orElseThrow(() -> new EntityNotFoundException("EDT introuvable: " + edtId));
-        List<ScheduleEntry> entries = scheduleEntryRepository.findByEdt_IdOrderByStartTimeAsc(edtId);
+        List<ScheduleEntry> entries = resolveEntriesForEdt(edt);
         EDTExportData exportData = toExportData(edt, entries);
         return excelExportService.exportWeeklyEdtExcel(exportData);
     }
@@ -257,48 +278,69 @@ public class EDTService {
     public byte[] exportPdfForView(EDT.VueType vue, Long targetId, Integer semaine, Integer annee, Long creePar) {
         EDT edt = getOrCreate(semaine, annee, vue, targetId, creePar);
 
-        LocalDate start = isoWeekStart(annee, semaine);
-        LocalDateTime from = start.atStartOfDay();
-        LocalDateTime to = start.plusDays(6).atTime(23, 59, 59);
-
-        List<ScheduleEntry> entries = switch (vue) {
-            case GROUPE -> scheduleEntryRepository.findByGroupIdAndStartTimeBetweenOrderByStartTimeAsc(targetId, from, to);
-            case ENSEIGNANT -> scheduleEntryRepository.findByTeacherIdAndStartTimeBetweenOrderByStartTimeAsc(targetId, from, to);
-            case SALLE -> scheduleEntryRepository.findByRoomIdAndStartTimeBetweenOrderByStartTimeAsc(targetId, from, to);
-        };
-
-        return pdfExportService.exportWeeklyEdtPdf(edt, entries);
+        List<ScheduleEntry> entries = resolveEntriesForEdt(edt);
+        EDTExportData exportData = toExportData(edt, entries);
+        return pdfExportService.exportWeeklyEdtPdf(edt, exportData);
     }
 
     public byte[] exportExcelForView(EDT.VueType vue, Long targetId, Integer semaine, Integer annee, Long creePar) {
         EDT edt = getOrCreate(semaine, annee, vue, targetId, creePar);
 
-        LocalDate start = isoWeekStart(annee, semaine);
-        LocalDateTime from = start.atStartOfDay();
-        LocalDateTime to = start.plusDays(6).atTime(23, 59, 59);
-
-        List<ScheduleEntry> entries = switch (vue) {
-            case GROUPE -> scheduleEntryRepository.findByGroupIdAndStartTimeBetweenOrderByStartTimeAsc(targetId, from, to);
-            case ENSEIGNANT -> scheduleEntryRepository.findByTeacherIdAndStartTimeBetweenOrderByStartTimeAsc(targetId, from, to);
-            case SALLE -> scheduleEntryRepository.findByRoomIdAndStartTimeBetweenOrderByStartTimeAsc(targetId, from, to);
-        };
-
+        List<ScheduleEntry> entries = resolveEntriesForEdt(edt);
         EDTExportData exportData = toExportData(edt, entries);
         return excelExportService.exportWeeklyEdtExcel(exportData);
     }
 
+    public long clearEntriesForGroups(Integer annee, Integer semaine, Set<Long> groupIds) {
+        if (groupIds == null || groupIds.isEmpty()) {
+            return 0L;
+        }
+        LocalDate weekStart = isoWeekStart(annee, semaine);
+        LocalDateTime from = weekStart.atStartOfDay();
+        LocalDateTime to = weekStart.plusDays(6).atTime(23, 59, 59);
+        return scheduleEntryRepository.deleteByGroupIdInAndStartTimeBetween(new ArrayList<>(groupIds), from, to);
+    }
+
     private EDTExportData toExportData(EDT edt, List<ScheduleEntry> entries) {
+        Map<Long, CourseCatalogClient.CourseSummary> courseCache = new HashMap<>();
+        Map<Long, CourseCatalogClient.MatiereSummary> matiereCache = new HashMap<>();
+        Map<Long, String> teacherLabelCache = new HashMap<>();
+        Map<Long, RoomServiceClient.RoomSummary> roomCache = new HashMap<>();
+        Map<Long, GroupServiceClient.GroupSummary> groupCache = new HashMap<>();
+
         List<EDTExportData.ExportEntry> exportEntries = entries.stream()
-            .map(entry -> EDTExportData.ExportEntry.builder()
-                .courseId(entry.getCourseId())
-                .teacherId(entry.getTeacherId())
-                .roomId(entry.getRoomId())
-                .groupId(entry.getGroupId())
-                .startTime(entry.getStartTime())
-                .endTime(entry.getEndTime())
-                .status(entry.getStatus() == null ? null : entry.getStatus().name())
-                .build())
-            .toList();
+                .map(entry -> {
+                    CourseCatalogClient.CourseSummary course = null;
+                    CourseCatalogClient.MatiereSummary matiere = null;
+                    if (entry.getCourseId() != null) {
+                        course = courseCache.computeIfAbsent(entry.getCourseId(), courseCatalogClient::getCourse);
+                        if (course != null && course.matiereId() != null) {
+                            matiere = matiereCache.computeIfAbsent(course.matiereId(), courseCatalogClient::getMatiere);
+                        }
+                    }
+
+                    String courseType = course == null ? null : course.type();
+                    String courseLabel = resolveCourseLabel(entry.getCourseId(), course, matiere);
+                    String teacherLabel = resolveTeacherLabel(entry.getTeacherId(), teacherLabelCache);
+                    String roomLabel = resolveRoomLabel(entry.getRoomId(), roomCache);
+                    String groupLabel = resolveGroupLabel(entry.getGroupId(), groupCache);
+
+                    return EDTExportData.ExportEntry.builder()
+                            .courseId(entry.getCourseId())
+                            .teacherId(entry.getTeacherId())
+                            .roomId(entry.getRoomId())
+                            .groupId(entry.getGroupId())
+                            .courseLabel(courseLabel)
+                            .courseType(courseType)
+                            .teacherLabel(teacherLabel)
+                            .roomLabel(roomLabel)
+                            .groupLabel(groupLabel)
+                            .startTime(entry.getStartTime())
+                            .endTime(entry.getEndTime())
+                            .status(entry.getStatus() == null ? null : entry.getStatus().name())
+                            .build();
+                })
+                .toList();
 
         return EDTExportData.builder()
             .edtId(edt.getId())
@@ -310,6 +352,61 @@ public class EDTService {
             .generatedAt(LocalDateTime.now())
             .entries(exportEntries)
             .build();
+    }
+
+    private List<ScheduleEntry> resolveEntriesForEdt(EDT edt) {
+        LocalDate start = isoWeekStart(edt.getAnnee(), edt.getSemaine());
+        LocalDateTime from = start.atStartOfDay();
+        LocalDateTime to = start.plusDays(6).atTime(23, 59, 59);
+
+        return switch (edt.getVue()) {
+            case GROUPE -> scheduleEntryRepository.findByGroupIdAndStartTimeBetweenOrderByStartTimeAsc(edt.getTargetId(), from, to);
+            case ENSEIGNANT -> scheduleEntryRepository.findByTeacherIdAndStartTimeBetweenOrderByStartTimeAsc(edt.getTargetId(), from, to);
+            case SALLE -> scheduleEntryRepository.findByRoomIdAndStartTimeBetweenOrderByStartTimeAsc(edt.getTargetId(), from, to);
+        };
+    }
+
+    private String resolveCourseLabel(
+            Long courseId,
+            CourseCatalogClient.CourseSummary course,
+            CourseCatalogClient.MatiereSummary matiere
+    ) {
+        if (course != null && course.title() != null && !course.title().isBlank()) {
+            return course.title();
+        }
+        if (matiere != null && matiere.nom() != null && !matiere.nom().isBlank()) {
+            return matiere.nom();
+        }
+        return "Cours #" + (courseId == null ? "-" : courseId);
+    }
+
+    private String resolveTeacherLabel(Long teacherId, Map<Long, String> cache) {
+        if (teacherId == null) {
+            return "Enseignant non assigne";
+        }
+        return cache.computeIfAbsent(teacherId, identityDirectoryClient::resolveTeacherDisplayName);
+    }
+
+    private String resolveRoomLabel(Long roomId, Map<Long, RoomServiceClient.RoomSummary> cache) {
+        if (roomId == null) {
+            return "Salle non assignee";
+        }
+        RoomServiceClient.RoomSummary room = cache.computeIfAbsent(roomId, roomServiceClient::getRoom);
+        if (room == null || room.name() == null || room.name().isBlank()) {
+            return "Salle #" + roomId;
+        }
+        return room.name();
+    }
+
+    private String resolveGroupLabel(Long groupId, Map<Long, GroupServiceClient.GroupSummary> cache) {
+        if (groupId == null) {
+            return "Groupe non assigne";
+        }
+        GroupServiceClient.GroupSummary group = cache.computeIfAbsent(groupId, groupServiceClient::getGroup);
+        if (group == null || group.name() == null || group.name().isBlank()) {
+            return "Groupe #" + groupId;
+        }
+        return group.name();
     }
 
     private EDT.PeriodeType inferPeriode(Integer semaine) {
@@ -360,7 +457,7 @@ public class EDTService {
                 if (edt.getVue() == EDT.VueType.ENSEIGNANT && userId.equals(edt.getTargetId())) {
                     return true;
                 }
-                return scheduleEntryRepository.findByEdt_IdOrderByStartTimeAsc(edt.getId()).stream()
+                return resolveEntriesForEdt(edt).stream()
                         .anyMatch(entry -> userId.equals(entry.getTeacherId()));
             }
         }

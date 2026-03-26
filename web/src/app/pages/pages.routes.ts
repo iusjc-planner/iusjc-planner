@@ -2,10 +2,10 @@ import { Routes } from '@angular/router';
 import { Documentation } from './documentation/documentation';
 import { Crud } from './crud/crud';
 import { Empty } from './empty/empty';
-import { EnseignantsPage } from './admin/enseignants';
 import { UtilisateursPage } from './admin/utilisateurs';
 import { GroupesPage } from './admin/groupes';
 import { EcolesPage } from './admin/ecoles';
+import { MatieresPage } from './admin/matieres';
 import { CoursPage } from './admin/cours';
 import { SallesPage } from './admin/salles';
 import { RessourcesPage } from './admin/ressources';
@@ -24,10 +24,10 @@ export default [
     { path: 'empty', component: Empty, canActivate: [authGuard] },
     { path: 'notifications', component: NotificationsPage, canActivate: [authGuard] },
     { path: 'profil', component: ProfilPage, canActivate: [authGuard] },
-    { path: 'admin/enseignants', component: EnseignantsPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
     { path: 'admin/utilisateurs', component: UtilisateursPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
     { path: 'admin/groupes', component: GroupesPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
     { path: 'admin/ecoles', component: EcolesPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
+    { path: 'admin/matieres', component: MatieresPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
     { path: 'admin/cours', component: CoursPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
     { path: 'admin/salles', component: SallesPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
     { path: 'admin/ressources', component: RessourcesPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
