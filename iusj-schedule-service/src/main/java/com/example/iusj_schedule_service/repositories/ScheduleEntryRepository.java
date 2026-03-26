@@ -18,6 +18,8 @@ public interface ScheduleEntryRepository extends JpaRepository<ScheduleEntry, Lo
 
         List<ScheduleEntry> findByRoomIdAndStartTimeBetweenOrderByStartTimeAsc(Long roomId, LocalDateTime start, LocalDateTime end);
 
+        long deleteByGroupIdInAndStartTimeBetween(List<Long> groupIds, LocalDateTime start, LocalDateTime end);
+
     long countByStatus(ScheduleEntry.Status status);
 
     boolean existsByRoomIdAndStatusNotAndStartTimeLessThanAndEndTimeGreaterThan(

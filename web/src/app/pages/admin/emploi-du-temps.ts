@@ -1,497 +1,761 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
-import { ScheduleService } from '../../core/services/schedule.service';
-import { TeacherService } from '../../core/services/teacher.service';
-import { RoomService } from '../../core/services/room.service';
-import { NotificationService } from '../../core/services/notification.service';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { MultiSelectModule } from 'primeng/multiselect';
+import { SelectModule } from 'primeng/select';
+import { TableModule } from 'primeng/table';
+import { Course } from '../../core/models/course.model';
+import { Edt, EdtGenerationRequest, EdtGenerationResult, EdtPeriodeType, EdtVueType, SlotSuggestion, ValidationReport } from '../../core/models/edt.model';
+import { Group } from '../../core/models/group.model';
+import { Room } from '../../core/models/room.model';
 import { ScheduleEntry } from '../../core/models/schedule.model';
 import { Teacher } from '../../core/models/teacher.model';
-import { Room } from '../../core/models/room.model';
+import { CourseService } from '../../core/services/course.service';
+import { EdtService } from '../../core/services/edt.service';
+import { GroupService } from '../../core/services/group.service';
+import { NotificationService } from '../../core/services/notification.service';
+import { RoomService } from '../../core/services/room.service';
+import { ScheduleService } from '../../core/services/schedule.service';
+import { TeacherService } from '../../core/services/teacher.service';
 
-type PlanningViewMode = 'global' | 'teacher' | 'room' | 'group';
+type PlanningViewMode = 'global' | 'group' | 'teacher' | 'room';
+type SelectOption = { label: string; value: number };
+type EntryForm = {
+    courseId?: number;
+    teacherId?: number;
+    roomId?: number;
+    groupId?: number;
+    date: string;
+    startTime: string;
+    endTime: string;
+    status: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+};
+type EntryRow = {
+    id?: number;
+    courseLabel: string;
+    teacherLabel: string;
+    groupLabel: string;
+    roomLabel: string;
+    dateLabel: string;
+    startLabel: string;
+    endLabel: string;
+    status: string;
+};
+type QuickMoveSlot = { label: string; dayOffset: number; startTime: string; endTime: string };
 
 @Component({
     selector: 'app-emploi-du-temps',
     standalone: true,
-    imports: [CommonModule, ButtonModule, InputTextModule, FormsModule],
-    template: `
-        <div class="card">
-            <div class="flex justify-between items-center mb-6">
-                <h5 class="text-2xl font-bold">Gestion des emplois du temps</h5>
-                <button pButton type="button" label="Creer cours" icon="pi pi-plus" class="p-button-rounded p-button-text" (click)="createSession()"></button>
-            </div>
-
-            <div class="grid grid-cols-12 gap-4 mb-6">
-                <div class="col-span-12 md:col-span-3">
-                    <label class="block mb-2 font-medium">Vue planning</label>
-                    <select [(ngModel)]="viewMode" (ngModelChange)="computeViewData()" class="w-full px-3 py-2 border rounded">
-                        <option value="global">Globale</option>
-                        <option value="teacher">Par enseignant</option>
-                        <option value="room">Par salle</option>
-                        <option value="group">Par groupe</option>
-                    </select>
-                </div>
-                <div class="col-span-12 md:col-span-3">
-                    <label class="block mb-2 font-medium">Selectionner une date</label>
-                    <input type="date" [(ngModel)]="selectedDate" (ngModelChange)="loadSchedule()" class="w-full px-3 py-2 border rounded" />
-                </div>
-                <div class="col-span-12 md:col-span-3">
-                    <label class="block mb-2 font-medium">Filtrer par enseignant</label>
-                    <select [(ngModel)]="selectedEnseignant" (ngModelChange)="loadSchedule()" class="w-full px-3 py-2 border rounded">
-                        <option value="">Tous les enseignants</option>
-                        <option *ngFor="let ens of enseignants" [value]="ens.value">{{ ens.label }}</option>
-                    </select>
-                </div>
-                <div class="col-span-12 md:col-span-3">
-                    <label class="block mb-2 font-medium">Filtrer par salle</label>
-                    <select [(ngModel)]="selectedSalle" (ngModelChange)="loadSchedule()" class="w-full px-3 py-2 border rounded">
-                        <option value="">Toutes les salles</option>
-                        <option *ngFor="let salle of salles" [value]="salle.value">{{ salle.label }}</option>
-                    </select>
-                </div>
-                <div class="col-span-12 md:col-span-3">
-                    <label class="block mb-2 font-medium">Filtrer par groupe</label>
-                    <select [(ngModel)]="selectedGroupe" (ngModelChange)="loadSchedule()" class="w-full px-3 py-2 border rounded">
-                        <option value="">Tous les groupes</option>
-                        <option *ngFor="let groupe of groupes" [value]="groupe.value">{{ groupe.label }}</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg mb-6">
-                <p class="text-sm text-muted-color">
-                    <i class="pi pi-info-circle mr-2"></i>
-                    Validation conflits activee: un creneau en chevauchement (enseignant ou salle) est bloque avant creation/deplacement.
-                </p>
-            </div>
-
-            <div class="card mb-6 bg-surface-50 dark:bg-surface-800">
-                <h6 class="font-bold mb-3">Nouvelle seance</h6>
-                <div class="grid grid-cols-12 gap-4">
-                    <div class="col-span-12 md:col-span-3">
-                        <label class="block mb-2 font-medium">Jour</label>
-                        <select [(ngModel)]="newSession.day" class="w-full px-3 py-2 border rounded">
-                            <option value="MONDAY">Lundi</option>
-                            <option value="TUESDAY">Mardi</option>
-                            <option value="WEDNESDAY">Mercredi</option>
-                            <option value="THURSDAY">Jeudi</option>
-                            <option value="FRIDAY">Vendredi</option>
-                            <option value="SATURDAY">Samedi</option>
-                            <option value="SUNDAY">Dimanche</option>
-                        </select>
-                    </div>
-                    <div class="col-span-12 md:col-span-2">
-                        <label class="block mb-2 font-medium">Debut</label>
-                        <input type="time" [(ngModel)]="newSession.startTime" class="w-full px-3 py-2 border rounded" />
-                    </div>
-                    <div class="col-span-12 md:col-span-2">
-                        <label class="block mb-2 font-medium">Fin</label>
-                        <input type="time" [(ngModel)]="newSession.endTime" class="w-full px-3 py-2 border rounded" />
-                    </div>
-                    <div class="col-span-12 md:col-span-2">
-                        <label class="block mb-2 font-medium">Course ID</label>
-                        <input pInputText type="number" [(ngModel)]="newSession.courseId" class="w-full" />
-                    </div>
-                    <div class="col-span-12 md:col-span-3">
-                        <label class="block mb-2 font-medium">Enseignant</label>
-                        <select [(ngModel)]="newSession.teacherId" class="w-full px-3 py-2 border rounded">
-                            <option [ngValue]="undefined">Selectionner</option>
-                            <option *ngFor="let ens of enseignants" [ngValue]="toNumber(ens.value)">{{ ens.label }}</option>
-                        </select>
-                    </div>
-                    <div class="col-span-12 md:col-span-3">
-                        <label class="block mb-2 font-medium">Salle</label>
-                        <select [(ngModel)]="newSession.roomId" class="w-full px-3 py-2 border rounded">
-                            <option [ngValue]="undefined">Selectionner</option>
-                            <option *ngFor="let salle of salles" [ngValue]="toNumber(salle.value)">{{ salle.label }}</option>
-                        </select>
-                    </div>
-                    <div class="col-span-12 md:col-span-3">
-                        <label class="block mb-2 font-medium">Groupe ID</label>
-                        <input pInputText type="number" [(ngModel)]="newSession.groupId" class="w-full" />
-                    </div>
-                </div>
-                <div class="mt-4">
-                    <button pButton type="button" label="Valider et creer" icon="pi pi-check" (click)="createSession()"></button>
-                </div>
-
-                <div *ngIf="conflictMessages.length > 0" class="mt-4 p-3 rounded bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-                    <p class="font-semibold text-red-700 dark:text-red-300 mb-2">Conflits detectes</p>
-                    <ul class="text-sm text-red-700 dark:text-red-300 list-disc ml-4">
-                        <li *ngFor="let conflict of conflictMessages">{{ conflict }}</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-12 gap-4">
-                <div class="col-span-12 md:col-span-6">
-                    <div class="card bg-surface-50 dark:bg-surface-800">
-                        <h6 class="font-bold mb-3">{{ getViewLabel() }}</h6>
-                        <div class="space-y-2">
-                            <div
-                                *ngFor="let course of coursDuJour"
-                                class="p-3 bg-white dark:bg-surface-700 rounded border-l-4 border-blue-500 cursor-move"
-                                draggable="true"
-                                (dragstart)="onDragStart(course.id)"
-                            >
-                                <p class="font-medium">{{ course.title }}</p>
-                                <p class="text-sm text-muted-color">{{ course.day }} | {{ course.time }} | {{ course.room }}</p>
-                            </div>
-                            <p *ngIf="coursDuJour.length === 0" class="text-sm text-muted-color">Aucun cours pour les filtres selectionnes.</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-span-12 md:col-span-6">
-                    <div class="card bg-surface-50 dark:bg-surface-800">
-                        <h6 class="font-bold mb-3">Statistiques</h6>
-                        <div class="space-y-2">
-                            <div class="flex justify-between">
-                                <span>Cours planifies:</span>
-                                <span class="font-bold">{{ stats.coursPlanifies }}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span>Salles occupees:</span>
-                                <span class="font-bold">{{ stats.sallesOccupees }}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span>Conflits detectes:</span>
-                                <span class="font-bold text-red-600">{{ stats.conflitsDetectes }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card mt-6 bg-surface-50 dark:bg-surface-800">
-                <h6 class="font-bold mb-3">Deplacement rapide (drag and drop)</h6>
-                <p class="text-sm text-muted-color mb-4">Glissez une seance depuis la liste puis deposez-la sur un creneau cible.</p>
-
-                <div class="grid grid-cols-12 gap-3">
-                    <div
-                        *ngFor="let slot of quickMoveSlots"
-                        class="col-span-12 md:col-span-4 p-3 border rounded-lg bg-white dark:bg-surface-700"
-                        (dragover)="$event.preventDefault()"
-                        (drop)="onDropToSlot(slot)"
-                    >
-                        <p class="font-semibold">{{ slot.label }}</p>
-                        <p class="text-sm text-muted-color">{{ slot.day }} | {{ slot.startTime }} - {{ slot.endTime }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `
+    imports: [CommonModule, FormsModule, ButtonModule, DialogModule, InputTextModule, MultiSelectModule, SelectModule, TableModule],
+    templateUrl: './emploi-du-temps.html'
 })
 export class EmploiDuTempsPage {
-    selectedDate = '';
-    selectedEnseignant = '';
-    selectedSalle = '';
-    selectedGroupe = '';
     viewMode: PlanningViewMode = 'global';
+    semaine = 1;
+    annee = new Date().getFullYear();
+    selectedTargetId?: number;
+    selectedPeriode: EdtPeriodeType = 'ANNUEL';
+    loading = false;
+    noTargetEdt = false;
 
-    enseignants: Array<{ label: string; value: string }> = [];
-    salles: Array<{ label: string; value: string }> = [];
-    groupes: Array<{ label: string; value: string }> = [];
+    availableEdts: Edt[] = [];
+    selectedEdt?: Edt;
+    entries: ScheduleEntry[] = [];
+    entryRows: EntryRow[] = [];
+    weeklyViewData: Record<string, ScheduleEntry[]> = {};
 
-    coursDuJour: Array<{ id?: number; title: string; time: string; room: string; day: string; startTime: string; endTime: string; roomId?: number }> = [];
-    stats = {
-        coursPlanifies: 0,
-        sallesOccupees: '0/0',
-        conflitsDetectes: 0
+    generationResult?: EdtGenerationResult;
+    lastValidationReport?: ValidationReport;
+    entryValidationMessages: string[] = [];
+
+    displayGenerateDialog = false;
+    displayEntryDialog = false;
+    isEditMode = false;
+    editingEntryId?: number;
+    draggedEntryId?: number;
+    suggestions: SlotSuggestion[] = [];
+
+    generationForm: { periode: EdtPeriodeType; groupIds: number[]; dryRun: boolean; algorithmType: string } = {
+        periode: 'ANNUEL',
+        groupIds: [],
+        dryRun: false,
+        algorithmType: 'GREEDY'
     };
+    entryForm: EntryForm = this.emptyEntryForm();
 
-    conflictMessages: string[] = [];
-    draggedSessionId?: number;
+    stats = { totalEntries: 0, uniqueTeachers: 0, uniqueGroups: 0, uniqueRooms: 0 };
 
-    quickMoveSlots: Array<{ label: string; day: string; startTime: string; endTime: string }> = [
-        { label: 'Slot A', day: 'MONDAY', startTime: '08:00', endTime: '10:00' },
-        { label: 'Slot B', day: 'TUESDAY', startTime: '10:00', endTime: '12:00' },
-        { label: 'Slot C', day: 'WEDNESDAY', startTime: '14:00', endTime: '16:00' }
+    viewModeOptions = [
+        { label: 'Globale', value: 'global' as PlanningViewMode },
+        { label: 'Par groupe', value: 'group' as PlanningViewMode },
+        { label: 'Par enseignant', value: 'teacher' as PlanningViewMode },
+        { label: 'Par salle', value: 'room' as PlanningViewMode }
+    ];
+    periodeOptions = [
+        { label: 'SEMESTRE1', value: 'SEMESTRE1' as EdtPeriodeType },
+        { label: 'SEMESTRE2', value: 'SEMESTRE2' as EdtPeriodeType },
+        { label: 'ANNUEL', value: 'ANNUEL' as EdtPeriodeType }
+    ];
+    algorithmOptions = [
+        { label: 'GREEDY', value: 'GREEDY' },
+        { label: 'FORD_FULKERSON', value: 'FORD_FULKERSON' }
+    ];
+    quickMoveSlots: QuickMoveSlot[] = [
+        { label: 'Slot A', dayOffset: 0, startTime: '08:00', endTime: '10:00' },
+        { label: 'Slot B', dayOffset: 1, startTime: '10:00', endTime: '12:00' },
+        { label: 'Slot C', dayOffset: 2, startTime: '14:00', endTime: '16:00' }
     ];
 
-    newSession: {
-        courseId?: number;
-        teacherId?: number;
-        roomId?: number;
-        groupId?: number;
-        day: string;
-        startTime: string;
-        endTime: string;
-    } = {
-        day: 'MONDAY',
-        startTime: '08:00',
-        endTime: '10:00'
-    };
+    courses: Course[] = [];
+    groups: Group[] = [];
+    teachers: Teacher[] = [];
+    rooms: Room[] = [];
 
-    private schedules: ScheduleEntry[] = [];
-    private teachers: Teacher[] = [];
-    private rooms: Room[] = [];
+    courseOptions: SelectOption[] = [];
+    groupOptions: SelectOption[] = [];
+    teacherOptions: SelectOption[] = [];
+    roomOptions: SelectOption[] = [];
+
+    private groupsById = new Map<number, Group>();
+    private roomsById = new Map<number, Room>();
+    private teachersById = new Map<number, Teacher>();
+    private coursesById = new Map<number, Course>();
 
     constructor(
-        private scheduleService: ScheduleService,
-        private teacherService: TeacherService,
-        private roomService: RoomService,
-        private notificationService: NotificationService
+        private readonly edtService: EdtService,
+        private readonly scheduleService: ScheduleService,
+        private readonly courseService: CourseService,
+        private readonly groupService: GroupService,
+        private readonly teacherService: TeacherService,
+        private readonly roomService: RoomService,
+        private readonly notificationService: NotificationService
     ) {}
 
     ngOnInit() {
-        const today = new Date();
-        this.selectedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-        this.loadFilters();
-        this.loadSchedule();
+        const weekData = this.isoWeekData(new Date());
+        this.semaine = weekData.week;
+        this.annee = weekData.year;
+        this.loadReferenceData();
     }
 
-    toNumber(value: string): number {
-        return Number(value);
+    requiresTarget(): boolean {
+        return this.viewMode !== 'global';
     }
 
-    loadSchedule() {
-        const teacherId = this.selectedEnseignant ? Number(this.selectedEnseignant) : undefined;
-        const roomId = this.selectedSalle ? Number(this.selectedSalle) : undefined;
-        const groupId = this.selectedGroupe ? Number(this.selectedGroupe) : undefined;
-        const date = this.selectedDate || undefined;
-
-        this.scheduleService.getAll({ fromDate: date, toDate: date, teacherId, roomId, groupId }).subscribe({
-            next: (entries) => {
-                this.schedules = entries;
-                this.updateGroupOptions();
-                this.computeViewData();
-            },
-            error: () => {
-                this.notificationService.error('Erreur', 'Chargement des emplois du temps impossible');
-            }
-        });
+    get targetOptions(): SelectOption[] {
+        if (this.viewMode === 'group') return this.groupOptions;
+        if (this.viewMode === 'teacher') return this.teacherOptions;
+        if (this.viewMode === 'room') return this.roomOptions;
+        return [];
     }
 
-    createSession() {
-        const validationError = this.validateNewSession();
-        if (validationError) {
-            this.notificationService.warn('Validation', validationError);
+    canCreateTargetEdt(): boolean {
+        return this.requiresTarget() && this.selectedTargetId !== undefined;
+    }
+
+    canExport(): boolean {
+        return this.requiresTarget() && this.selectedTargetId !== undefined;
+    }
+
+    onViewModeChange() {
+        this.selectedTargetId = undefined;
+        this.selectedEdt = undefined;
+        this.noTargetEdt = false;
+        this.entries = [];
+        this.entryRows = [];
+        this.updateStats();
+    }
+
+    refreshView() {
+        this.generationResult = undefined;
+        this.entryValidationMessages = [];
+        this.lastValidationReport = undefined;
+        this.loading = true;
+        if (this.viewMode === 'global') {
+            this.loadGlobalView();
             return;
         }
-
-        const candidate = this.newSession as ScheduleEntry;
-        this.conflictMessages = this.detectConflicts(candidate);
-        if (this.conflictMessages.length > 0) {
-            this.notificationService.error('Conflit', 'Creation bloquee: conflits detectes');
-            return;
-        }
-
-        this.scheduleService.create(candidate).subscribe({
-            next: () => {
-                this.notificationService.info('Succes', 'Seance creee avec succes');
-                this.newSession = {
-                    ...this.newSession,
-                    courseId: undefined,
-                    teacherId: undefined,
-                    roomId: undefined,
-                    groupId: undefined
-                };
-                this.loadSchedule();
-            },
-            error: () => {
-                this.notificationService.error('Erreur', 'Creation de la seance impossible');
-            }
-        });
+        this.loadTargetView();
     }
 
-    onDragStart(sessionId?: number) {
-        this.draggedSessionId = sessionId;
+    openGenerateDialog() {
+        this.generationForm = { periode: this.selectedPeriode, groupIds: [], dryRun: false, algorithmType: 'GREEDY' };
+        this.displayGenerateDialog = true;
     }
 
-    onDropToSlot(slot: { day: string; startTime: string; endTime: string }) {
-        if (!this.draggedSessionId) {
-            return;
-        }
-
-        const currentSession = this.schedules.find((entry) => entry.id === this.draggedSessionId);
-        if (!currentSession || !currentSession.id) {
-            return;
-        }
-
-        const updatedSession: ScheduleEntry = {
-            ...currentSession,
-            day: slot.day,
-            startTime: slot.startTime,
-            endTime: slot.endTime
+    runGeneration() {
+        const payload: EdtGenerationRequest = {
+            semaine: this.semaine,
+            annee: this.annee,
+            periode: this.generationForm.periode,
+            groupIds: this.generationForm.groupIds,
+            dryRun: this.generationForm.dryRun,
+            algorithmType: this.generationForm.algorithmType
         };
-
-        const conflicts = this.detectConflicts(updatedSession, currentSession.id);
-        if (conflicts.length > 0) {
-            this.conflictMessages = conflicts;
-            this.notificationService.error('Conflit', 'Deplacement bloque: conflit detecte');
-            return;
-        }
-
-        this.scheduleService.update(currentSession.id, updatedSession).subscribe({
-            next: () => {
-                this.notificationService.info('Succes', 'Seance deplacee avec succes');
-                this.draggedSessionId = undefined;
-                this.loadSchedule();
+        this.edtService.generate(payload).subscribe({
+            next: (result) => {
+                this.generationResult = result;
+                this.displayGenerateDialog = false;
+                this.notificationService.info('Generation', `Placed ${result.placed}/${result.requested}`);
+                this.refreshView();
             },
-            error: () => {
-                this.notificationService.error('Erreur', 'Deplacement de la seance impossible');
-            }
+            error: () => this.notificationService.error('Erreur', 'Generation EDT impossible')
         });
     }
 
-    getViewLabel(): string {
-        switch (this.viewMode) {
-            case 'teacher':
-                return 'Planning enseignant';
-            case 'room':
-                return 'Planning salle';
-            case 'group':
-                return 'Planning groupe';
-            default:
-                return 'Planning global';
+    createTargetEdt() {
+        if (!this.canCreateTargetEdt()) {
+            this.notificationService.warn('Validation', 'Selectionnez une cible pour creer un EDT');
+            return;
         }
+        const payload: Edt = {
+            semaine: this.semaine,
+            annee: this.annee,
+            periode: this.selectedPeriode,
+            vue: this.toEdtVue(this.viewMode),
+            targetId: this.selectedTargetId as number,
+            status: 'DRAFT'
+        };
+        this.edtService.createEdt(payload).subscribe({
+            next: (edt) => {
+                this.selectedEdt = edt;
+                this.noTargetEdt = false;
+                this.notificationService.info('Succes', `EDT #${edt.id} cree`);
+                this.refreshView();
+            },
+            error: () => this.notificationService.error('Erreur', 'Creation EDT impossible')
+        });
     }
 
-    private loadFilters() {
-        this.teacherService.getAll().subscribe({
-            next: (teachers) => {
+    validateSelectedEdt() {
+        if (!this.selectedEdt?.id) return;
+        this.edtService.validateEdt(this.selectedEdt.id).subscribe({
+            next: (report) => {
+                this.lastValidationReport = report;
+                this.notificationService.info('Validation', `Status ${report.status}`);
+                this.refreshView();
+            },
+            error: () => this.notificationService.error('Erreur', 'Validation EDT impossible')
+        });
+    }
+
+    publishSelectedEdt() {
+        if (!this.selectedEdt?.id) return;
+        this.edtService.publishEdt(this.selectedEdt.id).subscribe({
+            next: (edt) => {
+                this.selectedEdt = edt;
+                this.notificationService.info('Publication', 'EDT publie');
+            },
+            error: () => this.notificationService.error('Erreur', 'Publication EDT impossible')
+        });
+    }
+
+    unpublishSelectedEdt() {
+        if (!this.selectedEdt?.id) return;
+        this.edtService.unpublishEdt(this.selectedEdt.id).subscribe({
+            next: (edt) => {
+                this.selectedEdt = edt;
+                this.notificationService.info('Depublication', 'EDT depublie');
+            },
+            error: () => this.notificationService.error('Erreur', 'Depublication EDT impossible')
+        });
+    }
+
+    loadValidationReport() {
+        if (!this.selectedEdt?.id) return;
+        this.edtService.validationReport(this.selectedEdt.id).subscribe({
+            next: (report) => (this.lastValidationReport = report),
+            error: () => this.notificationService.error('Erreur', 'Rapport de validation indisponible')
+        });
+    }
+
+    exportEdt(format: 'pdf' | 'excel') {
+        if (!this.canExport()) {
+            this.notificationService.warn('Export', 'Selectionnez une vue cible pour exporter');
+            return;
+        }
+        this.edtService.exportByView(this.toEdtVue(this.viewMode), this.selectedTargetId as number, this.semaine, this.annee, format).subscribe({
+            next: (blob) => {
+                const target = this.selectedTargetId as number;
+                const ext = format === 'excel' ? 'xlsx' : 'pdf';
+                const filename = `EDT_${this.toEdtVue(this.viewMode)}_${target}_S${this.semaine}_${this.annee}.${ext}`;
+                this.downloadBlob(blob, filename);
+                this.notificationService.info('Export', `Fichier ${filename} telecharge`);
+            },
+            error: () => this.notificationService.error('Erreur', 'Export EDT impossible')
+        });
+    }
+
+    openCreateEntryDialog() {
+        if (this.requiresTarget() && !this.selectedEdt?.id) {
+            this.notificationService.warn('Validation', 'Aucun EDT cible selectionne');
+            return;
+        }
+        this.isEditMode = false;
+        this.editingEntryId = undefined;
+        this.entryValidationMessages = [];
+        this.suggestions = [];
+        this.entryForm = this.emptyEntryForm();
+        if (this.viewMode === 'group') this.entryForm.groupId = this.selectedTargetId;
+        if (this.viewMode === 'teacher') this.entryForm.teacherId = this.selectedTargetId;
+        if (this.viewMode === 'room') this.entryForm.roomId = this.selectedTargetId;
+        this.displayEntryDialog = true;
+    }
+
+    openEditEntryDialog(entry: ScheduleEntry) {
+        this.isEditMode = true;
+        this.editingEntryId = entry.id;
+        this.entryValidationMessages = [];
+        this.suggestions = [];
+        this.entryForm = {
+            courseId: entry.courseId,
+            teacherId: entry.teacherId,
+            roomId: entry.roomId,
+            groupId: entry.groupId,
+            date: this.datePart(entry.startTime),
+            startTime: this.timePart(entry.startTime),
+            endTime: this.timePart(entry.endTime),
+            status: entry.status || 'SCHEDULED'
+        };
+        this.displayEntryDialog = true;
+    }
+
+    requestSuggestions() {
+        if (!this.entryForm.teacherId || !this.entryForm.date) {
+            this.notificationService.warn('Validation', 'Enseignant et date sont obligatoires pour les suggestions');
+            return;
+        }
+        const course = this.entryForm.courseId ? this.coursesById.get(this.entryForm.courseId) : undefined;
+        const group = this.entryForm.groupId ? this.groupsById.get(this.entryForm.groupId) : undefined;
+        this.edtService
+            .suggestions({
+                teacherId: this.entryForm.teacherId,
+                date: this.entryForm.date,
+                groupId: this.entryForm.groupId,
+                matiereId: course?.matiereId,
+                effectif: group?.effectif
+            })
+            .subscribe({
+                next: (items) => {
+                    this.suggestions = items;
+                    if (items.length === 0) this.notificationService.warn('Suggestion', 'Aucun creneau disponible');
+                },
+                error: () => this.notificationService.error('Erreur', 'Suggestions indisponibles')
+            });
+    }
+
+    applySuggestion(suggestion: SlotSuggestion) {
+        this.entryForm.date = this.datePart(suggestion.startTime);
+        this.entryForm.startTime = this.timePart(suggestion.startTime);
+        this.entryForm.endTime = this.timePart(suggestion.endTime);
+        if (suggestion.roomId) this.entryForm.roomId = suggestion.roomId;
+    }
+
+    saveEntry() {
+        const validationMessage = this.validateEntryForm();
+        if (validationMessage) {
+            this.notificationService.warn('Validation', validationMessage);
+            return;
+        }
+        const payload = this.toSchedulePayload(this.entryForm);
+        const groupSize = payload.groupId ? this.groupsById.get(payload.groupId)?.effectif : undefined;
+        const roomCapacity = payload.roomId ? this.roomsById.get(payload.roomId)?.capacite : undefined;
+        const excludeEntryId = this.isEditMode ? this.editingEntryId : undefined;
+        this.edtService
+            .validateEntry({
+                courseId: payload.courseId as number,
+                teacherId: payload.teacherId as number,
+                roomId: payload.roomId as number,
+                groupId: payload.groupId as number,
+                startTime: payload.startTime,
+                endTime: payload.endTime,
+                groupSize,
+                roomCapacity,
+                excludeEntryId
+            })
+            .subscribe({
+                next: (result) => {
+                    this.entryValidationMessages = [...(result.conflicts || []), ...(result.warnings || [])];
+                    if (!result.valid) {
+                        this.notificationService.error('Conflit', 'Seance invalide: conflits detectes');
+                        return;
+                    }
+                    if (this.isEditMode && this.editingEntryId) {
+                        this.scheduleService.update(this.editingEntryId, payload).subscribe({
+                            next: () => {
+                                this.displayEntryDialog = false;
+                                this.notificationService.info('Succes', 'Seance mise a jour');
+                                this.refreshView();
+                            },
+                            error: () => this.notificationService.error('Erreur', 'Mise a jour seance impossible')
+                        });
+                        return;
+                    }
+                    if (!this.selectedEdt?.id) {
+                        this.notificationService.warn('Validation', 'Aucun EDT selectionne pour ajout de seance');
+                        return;
+                    }
+                    this.edtService.addEntry(this.selectedEdt.id, payload).subscribe({
+                        next: () => {
+                            this.displayEntryDialog = false;
+                            this.notificationService.info('Succes', 'Seance ajoutee');
+                            this.refreshView();
+                        },
+                        error: () => this.notificationService.error('Erreur', 'Ajout de seance impossible')
+                    });
+                },
+                error: () => this.notificationService.error('Erreur', 'Validation backend de la seance indisponible')
+            });
+    }
+
+    deleteEntry(entry: ScheduleEntry) {
+        if (!entry.id) return;
+        this.scheduleService.delete(entry.id).subscribe({
+            next: () => {
+                this.notificationService.info('Succes', 'Seance supprimee');
+                this.refreshView();
+            },
+            error: () => this.notificationService.error('Erreur', 'Suppression seance impossible')
+        });
+    }
+
+    onDragStart(entryId?: number) {
+        this.draggedEntryId = entryId;
+    }
+
+    onDropToSlot(slot: QuickMoveSlot) {
+        if (!this.draggedEntryId) return;
+        const current = this.entries.find((item) => item.id === this.draggedEntryId);
+        if (!current || !current.id) return;
+        const date = this.dateForDayOffset(slot.dayOffset);
+        const updated: ScheduleEntry = {
+            ...current,
+            day: this.dayCode(date),
+            startTime: this.toDateTime(date, slot.startTime),
+            endTime: this.toDateTime(date, slot.endTime)
+        };
+        const groupSize = updated.groupId ? this.groupsById.get(updated.groupId)?.effectif : undefined;
+        const roomCapacity = updated.roomId ? this.roomsById.get(updated.roomId)?.capacite : undefined;
+        this.edtService
+            .validateEntry({
+                courseId: updated.courseId as number,
+                teacherId: updated.teacherId as number,
+                roomId: updated.roomId as number,
+                groupId: updated.groupId as number,
+                startTime: updated.startTime,
+                endTime: updated.endTime,
+                groupSize,
+                roomCapacity,
+                excludeEntryId: current.id
+            })
+            .subscribe({
+                next: (result) => {
+                    this.entryValidationMessages = [...(result.conflicts || []), ...(result.warnings || [])];
+                    if (!result.valid) {
+                        this.notificationService.error('Conflit', 'Deplacement bloque');
+                        return;
+                    }
+                    this.scheduleService.update(current.id as number, updated).subscribe({
+                        next: () => {
+                            this.draggedEntryId = undefined;
+                            this.notificationService.info('Succes', 'Seance deplacee');
+                            this.refreshView();
+                        },
+                        error: () => this.notificationService.error('Erreur', 'Deplacement impossible')
+                    });
+                },
+                error: () => this.notificationService.error('Erreur', 'Validation du deplacement indisponible')
+            });
+    }
+
+    labelForSlotDate(dayOffset: number): string {
+        return this.dateForDayOffset(dayOffset);
+    }
+
+    roomLabel(roomId?: number): string {
+        if (!roomId) return '-';
+        const room = this.roomsById.get(roomId);
+        if (!room) return `Salle #${roomId}`;
+        return `${room.code || room.nom}`;
+    }
+
+    private loadReferenceData() {
+        forkJoin({
+            courses: this.courseService.getAll().pipe(catchError(() => of([] as Course[]))),
+            groups: this.groupService.getAll().pipe(catchError(() => of([] as Group[]))),
+            teachers: this.teacherService.getAll().pipe(catchError(() => of([] as Teacher[]))),
+            rooms: this.roomService.getAll().pipe(catchError(() => of([] as Room[])))
+        }).subscribe({
+            next: ({ courses, groups, teachers, rooms }) => {
+                this.courses = courses;
+                this.groups = groups;
                 this.teachers = teachers;
-                this.enseignants = teachers
-                    .map((teacher) => ({
-                        label: `${teacher.prenom} ${teacher.nom}`,
-                        value: String(teacher.id || '')
-                    }))
-                    .filter((item) => item.value);
-            }
-        });
-
-        this.roomService.getAll().subscribe({
-            next: (rooms) => {
                 this.rooms = rooms;
-                this.salles = rooms
-                    .map((room) => ({
-                        label: room.nom,
-                        value: String(room.id || '')
-                    }))
-                    .filter((item) => item.value);
+                this.coursesById = new Map(courses.filter((item) => item.id !== undefined).map((item) => [item.id as number, item]));
+                this.groupsById = new Map(groups.filter((item) => item.id !== undefined).map((item) => [item.id as number, item]));
+                this.teachersById = new Map(teachers.filter((item) => item.id !== undefined).map((item) => [item.id as number, item]));
+                this.roomsById = new Map(rooms.filter((item) => item.id !== undefined).map((item) => [item.id as number, item]));
+                this.courseOptions = courses
+                    .filter((item) => item.id !== undefined)
+                    .map((item) => ({ label: item.nom || item.title || `Cours #${item.id}`, value: item.id as number }));
+                this.groupOptions = groups.filter((item) => item.id !== undefined).map((item) => ({ label: item.nom, value: item.id as number }));
+                this.teacherOptions = teachers.filter((item) => item.id !== undefined).map((item) => ({ label: this.teacherDisplayName(item), value: item.id as number }));
+                this.roomOptions = rooms
+                    .filter((item) => item.id !== undefined)
+                    .map((item) => ({ label: `${item.code || item.nom} - ${item.nom}`, value: item.id as number }));
+                this.refreshView();
+            },
+            error: () => this.notificationService.error('Erreur', 'Chargement des ressources EDT impossible')
+        });
+    }
+
+    private loadGlobalView() {
+        this.selectedEdt = undefined;
+        this.noTargetEdt = false;
+        this.edtService.listEdt({ semaine: this.semaine, annee: this.annee }).subscribe({
+            next: (edts) => {
+                this.availableEdts = edts.filter((item) => item.vue === 'GROUPE');
+                const ids = this.availableEdts.map((item) => item.id).filter((id): id is number => id !== undefined);
+                if (ids.length === 0) {
+                    this.entries = [];
+                    this.entryRows = [];
+                    this.weeklyViewData = {};
+                    this.updateStats();
+                    this.loading = false;
+                    return;
+                }
+                const requests = ids.map((id) => this.edtService.getEntries(id).pipe(catchError(() => of([] as ScheduleEntry[]))));
+                forkJoin(requests).subscribe({
+                    next: (resultSets) => {
+                        this.entries = this.deduplicateEntries(resultSets.flat());
+                        this.rebuildEntryRows();
+                        this.loading = false;
+                    },
+                    error: () => {
+                        this.loading = false;
+                        this.notificationService.error('Erreur', 'Chargement des seances globales impossible');
+                    }
+                });
+            },
+            error: () => {
+                this.loading = false;
+                this.notificationService.error('Erreur', 'Chargement des EDT impossible');
             }
         });
     }
 
-    computeViewData() {
-        const roomById = new Map(this.rooms.filter((room) => room.id !== undefined).map((room) => [room.id as number, room.nom]));
-        const filteredSchedules = this.getSchedulesForCurrentView();
+    private loadTargetView() {
+        if (!this.selectedTargetId) {
+            this.entries = [];
+            this.entryRows = [];
+            this.selectedEdt = undefined;
+            this.noTargetEdt = false;
+            this.updateStats();
+            this.loading = false;
+            return;
+        }
+        const request =
+            this.viewMode === 'group'
+                ? this.edtService.getByGroupe(this.selectedTargetId, this.semaine, this.annee)
+                : this.viewMode === 'teacher'
+                ? this.edtService.getByEnseignant(this.selectedTargetId, this.semaine, this.annee)
+                : this.edtService.getBySalle(this.selectedTargetId, this.semaine, this.annee);
+        request.subscribe({
+            next: (edt) => {
+                this.selectedEdt = edt;
+                this.availableEdts = [edt];
+                this.noTargetEdt = false;
+                this.loadEntriesForEdt(edt.id as number);
+            },
+            error: (error: { status?: number }) => {
+                if (error?.status === 404) {
+                    this.noTargetEdt = true;
+                    this.selectedEdt = undefined;
+                    this.entries = [];
+                    this.entryRows = [];
+                    this.updateStats();
+                    this.loading = false;
+                    return;
+                }
+                this.loading = false;
+                this.notificationService.error('Erreur', 'Chargement EDT cible impossible');
+            }
+        });
+    }
 
-        this.coursDuJour = filteredSchedules.map((entry) => ({
+    private loadEntriesForEdt(edtId: number) {
+        forkJoin({
+            entries: this.edtService.getEntries(edtId),
+            weekly: this.edtService.weeklyView(edtId).pipe(catchError(() => of({} as Record<string, ScheduleEntry[]>)))
+        }).subscribe({
+            next: ({ entries, weekly }) => {
+                this.entries = this.sortByStartTime(entries || []);
+                this.weeklyViewData = weekly || {};
+                this.rebuildEntryRows();
+                this.loading = false;
+            },
+            error: () => {
+                this.loading = false;
+                this.notificationService.error('Erreur', 'Chargement des seances EDT impossible');
+            }
+        });
+    }
+
+    private rebuildEntryRows() {
+        this.entryRows = this.entries.map((entry) => ({
             id: entry.id,
-            title: `Cours #${entry.courseId || '-'}`,
-            time: `${entry.startTime} - ${entry.endTime}`,
-            room: entry.roomId ? roomById.get(entry.roomId) || `Salle #${entry.roomId}` : 'Salle non assignee',
-            day: entry.day,
-            startTime: entry.startTime,
-            endTime: entry.endTime,
-            roomId: entry.roomId
+            courseLabel: this.courseLabel(entry.courseId),
+            teacherLabel: this.teacherLabel(entry.teacherId),
+            groupLabel: this.groupLabel(entry.groupId),
+            roomLabel: this.roomLabel(entry.roomId),
+            dateLabel: this.datePart(entry.startTime),
+            startLabel: this.timePart(entry.startTime),
+            endLabel: this.timePart(entry.endTime),
+            status: entry.status || entry.statut || 'SCHEDULED'
         }));
+        this.updateStats();
+    }
 
-        const occupiedRooms = new Set(filteredSchedules.map((entry) => entry.roomId).filter((id): id is number => id !== undefined));
-        const totalRooms = this.rooms.length;
-
+    private updateStats() {
         this.stats = {
-            coursPlanifies: filteredSchedules.length,
-            sallesOccupees: `${occupiedRooms.size}/${totalRooms}`,
-            conflitsDetectes: filteredSchedules.filter((entry) => this.isConflictStatus(entry.statut)).length
+            totalEntries: this.entries.length,
+            uniqueTeachers: new Set(this.entries.map((item) => item.teacherId).filter((id) => id !== undefined)).size,
+            uniqueGroups: new Set(this.entries.map((item) => item.groupId).filter((id) => id !== undefined)).size,
+            uniqueRooms: new Set(this.entries.map((item) => item.roomId).filter((id) => id !== undefined)).size
         };
     }
 
-    private getSchedulesForCurrentView(): ScheduleEntry[] {
-        if (this.viewMode === 'teacher') {
-            if (this.selectedEnseignant) {
-                const teacherId = Number(this.selectedEnseignant);
-                return this.schedules.filter((entry) => entry.teacherId === teacherId);
-            }
-            return this.schedules.filter((entry) => entry.teacherId !== undefined);
+    private validateEntryForm(): string | null {
+        if (!this.entryForm.courseId || !this.entryForm.teacherId || !this.entryForm.groupId || !this.entryForm.roomId) {
+            return 'Cours, enseignant, groupe et salle sont obligatoires';
         }
-
-        if (this.viewMode === 'room') {
-            if (this.selectedSalle) {
-                const roomId = Number(this.selectedSalle);
-                return this.schedules.filter((entry) => entry.roomId === roomId);
-            }
-            return this.schedules.filter((entry) => entry.roomId !== undefined);
-        }
-
-        if (this.viewMode === 'group') {
-            if (this.selectedGroupe) {
-                const groupId = Number(this.selectedGroupe);
-                return this.schedules.filter((entry) => entry.groupId === groupId);
-            }
-            return this.schedules.filter((entry) => entry.groupId !== undefined);
-        }
-
-        return this.schedules;
-    }
-
-    private updateGroupOptions() {
-        const groupIds = Array.from(new Set(this.schedules.map((entry) => entry.groupId).filter((id): id is number => id !== undefined))).sort((a, b) => a - b);
-        this.groupes = groupIds.map((id) => ({ label: `Groupe #${id}`, value: String(id) }));
-    }
-
-    private validateNewSession(): string | null {
-        if (!this.newSession.courseId) {
-            return 'Le cours est obligatoire';
-        }
-
-        if (!this.newSession.teacherId) {
-            return 'L enseignant est obligatoire';
-        }
-
-        if (!this.newSession.roomId) {
-            return 'La salle est obligatoire';
-        }
-
-        if (!this.newSession.groupId) {
-            return 'Le groupe est obligatoire';
-        }
-
-        if (!this.newSession.startTime || !this.newSession.endTime || this.newSession.startTime >= this.newSession.endTime) {
-            return 'Le creneau horaire est invalide';
-        }
-
+        if (!this.entryForm.date || !this.entryForm.startTime || !this.entryForm.endTime) return 'Date et horaires sont obligatoires';
+        if (this.entryForm.startTime >= this.entryForm.endTime) return 'L heure de fin doit etre superieure a l heure de debut';
         return null;
     }
 
-    private detectConflicts(candidate: ScheduleEntry, excludeId?: number): string[] {
-        const conflicts: string[] = [];
+    private toSchedulePayload(form: EntryForm): ScheduleEntry {
+        return {
+            courseId: form.courseId,
+            teacherId: form.teacherId,
+            roomId: form.roomId,
+            groupId: form.groupId,
+            day: this.dayCode(form.date),
+            startTime: this.toDateTime(form.date, form.startTime),
+            endTime: this.toDateTime(form.date, form.endTime),
+            status: form.status
+        };
+    }
 
-        for (const entry of this.schedules) {
-            if (excludeId && entry.id === excludeId) {
-                continue;
-            }
+    private emptyEntryForm(): EntryForm {
+        const monday = this.dateForDayOffset(0);
+        return { courseId: undefined, teacherId: undefined, roomId: undefined, groupId: undefined, date: monday, startTime: '08:00', endTime: '10:00', status: 'SCHEDULED' };
+    }
 
-            if (entry.day !== candidate.day) {
-                continue;
-            }
+    private teacherDisplayName(teacher: Teacher): string {
+        const fullName = `${teacher.prenom || ''} ${teacher.nom || ''}`.trim();
+        return fullName || `Enseignant #${teacher.id}`;
+    }
 
-            if (!this.overlaps(entry.startTime, entry.endTime, candidate.startTime, candidate.endTime)) {
-                continue;
-            }
+    private courseLabel(courseId?: number): string {
+        if (!courseId) return 'Cours -';
+        const course = this.coursesById.get(courseId);
+        return course?.nom || course?.title || `Cours #${courseId}`;
+    }
 
-            if (entry.teacherId && candidate.teacherId && entry.teacherId === candidate.teacherId) {
-                conflicts.push(`Conflit enseignant sur ${candidate.day} (${candidate.startTime}-${candidate.endTime})`);
-            }
+    private teacherLabel(teacherId?: number): string {
+        if (!teacherId) return 'Enseignant -';
+        const teacher = this.teachersById.get(teacherId);
+        if (!teacher) return `Enseignant #${teacherId}`;
+        return this.teacherDisplayName(teacher);
+    }
 
-            if (entry.roomId && candidate.roomId && entry.roomId === candidate.roomId) {
-                conflicts.push(`Conflit salle sur ${candidate.day} (${candidate.startTime}-${candidate.endTime})`);
-            }
+    private groupLabel(groupId?: number): string {
+        if (!groupId) return 'Groupe -';
+        const group = this.groupsById.get(groupId);
+        return group?.nom || `Groupe #${groupId}`;
+    }
+
+    private toEdtVue(mode: PlanningViewMode): EdtVueType {
+        if (mode === 'group') return 'GROUPE';
+        if (mode === 'teacher') return 'ENSEIGNANT';
+        if (mode === 'room') return 'SALLE';
+        return 'GROUPE';
+    }
+
+    private deduplicateEntries(entries: ScheduleEntry[]): ScheduleEntry[] {
+        const map = new Map<string, ScheduleEntry>();
+        for (const entry of entries) {
+            const key = entry.id !== undefined ? `id-${entry.id}` : `${entry.courseId}-${entry.teacherId}-${entry.roomId}-${entry.groupId}-${entry.startTime}-${entry.endTime}`;
+            map.set(key, entry);
         }
-
-        return Array.from(new Set(conflicts));
+        return this.sortByStartTime(Array.from(map.values()));
     }
 
-    private overlaps(startA: string, endA: string, startB: string, endB: string): boolean {
-        return startA < endB && startB < endA;
+    private sortByStartTime(entries: ScheduleEntry[]): ScheduleEntry[] {
+        return [...entries].sort((a, b) => a.startTime.localeCompare(b.startTime));
     }
 
-    private isConflictStatus(status?: string): boolean {
-        const normalized = (status || '').toUpperCase();
-        return normalized.includes('CONFLICT') || normalized.includes('CONFLIT');
+    private isoWeekData(input: Date): { week: number; year: number } {
+        const value = new Date(Date.UTC(input.getFullYear(), input.getMonth(), input.getDate()));
+        value.setUTCDate(value.getUTCDate() + 4 - (value.getUTCDay() || 7));
+        const yearStart = new Date(Date.UTC(value.getUTCFullYear(), 0, 1));
+        const week = Math.ceil(((value.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+        return { week, year: value.getUTCFullYear() };
+    }
+
+    private mondayDateForWeek(year: number, week: number): Date {
+        const jan4 = new Date(year, 0, 4);
+        const day = (jan4.getDay() + 6) % 7;
+        const monday = new Date(year, 0, 4 - day + (week - 1) * 7);
+        monday.setHours(0, 0, 0, 0);
+        return monday;
+    }
+
+    private dateForDayOffset(dayOffset: number): string {
+        const monday = this.mondayDateForWeek(this.annee, this.semaine);
+        const value = new Date(monday);
+        value.setDate(monday.getDate() + dayOffset);
+        const year = value.getFullYear();
+        const month = String(value.getMonth() + 1).padStart(2, '0');
+        const day = String(value.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    private toDateTime(date: string, time: string): string {
+        return `${date}T${time}:00`;
+    }
+
+    private dayCode(date: string): string {
+        const value = new Date(`${date}T00:00:00`);
+        const map = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+        return map[value.getDay()] || 'MONDAY';
+    }
+
+    private datePart(value: string): string {
+        const [datePart] = (value || '').split('T');
+        if (datePart && datePart.length === 10) return datePart;
+        return this.dateForDayOffset(0);
+    }
+
+    private timePart(value: string): string {
+        const split = (value || '').split('T');
+        if (split.length < 2) return '08:00';
+        const time = split[1].slice(0, 5);
+        return time.length === 5 ? time : '08:00';
+    }
+
+    private downloadBlob(blob: Blob, filename: string) {
+        const blobUrl = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = blobUrl;
+        anchor.download = filename;
+        anchor.click();
+        URL.revokeObjectURL(blobUrl);
     }
 }

@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.WeekFields;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -32,7 +34,7 @@ public class EDTValidationService {
         ValidationReport report = new ValidationReport();
         report.setEdtId(edt.getId());
 
-        List<ScheduleEntry> entries = scheduleEntryRepository.findByEdt_IdOrderByStartTimeAsc(edt.getId());
+        List<ScheduleEntry> entries = loadEntriesForEdt(edt);
 
         validateMissingCourses(entries, report);
         validateConflicts(entries, report);
@@ -45,6 +47,21 @@ public class EDTValidationService {
             report.setValidatedAt(java.time.LocalDateTime.now());
         }
         return report;
+    }
+
+    private List<ScheduleEntry> loadEntriesForEdt(EDT edt) {
+        LocalDate weekStart = LocalDate.now()
+                .withYear(edt.getAnnee())
+                .with(WeekFields.ISO.weekOfWeekBasedYear(), edt.getSemaine())
+                .with(WeekFields.ISO.dayOfWeek(), 1);
+        LocalDateTime from = weekStart.atStartOfDay();
+        LocalDateTime to = weekStart.plusDays(6).atTime(23, 59, 59);
+
+        return switch (edt.getVue()) {
+            case GROUPE -> scheduleEntryRepository.findByGroupIdAndStartTimeBetweenOrderByStartTimeAsc(edt.getTargetId(), from, to);
+            case ENSEIGNANT -> scheduleEntryRepository.findByTeacherIdAndStartTimeBetweenOrderByStartTimeAsc(edt.getTargetId(), from, to);
+            case SALLE -> scheduleEntryRepository.findByRoomIdAndStartTimeBetweenOrderByStartTimeAsc(edt.getTargetId(), from, to);
+        };
     }
 
     private void validateMissingCourses(List<ScheduleEntry> entries, ValidationReport report) {

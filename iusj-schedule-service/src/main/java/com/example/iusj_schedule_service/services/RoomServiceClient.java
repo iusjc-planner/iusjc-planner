@@ -31,14 +31,18 @@ public class RoomServiceClient {
             for (Object room : rooms) {
                 if (room instanceof Map<?, ?> map) {
                     Object idRaw = map.get("id");
+                    Object statusRaw = map.get("status");
                     if (idRaw instanceof Number number) {
-                        ids.add(number.longValue());
+                        String status = statusRaw == null ? "ACTIVE" : statusRaw.toString();
+                        if ("ACTIVE".equalsIgnoreCase(status)) {
+                            ids.add(number.longValue());
+                        }
                     }
                 }
             }
-            return ids.isEmpty() ? List.of(1L, 2L, 3L) : ids;
+            return ids;
         } catch (Exception ex) {
-            return List.of(1L, 2L, 3L);
+            return List.of();
         }
     }
 }

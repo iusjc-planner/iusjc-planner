@@ -2,6 +2,8 @@ package com.example.iusj_schedule_service.dto;
 
 import jakarta.validation.constraints.NotNull;
 
+import java.time.LocalDateTime;
+
 public class GenerationCourseInput {
 
     private Long id;
@@ -20,6 +22,16 @@ public class GenerationCourseInput {
     private Integer groupSize;
 
     private Integer roomCapacity;
+
+    private LocalDateTime fixedStartTime;
+
+    private LocalDateTime fixedEndTime;
+
+    private String courseType;
+
+    private String courseTitle;
+
+    private String subjectName;
 
     public Long getId() {
         return id;
@@ -75,5 +87,49 @@ public class GenerationCourseInput {
 
     public void setRoomCapacity(Integer roomCapacity) {
         this.roomCapacity = roomCapacity;
+    }
+
+    public LocalDateTime getFixedStartTime() {
+        return fixedStartTime;
+    }
+
+    public void setFixedStartTime(LocalDateTime fixedStartTime) {
+        this.fixedStartTime = fixedStartTime;
+    }
+
+    public LocalDateTime getFixedEndTime() {
+        return fixedEndTime;
+    }
+
+    public void setFixedEndTime(LocalDateTime fixedEndTime) {
+        this.fixedEndTime = fixedEndTime;
+    }
+
+    public String getCourseType() {
+        return courseType;
+    }
+
+    public void setCourseType(String courseType) {
+        this.courseType = courseType;
+    }
+
+    public String getCourseTitle() {
+        return courseTitle;
+    }
+
+    public void setCourseTitle(String courseTitle) {
+        this.courseTitle = courseTitle;
+    }
+
+    public String getSubjectName() {
+        return subjectName;
+    }
+
+    public void setSubjectName(String subjectName) {
+        this.subjectName = subjectName;
+    }
+
+    public boolean hasFixedSlot() {
+        return fixedStartTime != null && fixedEndTime != null;
     }
 }

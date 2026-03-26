@@ -7,5 +7,7 @@ export interface ScheduleEntry {
     day: string;
     startTime: string;
     endTime: string;
+    status?: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+    edtId?: number;
     statut?: string;
 }

@@ -7,6 +7,7 @@ export const ApiEndpoints = {
     courses: `${API_BASE_URL}/courses`,
     matieres: `${API_BASE_URL}/matieres`,
     schedule: `${API_BASE_URL}/schedule`,
+    edt: `${API_BASE_URL}/edt`,
     groups: `${API_BASE_URL}/groups`,
     schools: `${API_BASE_URL}/schools`,
     notifications: `${API_BASE_URL}/notifications`,

@@ -1,5 +1,8 @@
 package com.example.iusj_schedule_service.services;
 
+import com.example.iusj_schedule_service.client.CourseCatalogClient;
+import com.example.iusj_schedule_service.client.GroupServiceClient;
+import com.example.iusj_schedule_service.client.IdentityDirectoryClient;
 import com.example.iusj_schedule_service.dto.ValidationReport;
 import com.example.iusj_schedule_service.entities.EDT;
 import com.example.iusj_schedule_service.repositories.EDTRepository;
@@ -46,6 +49,18 @@ class EDTServiceTest {
 
     @Mock
     private ExcelExportService excelExportService;
+
+    @Mock
+    private CourseCatalogClient courseCatalogClient;
+
+    @Mock
+    private IdentityDirectoryClient identityDirectoryClient;
+
+    @Mock
+    private com.example.iusj_schedule_service.client.RoomServiceClient roomServiceClient;
+
+    @Mock
+    private GroupServiceClient groupServiceClient;
 
     @InjectMocks
     private EDTService edtService;
