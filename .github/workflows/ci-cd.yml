@@ -89,7 +89,30 @@ jobs:
       run: |
         cd frontend
         npm run test:ci
-      continue-on-error: true
+
+    - name: Upload frontend unit coverage
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: frontend-unit-coverage
+        path: frontend/coverage/
+
+    - name: Install Playwright browsers
+      run: |
+        cd frontend
+        npx playwright install --with-deps chromium
+
+    - name: Run E2E tests
+      run: |
+        cd frontend
+        npm run e2e:ci
+
+    - name: Upload Playwright report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: frontend-e2e-report
+        path: frontend/playwright-report/
 
     - name: Build frontend
       run: |

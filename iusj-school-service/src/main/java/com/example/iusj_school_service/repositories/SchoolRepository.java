@@ -8,4 +8,6 @@ import com.example.iusj_school_service.entities.School;
 public interface SchoolRepository extends JpaRepository<School, Long>, JpaSpecificationExecutor<School> {
 
 	long countByStatus(School.Status status);
+
+	boolean existsByNameIgnoreCase(String name);
 }

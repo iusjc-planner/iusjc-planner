@@ -2,21 +2,16 @@ package com.example.iusj_room_service.services;
 
 import com.example.iusj_room_service.entities.Room;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-
-import jakarta.persistence.criteria.Predicate;
-
-import java.util.List;
 
 public class RoomSpecifications {
 
-    public static Specification<Room> withFilters(String name, Room.RoomType type, Room.RoomStatus status, Integer minCapacity, List<String> equipments) {
+    public static Specification<Room> withFilters(String name, Room.RoomType type, Room.RoomStatus status, Integer minCapacity, Long equipmentId) {
         return Specification.where(hasName(name))
                 .and(hasType(type))
                 .and(hasStatus(status))
                 .and(hasMinCapacity(minCapacity))
-                .and(hasEquipments(equipments));
+                .and(hasEquipmentId(equipmentId));
     }
 
     private static Specification<Room> hasName(String name) {
@@ -44,14 +39,13 @@ public class RoomSpecifications {
         return (root, query, cb) -> minCapacity == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("capacity"), minCapacity);
     }
 
-    private static Specification<Room> hasEquipments(List<String> equipments) {
+    private static Specification<Room> hasEquipmentId(Long equipmentId) {
         return (root, query, cb) -> {
-            if (CollectionUtils.isEmpty(equipments)) {
+            if (equipmentId == null) {
                 return cb.conjunction();
             }
-            return cb.and(equipments.stream()
-                    .map(eq -> cb.isMember(eq, root.get("equipments")))
-                    .toArray(Predicate[]::new));
+            query.distinct(true);
+            return cb.equal(root.join("equipments").get("resourceId"), equipmentId);
         };
     }
 }

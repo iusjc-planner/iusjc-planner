@@ -1,6 +1,8 @@
 package com.example.iusj_user_service.services;
 
 import com.example.iusj_user_service.client.TeacherServiceClient;
+import com.example.iusj_user_service.annotation.Audited;
+import com.example.iusj_user_service.entities.AuditLog;
 import com.example.iusj_user_service.entities.User;
 import com.example.iusj_user_service.repository.UserRepository;
 import org.slf4j.Logger;
@@ -34,6 +36,7 @@ public class UserService {
         return userRepository.findById(id);
     }
 
+    @Audited(action = AuditLog.AuditAction.CREATE, entityType = "User")
     public User createUser(User user) {
         try {
             logger.info("Création utilisateur: nom={}, prenom={}, email={}, role={}", 
@@ -71,6 +74,7 @@ public class UserService {
         }
     }
 
+    @Audited(action = AuditLog.AuditAction.UPDATE, entityType = "User")
     public Optional<User> updateUser(Long id, User updatedUser) {
         return userRepository.findById(id).map(user -> {
             user.setNom(updatedUser.getNom());
@@ -98,6 +102,7 @@ public class UserService {
         });
     }
 
+    @Audited(action = AuditLog.AuditAction.DELETE, entityType = "User")
     public void deleteUser(Long id) {
         userRepository.deleteById(id);
     }

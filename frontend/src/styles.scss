@@ -17,7 +17,7 @@
 
 // Styles personnalisés IUSJ
 :root {
-  // Palette IUSJ (adaptation du violet)
+  // Design tokens IUSJ
   --primary-color: #667eea;
   --primary-dark: #764ba2;
   --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -42,6 +42,18 @@
   // Navbar
   --navbar-height: 70px;
   --navbar-bg: #ffffff;
+
+  // UX states
+  --state-loading-bg: #f8f9fc;
+  --state-empty-bg: #fbfcfe;
+  --state-error-bg: #fff5f6;
+  --state-border: #e7ebf0;
+
+  // Accessibility
+  --focus-ring-color: rgba(102, 126, 234, 0.35);
+  --focus-ring: 0 0 0 0.2rem var(--focus-ring-color);
+  --control-min-height: 42px;
+  --content-radius: 10px;
 }
 
 * {
@@ -51,11 +63,95 @@
 }
 
 body {
-  font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'ubuntu-regular', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   font-size: 0.875rem;
   line-height: 1.5;
   color: var(--text-primary);
   background-color: var(--background-light);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.page-title {
+  color: #2f3747;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.page-header .breadcrumb {
+  margin-bottom: 0;
+}
+
+.card {
+  border: 1px solid var(--state-border);
+  border-radius: var(--content-radius);
+  box-shadow: 0 6px 20px rgba(20, 34, 70, 0.04);
+}
+
+.btn,
+.form-control,
+.form-select {
+  min-height: var(--control-min-height);
+}
+
+.form-label {
+  font-weight: 600;
+  margin-bottom: 0.45rem;
+  color: #3e4b5b;
+}
+
+// Unified states for loading/empty/error blocks across modules
+.ux-state {
+  border: 1px dashed var(--state-border);
+  border-radius: var(--content-radius);
+  padding: 1.25rem;
+}
+
+.ux-state-loading {
+  background: var(--state-loading-bg);
+}
+
+.ux-state-empty {
+  background: var(--state-empty-bg);
+}
+
+.ux-state-error {
+  background: var(--state-error-bg);
+}
+
+// Accessibility baseline
+a,
+button,
+input,
+select,
+textarea,
+[role='button'] {
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+    border-radius: 0.35rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 // Classes utilitaires IUSJ

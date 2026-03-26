@@ -6,6 +6,8 @@ export interface User {
   login: string;
   password?: string;
   telephone: number;
+  schoolId?: number;
+  schoolName?: string;
   status: UserStatus;
   role: UserRole;
 }

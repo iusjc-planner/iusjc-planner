@@ -4,13 +4,13 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { HttpParams } from '@angular/common/http';
 import { Teacher, TeacherFilters, TeacherStats, TeacherAvailability, AvailabilityGrid, IcsImportResult } from '../../shared/models/teacher.model';
-import { environment } from '../../../environments/environment';
+import { ApiEndpoints } from '../config/api-endpoints';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TeacherService {
-  private apiUrl = `${environment.apiUrl}/teachers`;
+  private apiUrl = ApiEndpoints.teachers;
 
   constructor(private http: HttpClient) { }
 

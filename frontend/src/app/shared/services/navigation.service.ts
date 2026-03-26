@@ -75,16 +75,10 @@ export class NavigationService {
       collapsed: false,
       submenu: [
         { title: 'Vue globale', link: '/app/schedules', icon: '' },
-        { title: 'Par enseignant', link: '/app/schedules/teachers', icon: '' },
-        { title: 'Par salle', link: '/app/schedules/rooms', icon: '' },
-        { title: 'Par groupe', link: '/app/schedules/groups', icon: '' }
+        { title: 'Par enseignant', link: '/app/schedules/teacher', icon: '' },
+        { title: 'Par salle', link: '/app/schedules/room', icon: '' },
+        { title: 'Par groupe', link: '/app/schedules/group', icon: '' }
       ]
-    },
-    {
-      title: 'Événements',
-      icon: 'mdi mdi-calendar-star',
-      link: '/app/events',
-      roles: ['ADMIN']
     },
     {
       title: 'Ressources',
@@ -93,14 +87,16 @@ export class NavigationService {
       roles: ['ADMIN']
     },
     {
+      title: 'Notifications',
+      icon: 'mdi mdi-bell-outline',
+      link: '/app/notifications',
+      roles: ['ADMIN']
+    },
+    {
       title: 'Rapports',
-      icon: 'mdi mdi-chart-bar',
-      roles: ['ADMIN'],
-      collapsed: false,
-      submenu: [
-        { title: 'Occupation salles', link: '/app/reports/rooms', icon: '' },
-        { title: 'Charge enseignants', link: '/app/reports/teachers', icon: '' }
-      ]
+      icon: 'mdi mdi-file-chart',
+      link: '/app/reports',
+      roles: ['ADMIN']
     },
     {
       title: 'Paramètres',
@@ -115,43 +111,37 @@ export class NavigationService {
       title: 'Dashboard Enseignant',
       icon: 'mdi mdi-view-dashboard',
       link: '/app/dashboard-teacher',
-      roles: ['USER']
+      roles: ['ENSEIGNANT']
     },
     {
       title: 'Mon Emploi du Temps',
       icon: 'mdi mdi-calendar-clock',
-      link: '/app/my-schedule',
-      roles: ['USER']
+      link: '/app/schedules',
+      roles: ['ENSEIGNANT']
     },
     {
-      title: 'Mes Matières',
-      icon: 'mdi mdi-book-open-variant',
-      link: '/app/my-courses',
-      roles: ['USER']
+      title: 'Ressources',
+      icon: 'mdi mdi-desktop-classic',
+      link: '/app/resources',
+      roles: ['ENSEIGNANT']
     },
     {
-      title: 'Mes Groupes',
-      icon: 'mdi mdi-account-group',
-      link: '/app/my-groups',
-      roles: ['USER']
+      title: 'Notifications',
+      icon: 'mdi mdi-bell-outline',
+      link: '/app/notifications',
+      roles: ['ENSEIGNANT']
     },
     {
-      title: 'Réservations de Salles',
-      icon: 'mdi mdi-door',
-      link: '/app/room-reservations',
-      roles: ['USER']
+      title: 'Recherche',
+      icon: 'mdi mdi-magnify',
+      link: '/app/search',
+      roles: ['ENSEIGNANT']
     },
     {
-      title: 'Mes Disponibilités',
-      icon: 'mdi mdi-calendar-check',
-      link: '/app/my-availability',
-      roles: ['USER']
-    },
-    {
-      title: 'Mon Profil',
-      icon: 'mdi mdi-account',
-      link: '/app/my-profile',
-      roles: ['USER']
+      title: 'Déconnexion',
+      icon: 'mdi mdi-logout',
+      link: '/login/logout',
+      roles: ['ENSEIGNANT']
     }
   ];
 
@@ -168,7 +158,7 @@ export class NavigationService {
     switch (currentUser.role) {
       case 'ADMIN':
         return this.adminMenuItems;
-      case 'USER':
+      case 'ENSEIGNANT':
         return this.teacherMenuItems;
       default:
         return [];
@@ -179,7 +169,7 @@ export class NavigationService {
     switch (role) {
       case 'ADMIN':
         return this.adminMenuItems;
-      case 'USER':
+      case 'ENSEIGNANT':
         return this.teacherMenuItems;
       default:
         return [];

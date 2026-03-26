@@ -155,12 +155,34 @@
             </div>
             <div class="col-md-6">
               <div class="form-group">
+                <label for="schoolId">École</label>
+                <select class="form-control" id="schoolId" formControlName="schoolId">
+                  <option [ngValue]="null">Sélectionner une école</option>
+                  <option *ngFor="let school of schools" [ngValue]="school.id">{{ school.name }}</option>
+                </select>
+                <small class="text-danger" *ngIf="userForm.get('schoolId')?.invalid && userForm.get('schoolId')?.touched">
+                  L'école est obligatoire pour un enseignant
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
                 <label for="status">Statut *</label>
                 <select class="form-control" id="status" formControlName="status">
                   <option *ngFor="let status of userStatuses" [value]="status">
                     {{ getStatusDisplayName(status) }}
                   </option>
                 </select>
+              </div>
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+              <div class="w-100">
+                <small class="text-muted">
+                  Le rôle et le statut sont requis. L'affectation école est requise pour les enseignants.
+                </small>
               </div>
             </div>
           </div>

@@ -8,6 +8,14 @@ import {
   DoughnutController,
   PieController
 } from 'chart.js';
+import { CourseService } from '../../core/services/course.service';
+import { RoomService } from '../../core/services/room.service';
+import { ScheduleService } from '../../core/services/schedule.service';
+import { TeacherService } from '../../core/services/teacher.service';
+import { UserService } from '../../core/services/user.service';
+import { Course } from '../../shared/models/course.model';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-dashboard',
@@ -15,13 +23,100 @@ import {
   styleUrls: ['./dashboard.component.scss']
 })
 export class DashboardComponent implements OnInit {
+  loading = true;
+  errorMessage = '';
 
-  constructor() {
+  kpis = {
+    users: 0,
+    teachers: 0,
+    rooms: 0,
+    courses: 0,
+    scheduledSessions: 0,
+    activeRooms: 0
+  };
+
+  recentCourses: Course[] = [];
+
+  constructor(
+    private userService: UserService,
+    private teacherService: TeacherService,
+    private roomService: RoomService,
+    private courseService: CourseService,
+    private scheduleService: ScheduleService
+  ) {
     // Enregistrer les composants Chart.js nécessaires
     Chart.register(ArcElement, Tooltip, Legend, DoughnutController, PieController);
   }
 
   ngOnInit(): void {
+    this.loadDashboardData();
+  }
+
+  private loadDashboardData(): void {
+    this.loading = true;
+    this.errorMessage = '';
+
+    forkJoin({
+      users: this.userService.getAllUsers().pipe(catchError(() => of([]))),
+      teachers: this.teacherService.getAllTeachers().pipe(catchError(() => of([]))),
+      rooms: this.roomService.getAll().pipe(catchError(() => of([]))),
+      courses: this.courseService.getAll().pipe(catchError(() => of([]))),
+      scheduleStats: this.scheduleService.stats().pipe(
+        catchError(() => of({ total: 0, scheduled: 0, completed: 0, cancelled: 0 }))
+      )
+    }).subscribe({
+      next: ({ users, teachers, rooms, courses, scheduleStats }) => {
+        this.kpis = {
+          users: users.length,
+          teachers: teachers.length,
+          rooms: rooms.length,
+          courses: courses.length,
+          scheduledSessions: scheduleStats.scheduled,
+          activeRooms: rooms.filter(room => room.status === 'ACTIVE').length
+        };
+
+        const now = new Date();
+        this.recentCourses = courses
+          .filter(course => this.toDate(course.date, course.startTime) >= now)
+          .sort((a, b) => this.toDate(a.date, a.startTime).getTime() - this.toDate(b.date, b.startTime).getTime())
+          .slice(0, 6);
+
+        this.doughnutChartData = {
+          labels: ['Actifs', 'Inactifs'],
+          datasets: [{
+            data: [this.kpis.users, Math.max(0, this.kpis.courses - this.kpis.users)],
+            backgroundColor: ['#667eea', '#cfd8dc'],
+            borderColor: ['#667eea', '#cfd8dc'],
+            borderWidth: 2,
+            hoverBackgroundColor: ['#5a6fd8', '#b0bec5']
+          }]
+        };
+
+        this.pieChartData = {
+          labels: ['Salles actives', 'Autres statuts'],
+          datasets: [{
+            data: [this.kpis.activeRooms, Math.max(0, this.kpis.rooms - this.kpis.activeRooms)],
+            backgroundColor: ['#28a745', '#ffc107'],
+            borderColor: ['#28a745', '#ffc107'],
+            borderWidth: 2
+          }]
+        };
+
+        this.loading = false;
+      },
+      error: () => {
+        this.errorMessage = 'Impossible de charger les statistiques du dashboard.';
+        this.loading = false;
+      }
+    });
+  }
+
+  formatDate(date: string): string {
+    return new Date(date).toLocaleDateString('fr-FR');
+  }
+
+  private toDate(date: string, time: string): Date {
+    return new Date(`${date}T${time}:00`);
   }
 
   // Graphique d'occupation des salles par école
@@ -101,27 +196,21 @@ export class DashboardComponent implements OnInit {
   // Graphique circulaire - Répartition des utilisateurs par école
   public doughnutChartType: ChartType = 'doughnut';
   public doughnutChartData = {
-    labels: ['SJI', 'SJM', 'PrepaVogt', 'CPGE'],
+    labels: ['Actifs', 'Inactifs'],
     datasets: [{
-      data: [35, 25, 20, 20],
+      data: [0, 0],
       backgroundColor: [
         '#667eea',
-        '#43e97b', 
-        '#ffd500',
-        '#047edf'
+        '#cfd8dc'
       ],
       borderColor: [
         '#667eea',
-        '#43e97b',
-        '#ffd500', 
-        '#047edf'
+        '#cfd8dc'
       ],
       borderWidth: 2,
       hoverBackgroundColor: [
         '#5a6fd8',
-        '#3dd370',
-        '#e6c200',
-        '#0369c7'
+        '#b0bec5'
       ]
     }]
   };
@@ -147,17 +236,15 @@ export class DashboardComponent implements OnInit {
   // Graphique circulaire - Statut des salles
   public pieChartType: ChartType = 'pie';
   public pieChartData = {
-    labels: ['Salles Occupées', 'Salles Libres', 'Salles en Maintenance'],
+    labels: ['Salles actives', 'Autres statuts'],
     datasets: [{
-      data: [18, 12, 2],
+      data: [0, 0],
       backgroundColor: [
-        '#dc3545',
         '#28a745',
         '#ffc107'
       ],
       borderColor: [
-        '#dc3545',
-        '#28a745', 
+        '#28a745',
         '#ffc107'
       ],
       borderWidth: 2

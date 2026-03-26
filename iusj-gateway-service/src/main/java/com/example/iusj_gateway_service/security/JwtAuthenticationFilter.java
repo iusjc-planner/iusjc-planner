@@ -64,13 +64,20 @@ public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAut
             // Extraire les informations utilisateur
             String username = jwtUtil.extractUsername(token);
             String role = jwtUtil.extractRole(token);
+            Long userId = jwtUtil.extractUserId(token);
+
+            if (username == null || role == null || userId == null) {
+                System.out.println("ERROR: Claims JWT manquantes");
+                return onError(exchange, "Claims JWT manquantes", HttpStatus.UNAUTHORIZED);
+            }
             
-            System.out.println("Token valid - Username: " + username + ", Role: " + role);
+            System.out.println("Token valid - Username: " + username + ", Role: " + role + ", UserId: " + userId);
 
             // Ajouter les informations utilisateur aux headers pour les services en aval
             ServerHttpRequest modifiedRequest = request.mutate()
                 .header("X-User-Name", username)
                 .header("X-User-Role", role)
+                .header("X-User-Id", String.valueOf(userId))
                 .build();
 
             ServerWebExchange modifiedExchange = exchange.mutate()

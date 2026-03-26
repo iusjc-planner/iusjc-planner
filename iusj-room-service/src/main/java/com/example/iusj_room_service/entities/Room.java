@@ -1,14 +1,15 @@
 package com.example.iusj_room_service.entities;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import java.util.List;
 
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.Min;
@@ -18,6 +19,8 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
 
 @Entity
 @Table(name = "rooms", uniqueConstraints = {
@@ -63,6 +66,7 @@ public class Room {
     @Size(max = 255)
     private String description;
 
-    @ElementCollection
-    private List<String> equipments;
+    @OneToMany(mappedBy = "room")
+    @JsonManagedReference
+    private List<RoomEquipment> equipments = new ArrayList<>();
 }

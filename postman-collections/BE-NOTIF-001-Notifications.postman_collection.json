@@ -1,0 +1,254 @@
+{
+  "info": {
+    "name": "BE-NOTIF-001 Notifications",
+    "description": "Tests API pour le ticket BE-NOTIF-001 via Gateway et JWT.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Login Admin",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"login\": \"admin\",\n  \"password\": \"admin123\"\n}"
+        },
+        "url": {
+          "raw": "{{gateway_url}}/auth/login",
+          "host": [
+            "{{gateway_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Login OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const body = pm.response.json();",
+              "pm.environment.set(\"jwt_token\", body.token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Create Notification (Admin)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"type\": \"INFO\",\n  \"contenu\": \"Notification de test admin\",\n  \"userId\": 1,\n  \"sourceType\": \"SYSTEM\",\n  \"sourceId\": 1\n}"
+        },
+        "url": {
+          "raw": "{{gateway_url}}/api/notifications",
+          "host": [
+            "{{gateway_url}}"
+          ],
+          "path": [
+            "api",
+            "notifications"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Notification creee\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "const body = pm.response.json();",
+              "pm.environment.set(\"notification_id\", body.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Get My Notifications",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{gateway_url}}/api/notifications",
+          "host": [
+            "{{gateway_url}}"
+          ],
+          "path": [
+            "api",
+            "notifications"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Liste notifications OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Get Unread Count",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{gateway_url}}/api/notifications/count",
+          "host": [
+            "{{gateway_url}}"
+          ],
+          "path": [
+            "api",
+            "notifications",
+            "count"
+          ]
+        }
+      }
+    },
+    {
+      "name": "5. Mark As Read",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{gateway_url}}/api/notifications/{{notification_id}}/read",
+          "host": [
+            "{{gateway_url}}"
+          ],
+          "path": [
+            "api",
+            "notifications",
+            "{{notification_id}}",
+            "read"
+          ]
+        }
+      }
+    },
+    {
+      "name": "6. Mark All As Read",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{gateway_url}}/api/notifications/read-all",
+          "host": [
+            "{{gateway_url}}"
+          ],
+          "path": [
+            "api",
+            "notifications",
+            "read-all"
+          ]
+        }
+      }
+    },
+    {
+      "name": "7. Broadcast (Admin Global)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"type\": \"ALERT\",\n  \"contenu\": \"Broadcast global test\",\n  \"sourceType\": \"SYSTEM\",\n  \"sourceId\": 99\n}"
+        },
+        "url": {
+          "raw": "{{gateway_url}}/api/notifications/broadcast",
+          "host": [
+            "{{gateway_url}}"
+          ],
+          "path": [
+            "api",
+            "notifications",
+            "broadcast"
+          ]
+        }
+      }
+    },
+    {
+      "name": "8. Delete Notification",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{gateway_url}}/api/notifications/{{notification_id}}",
+          "host": [
+            "{{gateway_url}}"
+          ],
+          "path": [
+            "api",
+            "notifications",
+            "{{notification_id}}"
+          ]
+        }
+      }
+    }
+  ]
+}

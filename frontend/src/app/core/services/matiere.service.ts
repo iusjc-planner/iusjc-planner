@@ -1,14 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../../environments/environment';
 import { Matiere, MatiereFilters, MatiereStats } from '../../shared/models/matiere.model';
+import { ApiEndpoints } from '../config/api-endpoints';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MatiereService {
-  private apiUrl = `${environment.apiUrl}/matieres`;
+  private apiUrl = ApiEndpoints.matieres;
 
   constructor(private http: HttpClient) {}
 

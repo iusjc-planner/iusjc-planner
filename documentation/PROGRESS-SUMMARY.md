@@ -1,218 +1,117 @@
-# 🚀 Résumé de la Progression - IUSJ Planner
+# Resume de progression - IUSJ Planner
 
-**Date**: 23 novembre 2025  
-**Session**: Implémentation des modules principaux
-
----
-
-## 📊 Progression Globale
-
-**Pages implémentées**: 8/41 (20%)  
-**Modules actifs**: 3/16
+Date de mise a jour: 25 Mars 2026
 
 ---
 
-## ✅ Modules Complètement Fonctionnels
+## 1. Vue globale
 
-### 1. Module Authentification ✅
-- **Login** - Page de connexion avec design moderne
-  - Formulaire avec validation
-  - Bouton centré
-  - Gradient violet IUSJ
-  - Redirection vers dashboard
+Ce resume consolide la progression backend + frontend avec alignement sur les audits transversaux.
 
-### 2. Module Dashboard ✅
-- **Dashboard Admin** - Vue d'ensemble avec statistiques
-  - 4 cartes avec gradients (Utilisateurs, Enseignants, Salles, Cours)
-  - Tableau des activités récentes
-  - Design responsive
-  
-- **Dashboard Enseignant** - Vue personnalisée
-  - Emploi du temps de la semaine
-  - Prochains cours
-  - Statistiques personnelles
-
-### 3. Module Utilisateurs ✅ COMPLET
-- **Liste** (`/users`)
-  - 5 utilisateurs de test
-  - Filtres: recherche, rôle, statut
-  - Actions: voir, modifier, supprimer
-  - Pagination
-  
-- **Formulaire** (`/users/new`, `/users/:id/edit`)
-  - Mode création/édition
-  - Validation reactive forms
-  - Affectation multiple d'écoles
-  - Sélection rôle et statut
-  
-- **Profil** (`/users/:id`)
-  - Vue détaillée en 2 colonnes
-  - Photo de profil
-  - Informations complètes
-  - Activité récente
-
-### 4. Module Enseignants 🆕
-- **Liste** (`/teachers`) ✅
-  - 8 enseignants de test
-  - Filtres: recherche, école, disponibilité
-  - 4 cartes statistiques avec gradients
-  - Badges pour matières et disponibilité
-  - Actions: voir, disponibilités, modifier, supprimer
+Strategie frontend validee: migration Big-bang vers `/web`.
 
 ---
 
-## 🚧 En Cours de Développement
+## 2. Backend - etat actuel
 
-### Module Enseignants (2 pages restantes)
-- 🚧 Fiche Enseignant détaillée
-- 🚧 Gestion des disponibilités (grille horaire)
+Statut global estime: 30-35% sur le plan tickets de conformite projet.
 
----
+- Tickets backend totaux: 17
+- En cours: 6
+- A faire: 11
+- Termines: 0
 
-## 📋 Prochaines Priorités
+Points avances:
 
-### Phase 1: Compléter Module Enseignants
-1. Fiche détaillée avec emploi du temps
-2. Grille de disponibilités interactive
+- Architecture microservices operationnelle (gateway + eureka + services coeur).
+- CRUD principal disponible sur plusieurs domaines.
+- Service notification present techniquement.
 
-### Phase 2: Module Salles (Priorité Haute)
-1. Liste des salles avec filtres
-2. Formulaire création/édition
-3. Détails avec calendrier d'occupation
+Points non clos:
 
-### Phase 3: Module Cours (Priorité Haute)
-1. Liste des cours avec filtres
-2. Formulaire avec validation des conflits
-3. Détails complets
+- forgot/reset password.
+- SMTP et notifications email.
+- reporting/export complet.
+- completion evenements et certains volets EDT.
 
-### Phase 4: Module Emplois du Temps (Critique)
-1. Vue globale avec calendrier
-2. Vue par enseignant
-3. Vue par salle
-4. Vue par groupe
+Reference detaillee:
+
+- `AUDIT-BACKEND.md`
+- `TICKETS-IMPLEMENTATION.md`
+- `tickets/README.md`
 
 ---
 
-## 🎨 Fonctionnalités Implémentées
+## 3. Frontend - etat actuel
 
-### Design System
-- ✅ Palette de couleurs IUSJ (violet, bleu, vert, rose, orange)
-- ✅ Gradients pour cartes et boutons
-- ✅ Material Design Icons (MDI)
-- ✅ Bootstrap 5
-- ✅ Responsive design
+### 3.1 Frontend historique `/frontend`
 
-### Composants UI
-- ✅ Tables avec filtres et pagination
-- ✅ Formulaires avec validation
-- ✅ Cartes statistiques avec gradients
-- ✅ Badges colorés
-- ✅ Boutons d'action
-- ✅ Breadcrumbs
-- ✅ Header, Sidebar, Footer
+- Plus mature sur l'integration backend actuelle.
+- Contient des bases auth/RBAC/services deja exploitees.
+- Sert de reference fonctionnelle pendant la migration.
 
-### Navigation
-- ✅ Routing avec lazy loading
-- ✅ Menu latéral complet
-- ✅ Breadcrumbs sur toutes les pages
-- ✅ Liens actifs
+### 3.2 Frontend cible `/web`
+
+- Base technique moderne (Angular 20, standalone, PrimeNG).
+- Potentiel UX superieur.
+- Parite metier complete pas encore atteinte.
+
+Reference detaillee:
+
+- `AUDIT-FRONTEND-WEB.md`
+- `PLAN-MIGRATION-FRONTEND-WEB.md`
+- `tickets/README-FRONTEND.md`
 
 ---
 
-## 📊 Statistiques
+## 4. Migration frontend (Big-bang)
 
-### Code Généré
-- **Composants**: 48+
-- **Services**: 17+
-- **Modules**: 16
-- **Lignes de code**: ~7000+
+Etat: planifiee, en phase d'implementation documentaire et ticketing.
 
-### Données de Test
-- **Utilisateurs**: 5
-- **Enseignants**: 8
-- **Total**: 13 entités
+Priorites immediates:
 
-### Temps Investi
-- **Configuration**: 2h
-- **Module Utilisateurs**: 3h
-- **Module Enseignants**: 2h
-- **Total**: 7h
+1. Core web: auth, guards RBAC, interceptors, service layer.
+2. Pages metier critiques: dashboard, users, planning, notifications.
+3. Qualite: tests unitaires + E2E parcours critiques.
+4. Cutover: checklist Go/No-Go puis bascule officielle vers `/web`.
 
 ---
 
-## 🎯 Objectifs de la Prochaine Session
+## 5. Exploitation et scripts
 
-1. ✅ Compléter Module Enseignants (2 pages)
-2. ✅ Implémenter Module Salles (3 pages)
-3. ✅ Implémenter Module Cours (3 pages)
-4. ✅ Commencer Module Emplois du Temps (4 pages)
+Scripts alignes avec la cible `/web`:
 
-**Estimation**: 12 pages supplémentaires = 15-20 heures
+- `start-services.ps1` lance `/web` par defaut et inclut `iusj-notification-service`.
+- `stop-services.ps1` arrete les processus IUSJ de maniere ciblee.
 
----
+Option de transition:
 
-## 🌐 URLs Actives
-
-### Authentification
-- `http://localhost:4200/login`
-
-### Dashboard
-- `http://localhost:4200/dashboard`
-- `http://localhost:4200/dashboard/teacher`
-
-### Utilisateurs
-- `http://localhost:4200/users` - Liste
-- `http://localhost:4200/users/new` - Nouveau
-- `http://localhost:4200/users/:id` - Profil
-- `http://localhost:4200/users/:id/edit` - Édition
-
-### Enseignants 🆕
-- `http://localhost:4200/teachers` - Liste ✅
-- `http://localhost:4200/teachers/:id` - Fiche (à venir)
-- `http://localhost:4200/teachers/:id/availability` - Disponibilités (à venir)
+- `start-services.ps1 -UseLegacyFrontend` pour lancer `/frontend` temporairement.
 
 ---
 
-## ✅ Checklist Technique
+## 6. Risques et dependances
 
-### Infrastructure
-- [x] 16 modules Angular créés
-- [x] 48+ composants générés
-- [x] 17+ services créés
-- [x] Routing configuré
-- [x] Shared components
+Principaux risques:
 
-### Modules Actifs
-- [x] Auth Module
-- [x] Dashboard Module
-- [x] Users Module (100%)
-- [x] Teachers Module (33%)
-- [ ] Rooms Module
-- [ ] Courses Module
-- [ ] Schedules Module
-- [ ] Autres modules (11)
+1. Perte de parite fonctionnelle au cutover si tickets P0/P1 incomplets.
+2. Regressions auth/RBAC si migration partielle.
+3. Incompletude backend sur flux critiques (password reset, reporting).
 
-### Qualité
-- [x] Design cohérent
-- [x] Responsive
-- [x] Validation des formulaires
-- [x] Filtres et recherche
-- [x] Données de test
-- [ ] Connexion API
-- [ ] Tests unitaires
+Dependances externes:
+
+1. SMTP (reset + notifications email).
+2. Moteur export PDF/Excel.
+3. Stockage supports.
+4. Messaging async recommande pour notification event-driven.
 
 ---
 
-## 🎉 Réalisations Clés
+## 7. Prochain jalon recommande
 
-1. ✅ **Architecture solide** - Structure modulaire et scalable
-2. ✅ **Design professionnel** - Palette IUSJ avec gradients
-3. ✅ **3 modules complets** - Auth, Dashboard, Users
-4. ✅ **Module Enseignants démarré** - Liste fonctionnelle
-5. ✅ **Données de test** - 13 entités pour démonstration
-6. ✅ **Navigation fluide** - Lazy loading et routing optimisé
+Atteindre un jalon de pre-cutover avec:
 
----
-
-**Dernière mise à jour**: 23 novembre 2025 - 06:40 AM 🚀💜  
-**Prochaine étape**: Compléter le module Enseignants
+1. Tickets FE-CORE-001 a FE-CORE-004 termines.
+2. Tickets FE-PAGE-001 a FE-PAGE-004 termines.
+3. Validation E2E critique au vert.
+4. Revue Go/No-Go formelle.

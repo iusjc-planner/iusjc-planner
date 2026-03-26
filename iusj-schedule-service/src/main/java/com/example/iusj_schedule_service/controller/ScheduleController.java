@@ -1,6 +1,8 @@
 package com.example.iusj_schedule_service.controller;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,10 +82,38 @@ public class ScheduleController {
 
     @PostMapping("/validate")
     public ResponseEntity<Map<String, Object>> validate(@Valid @RequestBody ScheduleEntry entry) {
-        List<String> conflicts = service.validateConflicts(entry, null);
+        ScheduleService.ValidationFeedback feedback = service.validateConflictsWithWarnings(entry, null);
         Map<String, Object> response = new HashMap<>();
-        response.put("conflict", !conflicts.isEmpty());
-        response.put("reasons", conflicts);
+        response.put("conflict", !feedback.conflicts().isEmpty());
+        response.put("reasons", feedback.conflicts());
+        response.put("warnings", feedback.warnings());
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/suggest-rooms")
+    public ResponseEntity<?> suggestRooms(
+            @RequestParam Integer effectif,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime time,
+            @RequestParam Integer duration) {
+        try {
+            LocalDateTime start = LocalDateTime.of(date, time);
+            List<ScheduleService.SuggestedRoom> suggestions = service.getSuggestedRooms(effectif, start, duration);
+            return ResponseEntity.ok(suggestions);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+        }
+    }
+
+    @GetMapping("/validate-capacity")
+    public ResponseEntity<Map<String, Object>> validateCapacity(
+            @RequestParam Long roomId,
+            @RequestParam Long groupId) {
+        ScheduleService.CapacityValidationResult result = service.validateCapacity(roomId, groupId);
+        Map<String, Object> response = new HashMap<>();
+        response.put("valid", result.errorMessage() == null);
+        response.put("error", result.errorMessage());
+        response.put("warning", result.warningMessage());
         return ResponseEntity.ok(response);
     }
 }

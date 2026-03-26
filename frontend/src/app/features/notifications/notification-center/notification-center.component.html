@@ -1,1 +1,74 @@
-<p>notification-center works!</p>
+<div class="page-header">
+	<h3 class="page-title">Centre de notifications</h3>
+	<nav aria-label="breadcrumb">
+		<ol class="breadcrumb">
+			<li class="breadcrumb-item"><a routerLink="/app/dashboard">Dashboard</a></li>
+			<li class="breadcrumb-item active" aria-current="page">Notifications</li>
+		</ol>
+	</nav>
+</div>
+
+<div class="row mb-4">
+	<div class="col-md-8 mb-2 mb-md-0">
+		<div class="btn-group" role="group" aria-label="Filtres notifications">
+			<button type="button" class="btn" [ngClass]="activeFilter === 'ALL' ? 'btn-primary' : 'btn-outline-primary'" (click)="setFilter('ALL')">
+				Toutes ({{ notifications.length }})
+			</button>
+			<button type="button" class="btn" [ngClass]="activeFilter === 'UNREAD' ? 'btn-primary' : 'btn-outline-primary'" (click)="setFilter('UNREAD')">
+				Non lues ({{ unreadCount }})
+			</button>
+			<button type="button" class="btn" [ngClass]="activeFilter === 'READ' ? 'btn-primary' : 'btn-outline-primary'" (click)="setFilter('READ')">
+				Lues ({{ readCount }})
+			</button>
+		</div>
+	</div>
+	<div class="col-md-4 text-md-end">
+		<button class="btn btn-outline-secondary me-2" (click)="refresh()">
+			<i class="mdi mdi-refresh"></i> Rafraichir
+		</button>
+		<button class="btn btn-primary" [disabled]="unreadCount === 0" (click)="markAllAsRead()">
+			<i class="mdi mdi-check-all"></i> Tout marquer lu
+		</button>
+	</div>
+</div>
+
+<div class="card">
+	<div class="card-body">
+		<div *ngIf="loading" class="text-center py-4 ux-state ux-state-loading" role="status" aria-live="polite">
+			<div class="spinner-border text-primary" role="status"></div>
+			<p class="text-muted mt-2 mb-0">Chargement des notifications...</p>
+		</div>
+
+		<div *ngIf="!loading && filteredNotifications.length === 0" class="text-center py-5 text-muted ux-state ux-state-empty" aria-live="polite">
+			<i class="mdi mdi-bell-off-outline d-block mb-2" style="font-size: 2rem;"></i>
+			Aucune notification pour ce filtre.
+		</div>
+
+		<div class="list-group" *ngIf="!loading && filteredNotifications.length > 0">
+			<div class="list-group-item d-flex justify-content-between align-items-start" *ngFor="let notification of filteredNotifications">
+				<div class="me-3">
+					<div class="d-flex align-items-center mb-1">
+						<span class="badge me-2" [ngClass]="{
+							'bg-info': notification.type === 'INFO',
+							'bg-success': notification.type === 'SUCCESS',
+							'bg-warning': notification.type === 'WARNING',
+							'bg-danger': notification.type === 'ERROR'
+						}">{{ notification.type }}</span>
+						<h6 class="mb-0">{{ notification.title }}</h6>
+						<span class="badge bg-danger ms-2" *ngIf="!notification.read">Nouveau</span>
+					</div>
+					<p class="mb-1 text-muted">{{ notification.message }}</p>
+					<small class="text-muted">{{ formatDate(notification.createdAt) }}</small>
+				</div>
+				<div class="btn-group">
+					<button class="btn btn-sm btn-outline-primary" [disabled]="notification.read" (click)="markAsRead(notification)">
+						Marquer lu
+					</button>
+					<button class="btn btn-sm btn-outline-danger" (click)="delete(notification)">
+						Supprimer
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

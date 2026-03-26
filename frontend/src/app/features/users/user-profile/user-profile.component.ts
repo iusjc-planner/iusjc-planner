@@ -2,7 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UserService } from '../../../core/services/user.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { SchoolService } from '../../../core/services/school.service';
 import { User, UserRole, UserStatus } from '../../../shared/models/user.model';
+import { School } from '../../../shared/models/school.model';
 
 @Component({
   selector: 'app-user-profile',
@@ -15,12 +17,14 @@ export class UserProfileComponent implements OnInit {
   loading = false;
   errorMessage = '';
   canEdit = false;
+  schools: School[] = [];
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private userService: UserService,
-    private authService: AuthService
+    public authService: AuthService,
+    private schoolService: SchoolService
   ) { }
 
   ngOnInit(): void {
@@ -28,6 +32,12 @@ export class UserProfileComponent implements OnInit {
       if (params['id']) {
         this.userId = +params['id'];
         this.loadUser(this.userId);
+      }
+    });
+
+    this.schoolService.getAllSchools().subscribe({
+      next: (schools) => {
+        this.schools = schools;
       }
     });
 
@@ -42,6 +52,8 @@ export class UserProfileComponent implements OnInit {
     this.userService.getUserById(id).subscribe({
       next: (user) => {
         this.user = user;
+        this.user.schoolName = this.resolveSchoolName(user.schoolId);
+        this.checkEditPermissions();
         this.loading = false;
       },
       error: (error) => {
@@ -59,6 +71,13 @@ export class UserProfileComponent implements OnInit {
       this.canEdit = this.authService.isAdmin() || 
                      (currentUser.login === this.user?.login);
     }
+  }
+
+  private resolveSchoolName(schoolId: number | undefined): string {
+    if (!schoolId) {
+      return 'Non assignée';
+    }
+    return this.schools.find(school => school.id === schoolId)?.name || `Ecole #${schoolId}`;
   }
 
   deleteUser(): void {
