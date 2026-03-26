@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { ChartModule } from 'primeng/chart';
+import { ReportService } from '../../core/services/report.service';
+import { NotificationService } from '../../core/services/notification.service';
 
 @Component({
     selector: 'app-rapports',
@@ -16,16 +18,16 @@ import { ChartModule } from 'primeng/chart';
                     
                     <div class="grid grid-cols-12 gap-4">
                         <div class="col-span-12 md:col-span-6 lg:col-span-3">
-                            <button pButton type="button" label="Utilisation salles" icon="pi pi-download" class="w-full p-button-outlined"></button>
+                            <button pButton type="button" label="Utilisation salles" icon="pi pi-download" class="w-full p-button-outlined" (click)="generateReport('room-usage')"></button>
                         </div>
                         <div class="col-span-12 md:col-span-6 lg:col-span-3">
-                            <button pButton type="button" label="Activité enseignants" icon="pi pi-download" class="w-full p-button-outlined"></button>
+                            <button pButton type="button" label="Activité enseignants" icon="pi pi-download" class="w-full p-button-outlined" (click)="generateReport('teacher-activity')"></button>
                         </div>
                         <div class="col-span-12 md:col-span-6 lg:col-span-3">
-                            <button pButton type="button" label="Ressources" icon="pi pi-download" class="w-full p-button-outlined"></button>
+                            <button pButton type="button" label="Ressources" icon="pi pi-download" class="w-full p-button-outlined" (click)="generateReport('resources')"></button>
                         </div>
                         <div class="col-span-12 md:col-span-6 lg:col-span-3">
-                            <button pButton type="button" label="Conflits résolus" icon="pi pi-download" class="w-full p-button-outlined"></button>
+                            <button pButton type="button" label="Conflits résolus" icon="pi pi-download" class="w-full p-button-outlined" (click)="generateReport('resolved-conflicts')"></button>
                         </div>
                     </div>
                 </div>
@@ -80,6 +82,11 @@ import { ChartModule } from 'primeng/chart';
     `
 })
 export class RapportsPage {
+    constructor(
+        private reportService: ReportService,
+        private notifications: NotificationService
+    ) {}
+
     chartData1: any;
     chartData2: any;
     chartOptions: any;
@@ -117,5 +124,34 @@ export class RapportsPage {
                 }
             }
         };
+    }
+
+    generateReport(type: string): void {
+        this.reportService.generate({ type, format: 'pdf' }).subscribe({
+            next: (report) => {
+                if (!report.id) {
+                    this.notifications.warn('Rapport genere', 'Le rapport a ete genere mais aucun identifiant de telechargement n a ete renvoye.');
+                    return;
+                }
+
+                this.reportService.download(report.id).subscribe({
+                    next: (file) => {
+                        const blobUrl = URL.createObjectURL(file);
+                        const anchor = document.createElement('a');
+                        anchor.href = blobUrl;
+                        anchor.download = `${type}-${report.id}.pdf`;
+                        anchor.click();
+                        URL.revokeObjectURL(blobUrl);
+                        this.notifications.info('Rapport telecharge', `Le rapport ${type} a ete telecharge.`);
+                    },
+                    error: () => {
+                        this.notifications.error('Erreur telechargement', 'Le fichier du rapport est indisponible.');
+                    }
+                });
+            },
+            error: () => {
+                this.notifications.error('Erreur generation', 'La generation du rapport a echoue.');
+            }
+        });
     }
 }

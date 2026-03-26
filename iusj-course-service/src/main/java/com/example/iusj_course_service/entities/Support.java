@@ -59,7 +59,7 @@ public class Support {
     private Long taille;
 
     @NotNull
-    @Column(nullable = false)
+    @Column(name = "matiere_id", nullable = false)
     private Long matiereId;
 
     private Long uploadePar;

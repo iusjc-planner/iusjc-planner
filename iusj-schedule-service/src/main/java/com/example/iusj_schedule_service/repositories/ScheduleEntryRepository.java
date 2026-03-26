@@ -10,7 +10,7 @@ import com.example.iusj_schedule_service.entities.ScheduleEntry;
 
 public interface ScheduleEntryRepository extends JpaRepository<ScheduleEntry, Long>, JpaSpecificationExecutor<ScheduleEntry> {
 
-        List<ScheduleEntry> findByEdtIdOrderByStartTimeAsc(Long edtId);
+        List<ScheduleEntry> findByEdt_IdOrderByStartTimeAsc(Long edtId);
 
         List<ScheduleEntry> findByGroupIdAndStartTimeBetweenOrderByStartTimeAsc(Long groupId, LocalDateTime start, LocalDateTime end);
 

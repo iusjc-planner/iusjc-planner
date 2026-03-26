@@ -32,7 +32,7 @@ public class EDTValidationService {
         ValidationReport report = new ValidationReport();
         report.setEdtId(edt.getId());
 
-        List<ScheduleEntry> entries = scheduleEntryRepository.findByEdtIdOrderByStartTimeAsc(edt.getId());
+        List<ScheduleEntry> entries = scheduleEntryRepository.findByEdt_IdOrderByStartTimeAsc(edt.getId());
 
         validateMissingCourses(entries, report);
         validateConflicts(entries, report);

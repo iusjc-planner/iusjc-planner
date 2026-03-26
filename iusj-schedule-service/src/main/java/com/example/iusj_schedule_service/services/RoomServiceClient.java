@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-@Service
+@Service("scheduleRoomIdClient")
 public class RoomServiceClient {
 
     private final RestTemplate restTemplate;

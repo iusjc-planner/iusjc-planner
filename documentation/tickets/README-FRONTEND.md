@@ -83,3 +83,38 @@ Sprint F3 (stabilisation + bascule):
 - Plan migration Big-bang: ../PLAN-MIGRATION-FRONTEND-WEB.md
 - Audit backend: ../AUDIT-BACKEND.md
 - Suivi backend: ../TICKETS-IMPLEMENTATION.md
+
+---
+
+## 6. Avancement FE-REL-001
+
+Implementation demarree en mode conditionnel (sans cutover effectif).
+Etat readiness courant: NO-GO (snapshot date du 2026-03-26).
+
+Etat des prerequis P0:
+
+- FE-CORE-001: termine
+- FE-CORE-002: termine
+- FE-CORE-003: termine
+- FE-CORE-004: termine
+- FE-REL-001: en cours (cutover non execute)
+
+Cause principale du NO-GO actuel:
+
+- FE-REL-001 non execute (cutover, smoke post-bascule et hypercare restent a faire)
+- FE-UX-001 non pret (coherence UI transversale)
+
+Livrables operationnels prepares:
+
+- [FE-REL-001-GO-NO-GO-CHECKLIST.md](./FE-REL-001-GO-NO-GO-CHECKLIST.md)
+- [FE-REL-001-CUTOVER-ROLLBACK-RUNBOOK.md](./FE-REL-001-CUTOVER-ROLLBACK-RUNBOOK.md)
+- [FE-REL-001-SMOKE-TESTS.md](./FE-REL-001-SMOKE-TESTS.md)
+- [FE-REL-001-HYPERCARE.md](./FE-REL-001-HYPERCARE.md)
+- [FE-REL-001-READINESS-SNAPSHOT-2026-03-26.md](./FE-REL-001-READINESS-SNAPSHOT-2026-03-26.md)
+- [FE-REL-001-UNBLOCKING-MATRIX.md](./FE-REL-001-UNBLOCKING-MATRIX.md)
+
+Gate de bascule maintenu:
+
+1. Prerequis tickets termines et valides.
+2. Tests critiques au vert.
+3. Validation Go/No-Go formelle.

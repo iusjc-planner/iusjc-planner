@@ -4,12 +4,31 @@ import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
+import { ScheduleService } from '../../core/services/schedule.service';
+import { CourseService } from '../../core/services/course.service';
+import { RoomService } from '../../core/services/room.service';
+import { ScheduleEntry } from '../../core/models/schedule.model';
+import { Course } from '../../core/models/course.model';
+import { Room } from '../../core/models/room.model';
+
+type ExamenItem = {
+    id?: number;
+    cours: string;
+    date: Date;
+    heure: string;
+    salle: string;
+    etudiants: number;
+};
 
 @Component({
     selector: 'app-examens',
     standalone: true,
-    imports: [CommonModule, ButtonModule, TableModule, InputTextModule, FormsModule],
+    imports: [CommonModule, ButtonModule, TableModule, InputTextModule, FormsModule, ToastModule],
+    providers: [MessageService],
     template: `
+        <p-toast></p-toast>
         <div class="card">
             <div class="flex justify-between items-center mb-6">
                 <h5 class="text-2xl font-bold">Gestion des examens</h5>
@@ -43,7 +62,7 @@ import { FormsModule } from '@angular/forms';
                         <td>{{ exam.etudiants }}</td>
                         <td>
                             <button pButton type="button" icon="pi pi-pencil" class="p-button-rounded p-button-text mr-2"></button>
-                            <button pButton type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger"></button>
+                            <button pButton type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" (click)="deleteExamen(exam)"></button>
                         </td>
                     </tr>
                 </ng-template>
@@ -53,9 +72,117 @@ import { FormsModule } from '@angular/forms';
 })
 export class ExamensPage {
     searchValue = '';
-    examens = [
-        { cours: 'Programmation C', date: new Date(2025, 4, 10), heure: '08:00', salle: 'B201', etudiants: 87 },
-        { cours: 'Calcul Différentiel', date: new Date(2025, 4, 12), heure: '10:00', salle: 'B202', etudiants: 73 },
-        { cours: 'Mécanique', date: new Date(2025, 4, 15), heure: '14:00', salle: 'B203', etudiants: 65 }
-    ];
+    private allExamens: ExamenItem[] = [];
+    private courses: Course[] = [];
+    private rooms: Room[] = [];
+
+    constructor(
+        private messageService: MessageService,
+        private scheduleService: ScheduleService,
+        private courseService: CourseService,
+        private roomService: RoomService
+    ) {}
+
+    ngOnInit() {
+        this.loadDependencies();
+    }
+
+    get examens(): ExamenItem[] {
+        const term = this.searchValue.trim().toLowerCase();
+        if (!term) {
+            return this.allExamens;
+        }
+
+        return this.allExamens.filter((exam) => {
+            return exam.cours.toLowerCase().includes(term) || exam.salle.toLowerCase().includes(term);
+        });
+    }
+
+    private loadDependencies() {
+        this.courseService.getAll().subscribe({
+            next: (courses) => {
+                this.courses = courses;
+                this.loadRoomsAndSchedule();
+            },
+            error: () => {
+                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Chargement des cours impossible' });
+            }
+        });
+    }
+
+    private loadRoomsAndSchedule() {
+        this.roomService.getAll().subscribe({
+            next: (rooms) => {
+                this.rooms = rooms;
+                this.loadExamens();
+            },
+            error: () => {
+                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Chargement des salles impossible' });
+            }
+        });
+    }
+
+    private loadExamens() {
+        this.scheduleService.getAll().subscribe({
+            next: (entries) => {
+                this.allExamens = entries.map((entry) => this.fromScheduleEntry(entry));
+            },
+            error: () => {
+                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Chargement des examens impossible' });
+            }
+        });
+    }
+
+    deleteExamen(exam: ExamenItem) {
+        if (!exam.id) {
+            return;
+        }
+
+        this.scheduleService.delete(exam.id).subscribe({
+            next: () => {
+                this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Examen supprime avec succes' });
+                this.loadExamens();
+            },
+            error: () => {
+                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Echec de suppression de l examen' });
+            }
+        });
+    }
+
+    private fromScheduleEntry(entry: ScheduleEntry): ExamenItem {
+        const course = this.courses.find((item) => item.id === entry.courseId);
+        const room = this.rooms.find((item) => item.id === entry.roomId);
+
+        return {
+            id: entry.id,
+            cours: course?.nom || `Cours #${entry.courseId || '-'}`,
+            date: this.toDate(entry.day),
+            heure: entry.startTime,
+            salle: room?.nom || `Salle #${entry.roomId || '-'}`,
+            etudiants: 0
+        };
+    }
+
+    private toDate(day: string): Date {
+        const now = new Date();
+        const map: Record<string, number> = {
+            MONDAY: 1,
+            TUESDAY: 2,
+            WEDNESDAY: 3,
+            THURSDAY: 4,
+            FRIDAY: 5,
+            SATURDAY: 6,
+            SUNDAY: 0
+        };
+
+        const targetDay = map[day.toUpperCase()];
+        if (targetDay === undefined) {
+            return now;
+        }
+
+        const result = new Date(now);
+        const delta = targetDay - now.getDay();
+        result.setDate(now.getDate() + delta);
+        return result;
+    }
 }

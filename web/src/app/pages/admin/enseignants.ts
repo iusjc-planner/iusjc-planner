@@ -8,18 +8,14 @@ import { DialogModule } from 'primeng/dialog';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { TooltipModule } from 'primeng/tooltip';
+import { TeacherService } from '../../core/services/teacher.service';
+import { Teacher } from '../../core/models/teacher.model';
 
-interface Enseignant {
-    id?: number;
-    nom: string;
-    prenom: string;
-    email: string;
+type Enseignant = Teacher & {
     telephone: string;
-    login: string;
     ecoles: string[];
     matieres: string[];
-    statut: string;
-}
+};
 
 interface CreneauHoraire {
     jour: string;
@@ -301,19 +297,43 @@ export class EnseignantsPage {
         { jour: 'Dimanche', debut: '-', fin: '-', disponible: false }
     ];
 
-    allEnseignants: Enseignant[] = [
-        { id: 1, nom: 'Dupont', prenom: 'Dr.', email: 'dupont@iusjc.cm', telephone: '+237 6XX XXX XXX', login: 'dupont', ecoles: ['Informatique'], matieres: ['Programmation C', 'Algorithmique'], statut: 'Actif' },
-        { id: 2, nom: 'Martin', prenom: 'Pr.', email: 'martin@iusjc.cm', telephone: '+237 6XX XXX XXX', login: 'martin', ecoles: ['Mathématiques'], matieres: ['Calcul Différentiel', 'Algèbre'], statut: 'Actif' },
-        { id: 3, nom: 'Lefevre', prenom: 'Dr.', email: 'lefevre@iusjc.cm', telephone: '+237 6XX XXX XXX', login: 'lefevre', ecoles: ['Physique'], matieres: ['Mécanique', 'Thermodynamique'], statut: 'Inactif' },
-        { id: 4, nom: 'Rousseau', prenom: 'Mme.', email: 'rousseau@iusjc.cm', telephone: '+237 6XX XXX XXX', login: 'rousseau', ecoles: ['Chimie'], matieres: ['Chimie Générale', 'Chimie Organique'], statut: 'Actif' },
-        { id: 5, nom: 'Bernard', prenom: 'M.', email: 'bernard@iusjc.cm', telephone: '+237 6XX XXX XXX', login: 'bernard', ecoles: ['Biologie'], matieres: ['Biologie Cellulaire', 'Génétique'], statut: 'Actif' }
-    ];
+    allEnseignants: Enseignant[] = [];
 
     get enseignants(): Enseignant[] {
-        return this.allEnseignants;
+        const term = this.searchValue.trim().toLowerCase();
+        if (!term) {
+            return this.allEnseignants;
+        }
+
+        return this.allEnseignants.filter((enseignant) => {
+            const fullname = `${enseignant.nom} ${enseignant.prenom}`.toLowerCase();
+            return (
+                fullname.includes(term) ||
+                enseignant.email.toLowerCase().includes(term) ||
+                enseignant.login.toLowerCase().includes(term)
+            );
+        });
     }
 
-    constructor(private messageService: MessageService) {}
+    constructor(
+        private messageService: MessageService,
+        private teacherService: TeacherService
+    ) {}
+
+    ngOnInit() {
+        this.loadTeachers();
+    }
+
+    private loadTeachers() {
+        this.teacherService.getAll().subscribe({
+            next: (teachers) => {
+                this.allEnseignants = teachers.map((teacher) => this.fromApiTeacher(teacher));
+            },
+            error: () => {
+                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Chargement des enseignants impossible' });
+            }
+        });
+    }
 
     openCreateDialog() {
         this.isEditMode = false;
@@ -360,25 +380,84 @@ export class EnseignantsPage {
         this.selectedEnseignant.matieres = this.matieresInput.split(',').map(m => m.trim()).filter(m => m);
 
         if (this.isEditMode) {
-            const index = this.allEnseignants.findIndex(e => e.id === this.selectedEnseignant.id);
-            if (index > -1) {
-                this.allEnseignants[index] = { ...this.selectedEnseignant };
-                this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Enseignant modifié avec succès' });
+            if (!this.selectedEnseignant.id) {
+                return;
             }
+
+            this.teacherService.update(this.selectedEnseignant.id, this.toApiTeacher(this.selectedEnseignant)).subscribe({
+                next: () => {
+                    this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Enseignant modifié avec succès' });
+                    this.displayDialog = false;
+                    this.loadTeachers();
+                },
+                error: (error: unknown) => {
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: this.getErrorMessage(error, 'Echec de modification enseignant') });
+                }
+            });
         } else {
-            const newEnseignant: Enseignant = {
-                id: Math.max(...this.allEnseignants.map(e => e.id || 0)) + 1,
-                ...this.selectedEnseignant
-            };
-            this.allEnseignants.push(newEnseignant);
-            this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Enseignant créé avec succès' });
+            this.teacherService.create(this.toApiTeacher(this.selectedEnseignant)).subscribe({
+                next: () => {
+                    this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Enseignant créé avec succès' });
+                    this.displayDialog = false;
+                    this.loadTeachers();
+                },
+                error: (error: unknown) => {
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: this.getErrorMessage(error, 'Echec de creation enseignant') });
+                }
+            });
         }
-        this.displayDialog = false;
     }
 
     deleteEnseignant() {
-        this.allEnseignants = this.allEnseignants.filter(e => e.id !== this.selectedEnseignant.id);
-        this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Enseignant supprimé avec succès' });
-        this.displayDeleteDialog = false;
+        if (!this.selectedEnseignant.id) {
+            return;
+        }
+
+        this.teacherService.delete(this.selectedEnseignant.id).subscribe({
+            next: () => {
+                this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Enseignant supprimé avec succès' });
+                this.displayDeleteDialog = false;
+                this.loadTeachers();
+            },
+            error: () => {
+                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Echec de suppression enseignant' });
+            }
+        });
+    }
+
+    private toApiTeacher(enseignant: Enseignant): Teacher {
+        return {
+            id: enseignant.id,
+            nom: enseignant.nom,
+            prenom: enseignant.prenom,
+            email: enseignant.email,
+            telephone: enseignant.telephone,
+            login: enseignant.login,
+            ecoles: enseignant.ecoles,
+            matieres: enseignant.matieres,
+            statut: enseignant.statut
+        };
+    }
+
+    private fromApiTeacher(teacher: Teacher): Enseignant {
+        return {
+            id: teacher.id,
+            nom: teacher.nom,
+            prenom: teacher.prenom,
+            email: teacher.email,
+            telephone: teacher.telephone || '',
+            login: teacher.login,
+            ecoles: teacher.ecoles || [],
+            matieres: teacher.matieres || [],
+            statut: teacher.statut
+        };
+    }
+
+    private getErrorMessage(error: unknown, fallback: string): string {
+        if (error instanceof Error && error.message) {
+            return error.message;
+        }
+
+        return fallback;
     }
 }

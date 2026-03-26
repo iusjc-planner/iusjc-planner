@@ -152,7 +152,7 @@ public class EDTService {
     }
 
     public List<ScheduleEntry> getEntries(Long edtId) {
-        return scheduleEntryRepository.findByEdtIdOrderByStartTimeAsc(edtId);
+        return scheduleEntryRepository.findByEdt_IdOrderByStartTimeAsc(edtId);
     }
 
     public ScheduleEntry addEntry(Long edtId, ScheduleEntry entry) {
@@ -235,21 +235,21 @@ public class EDTService {
         EDT edt = edtRepository.findById(edtId)
             .orElseThrow(() -> new EntityNotFoundException("EDT introuvable: " + edtId));
 
-        List<ScheduleEntry> entries = scheduleEntryRepository.findByEdtIdOrderByStartTimeAsc(edtId);
+        List<ScheduleEntry> entries = scheduleEntryRepository.findByEdt_IdOrderByStartTimeAsc(edtId);
         return aggregateByDay(entries, edt.getAnnee(), edt.getSemaine());
     }
 
     public byte[] exportPdfByEdtId(Long edtId) {
         EDT edt = edtRepository.findById(edtId)
             .orElseThrow(() -> new EntityNotFoundException("EDT introuvable: " + edtId));
-        List<ScheduleEntry> entries = scheduleEntryRepository.findByEdtIdOrderByStartTimeAsc(edtId);
+        List<ScheduleEntry> entries = scheduleEntryRepository.findByEdt_IdOrderByStartTimeAsc(edtId);
         return pdfExportService.exportWeeklyEdtPdf(edt, entries);
     }
 
     public byte[] exportExcelByEdtId(Long edtId) {
         EDT edt = edtRepository.findById(edtId)
             .orElseThrow(() -> new EntityNotFoundException("EDT introuvable: " + edtId));
-        List<ScheduleEntry> entries = scheduleEntryRepository.findByEdtIdOrderByStartTimeAsc(edtId);
+        List<ScheduleEntry> entries = scheduleEntryRepository.findByEdt_IdOrderByStartTimeAsc(edtId);
         EDTExportData exportData = toExportData(edt, entries);
         return excelExportService.exportWeeklyEdtExcel(exportData);
     }
@@ -360,7 +360,7 @@ public class EDTService {
                 if (edt.getVue() == EDT.VueType.ENSEIGNANT && userId.equals(edt.getTargetId())) {
                     return true;
                 }
-                return scheduleEntryRepository.findByEdtIdOrderByStartTimeAsc(edt.getId()).stream()
+                return scheduleEntryRepository.findByEdt_IdOrderByStartTimeAsc(edt.getId()).stream()
                         .anyMatch(entry -> userId.equals(entry.getTeacherId()));
             }
         }

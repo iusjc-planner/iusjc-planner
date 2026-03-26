@@ -36,10 +36,40 @@ function Start-IusjService {
         [int]$WaitSeconds = 12
     )
 
+    function Stop-ProcessOnPort {
+        param(
+            [Parameter(Mandatory = $true)]
+            [int]$TargetPort
+        )
+
+        $listeners = Get-NetTCPConnection -State Listen -LocalPort $TargetPort -ErrorAction SilentlyContinue |
+            Select-Object -ExpandProperty OwningProcess -Unique
+
+        if (-not $listeners) {
+            return
+        }
+
+        foreach ($processId in $listeners) {
+            try {
+                $proc = Get-Process -Id $processId -ErrorAction SilentlyContinue
+                if ($null -ne $proc) {
+                    Write-Host "[INFO] Arret du processus $($proc.ProcessName) (PID $processId) sur le port $TargetPort" -ForegroundColor DarkYellow
+                    Stop-Process -Id $processId -Force -ErrorAction Stop
+                }
+            } catch {
+                Write-Host "[WARN] Impossible d'arreter le PID $processId sur le port $TargetPort" -ForegroundColor Yellow
+            }
+        }
+
+        Start-Sleep -Seconds 2
+    }
+
     if (-not (Test-Path $ServicePath)) {
         Write-Host "[WARN] Dossier introuvable: $ServicePath" -ForegroundColor Yellow
         return
     }
+
+    Stop-ProcessOnPort -TargetPort $Port
 
     Write-Host "Compilation et demarrage de $ServiceName (port $Port)..." -ForegroundColor Yellow
     $command = "cd '$ServicePath'; mvn clean package -DskipTests; if (`$?) { java -jar target/$ServiceName-0.0.1-SNAPSHOT.jar }"

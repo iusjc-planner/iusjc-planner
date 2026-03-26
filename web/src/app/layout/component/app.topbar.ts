@@ -1,10 +1,12 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { MenuItem } from 'primeng/api';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { StyleClassModule } from 'primeng/styleclass';
 import { AppConfigurator } from './app.configurator';
 import { LayoutService } from '../service/layout.service';
+import { AuthService } from '../../core/services/auth.service';
+import { NotificationApiService } from '../../core/services/notification-api.service';
 
 @Component({
     selector: 'app-topbar',
@@ -64,29 +66,81 @@ import { LayoutService } from '../service/layout.service';
 
             <div class="layout-topbar-menu hidden lg:block">
                 <div class="layout-topbar-menu-content">
+                    <button type="button" class="layout-topbar-action" (click)="navigateToNotifications()">
+                        <i class="pi pi-bell"></i>
+                        <span>Notifications</span>
+                        <span *ngIf="unreadCount > 0" class="inline-flex items-center justify-center ml-2 min-w-5 h-5 text-xs rounded-full bg-red-500 text-white px-1">{{ unreadCount }}</span>
+                    </button>
                     <button type="button" class="layout-topbar-action">
                         <i class="pi pi-calendar"></i>
                         <span>Calendar</span>
                     </button>
-                    <button type="button" class="layout-topbar-action">
-                        <i class="pi pi-inbox"></i>
-                        <span>Messages</span>
-                    </button>
-                    <button type="button" class="layout-topbar-action">
+                    <button type="button" class="layout-topbar-action" (click)="navigateToProfile()">
                         <i class="pi pi-user"></i>
                         <span>Profile</span>
+                    </button>
+                    <button type="button" class="layout-topbar-action" (click)="logout()">
+                        <i class="pi pi-sign-out"></i>
+                        <span>Déconnexion</span>
                     </button>
                 </div>
             </div>
         </div>
     </div>`
 })
-export class AppTopbar {
+export class AppTopbar implements OnInit, OnDestroy {
     items!: MenuItem[];
+    unreadCount = 0;
+    private refreshHandle: ReturnType<typeof setInterval> | null = null;
 
-    constructor(public layoutService: LayoutService) {}
+    constructor(
+        public layoutService: LayoutService,
+        private authService: AuthService,
+        private notificationApiService: NotificationApiService,
+        private router: Router
+    ) {}
+
+    ngOnInit(): void {
+        this.loadUnreadCount();
+        this.refreshHandle = setInterval(() => this.loadUnreadCount(), 30000);
+    }
+
+    ngOnDestroy(): void {
+        if (this.refreshHandle) {
+            clearInterval(this.refreshHandle);
+            this.refreshHandle = null;
+        }
+    }
 
     toggleDarkMode() {
         this.layoutService.layoutConfig.update((state) => ({ ...state, darkTheme: !state.darkTheme }));
+    }
+
+    logout() {
+        this.authService.logout();
+    }
+
+    navigateToNotifications() {
+        this.router.navigate([this.getRoleBasedPath('notifications')]);
+    }
+
+    navigateToProfile() {
+        this.router.navigate([this.getRoleBasedPath('profil')]);
+    }
+
+    private loadUnreadCount() {
+        this.notificationApiService.getAll().subscribe({
+            next: (notifications) => {
+                this.unreadCount = notifications.filter((item) => !item.lu).length;
+            },
+            error: () => {
+                this.unreadCount = 0;
+            }
+        });
+    }
+
+    private getRoleBasedPath(section: 'notifications' | 'profil'): string {
+        const isAdmin = (this.authService.getRole() ?? '').toUpperCase().includes('ADMIN');
+        return isAdmin ? `/pages/admin/${section}` : `/pages/${section}`;
     }
 }

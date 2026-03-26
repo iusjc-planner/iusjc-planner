@@ -2,6 +2,8 @@ package com.example.iusj_school_service.services;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -35,6 +37,8 @@ public class SchoolService {
     }
 
     public School create(School school) {
+        validateSchoolCreation(school);
+
         // Set the school reference on each filiere before saving
         if (school.getFilieres() != null) {
             for (Filiere filiere : school.getFilieres()) {
@@ -118,4 +122,39 @@ public class SchoolService {
     }
 
     public record SchoolStats(long total, long active, long inactive) {}
+
+    private void validateSchoolCreation(School school) {
+        if (school.getName() == null || school.getName().isBlank()) {
+            throw new IllegalArgumentException("Le nom de l ecole est obligatoire");
+        }
+
+        if (repository.existsByNameIgnoreCase(school.getName().trim())) {
+            throw new IllegalArgumentException("Une ecole avec ce nom existe deja");
+        }
+
+        if (school.getFilieres() == null || school.getFilieres().isEmpty()) {
+            return;
+        }
+
+        Set<String> normalizedCodes = school.getFilieres().stream()
+                .map(Filiere::getCode)
+                .filter(code -> code != null && !code.isBlank())
+                .map(code -> code.trim().toUpperCase())
+                .collect(Collectors.toSet());
+
+        long requestedCount = school.getFilieres().stream()
+                .map(Filiere::getCode)
+                .filter(code -> code != null && !code.isBlank())
+                .count();
+
+        if (requestedCount != normalizedCodes.size()) {
+            throw new IllegalArgumentException("Les codes de filiere doivent etre uniques dans la meme ecole");
+        }
+
+        for (String code : normalizedCodes) {
+            if (filiereRepository.existsByCode(code)) {
+                throw new IllegalArgumentException("Le code de filiere " + code + " existe deja");
+            }
+        }
+    }
 }

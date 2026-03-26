@@ -3,11 +3,14 @@ import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { InputTextModule } from 'primeng/inputtext';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { TooltipModule } from 'primeng/tooltip';
+import { UserService } from '../../core/services/user.service';
+import { User } from '../../core/models/user.model';
+import { SchoolService } from '../../core/services/school.service';
 
 interface Utilisateur {
     id?: number;
@@ -18,12 +21,13 @@ interface Utilisateur {
     login: string;
     role: string;
     statut: string;
+    ecoles: string[];
 }
 
 @Component({
     selector: 'app-utilisateurs',
     standalone: true,
-    imports: [CommonModule, ButtonModule, TableModule, InputTextModule, FormsModule, DialogModule, ToastModule, TooltipModule],
+    imports: [CommonModule, ButtonModule, TableModule, InputTextModule, FormsModule, ReactiveFormsModule, DialogModule, ToastModule, TooltipModule],
     providers: [MessageService],
     template: `
         <p-toast></p-toast>
@@ -36,6 +40,29 @@ interface Utilisateur {
             <div class="mb-4 relative">
                 <i class="pi pi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-color"></i>
                 <input pInputText type="text" [(ngModel)]="searchValue" placeholder="   Rechercher..." class="w-full pl-10" />
+            </div>
+
+            <div class="grid grid-cols-12 gap-4 mb-4">
+                <div class="col-span-12 md:col-span-4">
+                    <label class="block mb-2 font-medium">Filtrer par role</label>
+                    <select [(ngModel)]="roleFilter" class="w-full px-3 py-2 border rounded">
+                        <option value="">Tous les roles</option>
+                        <option value="Administrateur">Administrateur</option>
+                        <option value="Enseignant">Enseignant</option>
+                        <option value="Support">Support</option>
+                    </select>
+                </div>
+                <div class="col-span-12 md:col-span-4">
+                    <label class="block mb-2 font-medium">Filtrer par statut</label>
+                    <select [(ngModel)]="statutFilter" class="w-full px-3 py-2 border rounded">
+                        <option value="">Tous les statuts</option>
+                        <option value="Actif">Actif</option>
+                        <option value="Inactif">Inactif</option>
+                    </select>
+                </div>
+                <div class="col-span-12 md:col-span-4 flex items-end">
+                    <span class="text-sm text-muted-color">{{ utilisateurs.length }} utilisateur(s) affiche(s)</span>
+                </div>
             </div>
 
             <p-table [value]="utilisateurs" [rows]="10" [paginator]="true" responsiveLayout="scroll">
@@ -74,30 +101,30 @@ interface Utilisateur {
 
         <!-- Dialog Créer/Modifier -->
         <p-dialog [(visible)]="displayDialog" [header]="isEditMode ? 'Modifier utilisateur' : 'Créer utilisateur'" [modal]="true" [style]="{width: '50vw'}" [breakpoints]="{'960px': '75vw', '640px': '90vw'}">
-            <div class="grid grid-cols-12 gap-4">
+            <form [formGroup]="userForm" class="grid grid-cols-12 gap-4">
                 <div class="col-span-12 md:col-span-6">
                     <label class="block mb-2 font-medium">Nom</label>
-                    <input pInputText type="text" [(ngModel)]="selectedUtilisateur.nom" class="w-full" />
+                    <input pInputText type="text" formControlName="nom" class="w-full" />
                 </div>
                 <div class="col-span-12 md:col-span-6">
                     <label class="block mb-2 font-medium">Prénom</label>
-                    <input pInputText type="text" [(ngModel)]="selectedUtilisateur.prenom" class="w-full" />
+                    <input pInputText type="text" formControlName="prenom" class="w-full" />
                 </div>
                 <div class="col-span-12 md:col-span-6">
                     <label class="block mb-2 font-medium">Email</label>
-                    <input pInputText type="email" [(ngModel)]="selectedUtilisateur.email" class="w-full" />
+                    <input pInputText type="email" formControlName="email" class="w-full" />
                 </div>
                 <div class="col-span-12 md:col-span-6">
                     <label class="block mb-2 font-medium">Téléphone</label>
-                    <input pInputText type="tel" [(ngModel)]="selectedUtilisateur.telephone" class="w-full" />
+                    <input pInputText type="tel" formControlName="telephone" class="w-full" />
                 </div>
                 <div class="col-span-12 md:col-span-6">
                     <label class="block mb-2 font-medium">Login</label>
-                    <input pInputText type="text" [(ngModel)]="selectedUtilisateur.login" class="w-full" />
+                    <input pInputText type="text" formControlName="login" class="w-full" />
                 </div>
                 <div class="col-span-12 md:col-span-6">
                     <label class="block mb-2 font-medium">Rôle</label>
-                    <select [(ngModel)]="selectedUtilisateur.role" class="w-full px-3 py-2 border rounded">
+                    <select formControlName="role" class="w-full px-3 py-2 border rounded">
                         <option value="Administrateur">Administrateur</option>
                         <option value="Enseignant">Enseignant</option>
                         <option value="Support">Support</option>
@@ -105,12 +132,18 @@ interface Utilisateur {
                 </div>
                 <div class="col-span-12 md:col-span-6">
                     <label class="block mb-2 font-medium">Statut</label>
-                    <select [(ngModel)]="selectedUtilisateur.statut" class="w-full px-3 py-2 border rounded">
+                    <select formControlName="statut" class="w-full px-3 py-2 border rounded">
                         <option value="Actif">Actif</option>
                         <option value="Inactif">Inactif</option>
                     </select>
                 </div>
-            </div>
+                <div class="col-span-12">
+                    <label class="block mb-2 font-medium">Ecoles</label>
+                    <select formControlName="ecoles" multiple class="w-full px-3 py-2 border rounded min-h-28">
+                        <option *ngFor="let schoolName of schoolOptions" [value]="schoolName">{{ schoolName }}</option>
+                    </select>
+                </div>
+            </form>
             <ng-template pTemplate="footer">
                 <button pButton type="button" label="Annuler" (click)="displayDialog = false" class="p-button-text"></button>
                 <button pButton type="button" [label]="isEditMode ? 'Modifier' : 'Créer'" (click)="saveUtilisateur()" class="p-button-rounded p-button-text"></button>
@@ -148,6 +181,10 @@ interface Utilisateur {
                     <label class="block mb-2 font-medium">Statut</label>
                     <p [ngClass]="selectedUtilisateur.statut === 'Actif' ? 'text-green-600' : 'text-red-600'">{{ selectedUtilisateur.statut }}</p>
                 </div>
+                <div class="col-span-12">
+                    <label class="block mb-2 font-medium">Ecoles</label>
+                    <p class="text-surface-900 dark:text-surface-0">{{ selectedUtilisateur.ecoles.join(', ') || '-' }}</p>
+                </div>
             </div>
             <ng-template pTemplate="footer">
                 <button pButton type="button" label="Fermer" (click)="displayViewDialog = false" class="p-button-text"></button>
@@ -166,10 +203,15 @@ interface Utilisateur {
 })
 export class UtilisateursPage {
     searchValue = '';
+    roleFilter = '';
+    statutFilter = '';
     displayDialog = false;
     displayViewDialog = false;
     displayDeleteDialog = false;
     isEditMode = false;
+    schoolOptions: string[] = [];
+    editingId?: number;
+    userForm: ReturnType<FormBuilder['group']>;
     
     selectedUtilisateur: Utilisateur = {
         nom: '',
@@ -178,19 +220,74 @@ export class UtilisateursPage {
         telephone: '',
         login: '',
         role: 'Enseignant',
-        statut: 'Actif'
+        statut: 'Actif',
+        ecoles: []
     };
 
-    utilisateurs: Utilisateur[] = [
-        { id: 1, nom: 'Admin', prenom: 'IUSJC', email: 'admin@iusjc.cm', telephone: '+237 6XX XXX XXX', login: 'admin', role: 'Administrateur', statut: 'Actif' },
-        { id: 2, nom: 'Dupont', prenom: 'Dr.', email: 'dupont@iusjc.cm', telephone: '+237 6XX XXX XXX', login: 'dupont', role: 'Enseignant', statut: 'Actif' },
-        { id: 3, nom: 'Martin', prenom: 'Pr.', email: 'martin@iusjc.cm', telephone: '+237 6XX XXX XXX', login: 'martin', role: 'Enseignant', statut: 'Actif' },
-        { id: 4, nom: 'Lefevre', prenom: 'Dr.', email: 'lefevre@iusjc.cm', telephone: '+237 6XX XXX XXX', login: 'lefevre', role: 'Enseignant', statut: 'Inactif' },
-        { id: 5, nom: 'Rousseau', prenom: 'Mme.', email: 'rousseau@iusjc.cm', telephone: '+237 6XX XXX XXX', login: 'rousseau', role: 'Enseignant', statut: 'Actif' },
-        { id: 6, nom: 'Support', prenom: 'IUSJC', email: 'support@iusjc.cm', telephone: '+237 6XX XXX XXX', login: 'support', role: 'Support', statut: 'Actif' }
-    ];
+    private allUtilisateurs: Utilisateur[] = [];
 
-    constructor(private messageService: MessageService) {}
+    get utilisateurs(): Utilisateur[] {
+        const term = this.searchValue.trim().toLowerCase();
+
+        return this.allUtilisateurs.filter((utilisateur) => {
+            const fullName = `${utilisateur.nom} ${utilisateur.prenom}`.toLowerCase();
+            const searchMatch =
+                term.length === 0 ||
+                fullName.includes(term) ||
+                utilisateur.email.toLowerCase().includes(term) ||
+                utilisateur.login.toLowerCase().includes(term);
+
+            const roleMatch = !this.roleFilter || utilisateur.role === this.roleFilter;
+            const statusMatch = !this.statutFilter || utilisateur.statut === this.statutFilter;
+
+            return searchMatch && roleMatch && statusMatch;
+        });
+    }
+
+    constructor(
+        private formBuilder: FormBuilder,
+        private messageService: MessageService,
+        private userService: UserService,
+        private schoolService: SchoolService
+    ) {
+        this.userForm = this.formBuilder.group({
+            nom: ['', Validators.required],
+            prenom: ['', Validators.required],
+            email: ['', [Validators.required, Validators.email]],
+            telephone: [''],
+            login: ['', Validators.required],
+            role: ['Enseignant', Validators.required],
+            statut: ['Actif', Validators.required],
+            ecoles: [[] as string[]]
+        });
+    }
+
+    ngOnInit() {
+        this.loadSchools();
+        this.loadUsers();
+    }
+
+    private loadSchools() {
+        this.schoolService.getAll().subscribe({
+            next: (schools) => {
+                this.schoolOptions = schools.map((school) => school.nom);
+            },
+            error: () => {
+                this.messageService.add({ severity: 'warn', summary: 'Avertissement', detail: 'Chargement des ecoles indisponible' });
+            }
+        });
+    }
+
+    private loadUsers() {
+        this.userService.getAll().subscribe({
+            next: (users) => {
+                this.allUtilisateurs = users.map((user) => this.fromApiUser(user));
+            },
+            error: () => {
+                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Chargement des utilisateurs impossible' });
+            }
+        });
+    }
 
     openCreateDialog() {
         this.isEditMode = false;
@@ -201,14 +298,19 @@ export class UtilisateursPage {
             telephone: '',
             login: '',
             role: 'Enseignant',
-            statut: 'Actif'
+            statut: 'Actif',
+            ecoles: []
         };
+        this.editingId = undefined;
+        this.userForm.reset(this.selectedUtilisateur);
         this.displayDialog = true;
     }
 
     openEditDialog(utilisateur: Utilisateur) {
         this.isEditMode = true;
         this.selectedUtilisateur = { ...utilisateur };
+        this.editingId = utilisateur.id;
+        this.userForm.reset({ ...utilisateur, ecoles: [...utilisateur.ecoles] });
         this.displayDialog = true;
     }
 
@@ -223,27 +325,109 @@ export class UtilisateursPage {
     }
 
     saveUtilisateur() {
-        if (this.isEditMode) {
-            const index = this.utilisateurs.findIndex(u => u.id === this.selectedUtilisateur.id);
-            if (index > -1) {
-                this.utilisateurs[index] = { ...this.selectedUtilisateur };
-                this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Utilisateur modifié avec succès' });
-            }
-        } else {
-            const newUtilisateur: Utilisateur = {
-                id: Math.max(...this.utilisateurs.map(u => u.id || 0)) + 1,
-                ...this.selectedUtilisateur
-            };
-            this.utilisateurs.push(newUtilisateur);
-            this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Utilisateur créé avec succès' });
+        if (this.userForm.invalid) {
+            this.userForm.markAllAsTouched();
+            this.messageService.add({ severity: 'warn', summary: 'Validation', detail: 'Veuillez corriger les champs obligatoires' });
+            return;
         }
-        this.displayDialog = false;
+
+        const utilisateur = this.toUtilisateurFromForm();
+
+        if (this.isEditMode) {
+            this.userService.update(this.editingId!, this.toApiUser({ ...utilisateur, id: this.editingId })).subscribe({
+                next: () => {
+                    this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Utilisateur modifié avec succès' });
+                    this.displayDialog = false;
+                    this.loadUsers();
+                },
+                error: (error: unknown) => {
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: this.getErrorMessage(error, 'Echec de modification utilisateur') });
+                }
+            });
+        } else {
+            this.userService.create(this.toApiUser(utilisateur)).subscribe({
+                next: () => {
+                    this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Utilisateur créé avec succès' });
+                    this.displayDialog = false;
+                    this.loadUsers();
+                },
+                error: (error: unknown) => {
+                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: this.getErrorMessage(error, 'Echec de creation utilisateur') });
+                }
+            });
+        }
     }
 
     deleteUtilisateur() {
-        this.utilisateurs = this.utilisateurs.filter(u => u.id !== this.selectedUtilisateur.id);
-        this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Utilisateur supprimé avec succès' });
-        this.displayDeleteDialog = false;
+        if (!this.selectedUtilisateur.id) {
+            return;
+        }
+
+        this.userService.delete(this.selectedUtilisateur.id).subscribe({
+            next: () => {
+                this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Utilisateur supprimé avec succès' });
+                this.displayDeleteDialog = false;
+                this.loadUsers();
+            },
+            error: () => {
+                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Echec de suppression utilisateur' });
+            }
+        });
+    }
+
+    private toApiUser(utilisateur: Utilisateur): User {
+        const payload: User & { ecoles?: string[] } = {
+            id: utilisateur.id,
+            nom: utilisateur.nom,
+            prenom: utilisateur.prenom,
+            email: utilisateur.email,
+            telephone: utilisateur.telephone,
+            login: utilisateur.login,
+            role: utilisateur.role,
+            statut: utilisateur.statut,
+            ecoles: utilisateur.ecoles
+        };
+
+        return payload;
+    }
+
+    private fromApiUser(user: User): Utilisateur {
+        const extendedUser = user as User & { ecoles?: string[] };
+
+        return {
+            id: user.id,
+            nom: user.nom,
+            prenom: user.prenom,
+            email: user.email,
+            telephone: user.telephone ?? '',
+            login: user.login,
+            role: user.role,
+            statut: user.statut,
+            ecoles: extendedUser.ecoles ?? []
+        };
+    }
+
+    private toUtilisateurFromForm(): Utilisateur {
+        const value = this.userForm.getRawValue();
+
+        return {
+            nom: value.nom || '',
+            prenom: value.prenom || '',
+            email: value.email || '',
+            telephone: value.telephone || '',
+            login: value.login || '',
+            role: value.role || 'Enseignant',
+            statut: value.statut || 'Actif',
+            ecoles: value.ecoles || []
+        };
+    }
+
+    private getErrorMessage(error: unknown, fallback: string): string {
+        if (error instanceof Error && error.message) {
+            return error.message;
+        }
+
+        return fallback;
     }
 
     getRoleClass(role: string): string {

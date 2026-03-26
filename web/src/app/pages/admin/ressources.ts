@@ -4,12 +4,27 @@ import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
+import { RoomService } from '../../core/services/room.service';
+import { Room } from '../../core/models/room.model';
+
+type RessourceItem = {
+    id?: number;
+    nom: string;
+    type: string;
+    quantite: number;
+    localisation: string;
+    statut: string;
+};
 
 @Component({
     selector: 'app-ressources',
     standalone: true,
-    imports: [CommonModule, ButtonModule, TableModule, InputTextModule, FormsModule],
+    imports: [CommonModule, ButtonModule, TableModule, InputTextModule, FormsModule, ToastModule],
+    providers: [MessageService],
     template: `
+        <p-toast></p-toast>
         <div class="card">
             <div class="flex justify-between items-center mb-6">
                 <h5 class="text-2xl font-bold">Gestion des ressources</h5>
@@ -47,7 +62,7 @@ import { FormsModule } from '@angular/forms';
                         </td>
                         <td>
                             <button pButton type="button" icon="pi pi-pencil" class="p-button-rounded p-button-text mr-2"></button>
-                            <button pButton type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger"></button>
+                            <button pButton type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" (click)="deleteRessource(ressource)"></button>
                         </td>
                     </tr>
                 </ng-template>
@@ -57,13 +72,54 @@ import { FormsModule } from '@angular/forms';
 })
 export class RessourcesPage {
     searchValue = '';
-    ressources = [
-        { nom: 'Projecteur', type: 'Équipement', quantite: 12, localisation: 'Bâtiment A', statut: 'Disponible' },
-        { nom: 'Ordinateur portable', type: 'Informatique', quantite: 25, localisation: 'Bâtiment C', statut: 'Disponible' },
-        { nom: 'Tableau interactif', type: 'Équipement', quantite: 8, localisation: 'Bâtiment B', statut: 'Disponible' },
-        { nom: 'Microscope', type: 'Laboratoire', quantite: 15, localisation: 'Bâtiment C', statut: 'Maintenance' },
-        { nom: 'Baffle audio', type: 'Équipement', quantite: 6, localisation: 'Bâtiment D', statut: 'Disponible' }
-    ];
+    private allRessources: RessourceItem[] = [];
+
+    constructor(
+        private messageService: MessageService,
+        private roomService: RoomService
+    ) {}
+
+    ngOnInit() {
+        this.loadRessources();
+    }
+
+    get ressources(): RessourceItem[] {
+        const term = this.searchValue.trim().toLowerCase();
+        if (!term) {
+            return this.allRessources;
+        }
+
+        return this.allRessources.filter((resource) => {
+            return resource.nom.toLowerCase().includes(term) || resource.type.toLowerCase().includes(term);
+        });
+    }
+
+    private loadRessources() {
+        this.roomService.getAll().subscribe({
+            next: (rooms) => {
+                this.allRessources = rooms.map((room) => this.fromRoom(room));
+            },
+            error: () => {
+                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Chargement des ressources impossible' });
+            }
+        });
+    }
+
+    deleteRessource(resource: RessourceItem) {
+        if (!resource.id) {
+            return;
+        }
+
+        this.roomService.delete(resource.id).subscribe({
+            next: () => {
+                this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Ressource supprimee avec succes' });
+                this.loadRessources();
+            },
+            error: () => {
+                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Echec de suppression de la ressource' });
+            }
+        });
+    }
 
     getStatusClass(statut: string): string {
         const classes: { [key: string]: string } = {
@@ -72,5 +128,16 @@ export class RessourcesPage {
             'Maintenance': 'bg-red-100 text-red-800 px-2 py-1 rounded'
         };
         return classes[statut] || '';
+    }
+
+    private fromRoom(room: Room): RessourceItem {
+        return {
+            id: room.id,
+            nom: room.nom,
+            type: room.type || 'Ressource',
+            quantite: room.capacite,
+            localisation: room.code,
+            statut: room.statut || 'Disponible'
+        };
     }
 }

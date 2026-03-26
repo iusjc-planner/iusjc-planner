@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
@@ -7,11 +9,12 @@ import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { RippleModule } from 'primeng/ripple';
 import { AppFloatingConfigurator } from '../../layout/component/app.floatingconfigurator';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
     selector: 'app-login',
     standalone: true,
-    imports: [ButtonModule, CheckboxModule, InputTextModule, PasswordModule, FormsModule, RouterModule, RippleModule, AppFloatingConfigurator],
+    imports: [CommonModule, ButtonModule, CheckboxModule, InputTextModule, PasswordModule, FormsModule, RouterModule, RippleModule, AppFloatingConfigurator],
     template: `
         <app-floating-configurator />
         <div class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-screen overflow-hidden">
@@ -41,8 +44,8 @@ import { AppFloatingConfigurator } from '../../layout/component/app.floatingconf
                         </div>
 
                         <div>
-                            <label for="email1" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">Email</label>
-                            <input pInputText id="email1" type="text" placeholder="Email address" class="w-full md:w-120 mb-8" [(ngModel)]="email" />
+                            <label for="login1" class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">Login</label>
+                            <input pInputText id="login1" type="text" placeholder="Login" class="w-full md:w-120 mb-8" [(ngModel)]="login" />
 
                             <label for="password1" class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Password</label>
                             <p-password id="password1" [(ngModel)]="password" placeholder="Password" [toggleMask]="true" styleClass="mb-4" [fluid]="true" [feedback]="false"></p-password>
@@ -54,7 +57,8 @@ import { AppFloatingConfigurator } from '../../layout/component/app.floatingconf
                                 </div>
                                 <span class="font-medium no-underline ml-2 text-right cursor-pointer text-primary">Forgot password?</span>
                             </div>
-                            <p-button label="Sign In" styleClass="w-full" routerLink="/"></p-button>
+                            <small *ngIf="errorMessage" class="text-red-500 block mb-4">{{ errorMessage }}</small>
+                            <p-button label="Sign In" styleClass="w-full" [loading]="loading" (onClick)="onSignIn()"></p-button>
                         </div>
                     </div>
                 </div>
@@ -63,9 +67,48 @@ import { AppFloatingConfigurator } from '../../layout/component/app.floatingconf
     `
 })
 export class Login {
-    email: string = '';
+    private readonly authService = inject(AuthService);
+    private readonly router = inject(Router);
+
+    login: string = '';
 
     password: string = '';
 
     checked: boolean = false;
+
+    loading: boolean = false;
+
+    errorMessage: string = '';
+
+    ngOnInit(): void {
+        if (this.authService.isAuthenticated()) {
+            this.authService.redirectByRole();
+        }
+    }
+
+    onSignIn(): void {
+        if (!this.login || !this.password) {
+            this.errorMessage = 'Veuillez renseigner login et mot de passe.';
+            return;
+        }
+
+        this.errorMessage = '';
+        this.loading = true;
+
+        this.authService.login({ login: this.login, password: this.password }).subscribe((session) => {
+            this.loading = false;
+            if (!session) {
+                this.errorMessage = 'Connexion echouee. Verifiez vos identifiants.';
+                return;
+            }
+
+            const role = (session.role ?? '').toUpperCase();
+            if (role.includes('ADMIN')) {
+                this.router.navigate(['/dashboard']);
+                return;
+            }
+
+            this.router.navigate(['/']);
+        });
+    }
 }

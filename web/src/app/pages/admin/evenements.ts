@@ -4,12 +4,27 @@ import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
 import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
+import { NotificationApiService } from '../../core/services/notification-api.service';
+import { AppNotification } from '../../core/models/notification.model';
+
+type EvenementItem = {
+    id?: number;
+    nom: string;
+    type: string;
+    date: Date;
+    salle: string;
+    participants: number;
+};
 
 @Component({
     selector: 'app-evenements',
     standalone: true,
-    imports: [CommonModule, ButtonModule, TableModule, InputTextModule, FormsModule],
+    imports: [CommonModule, ButtonModule, TableModule, InputTextModule, FormsModule, ToastModule],
+    providers: [MessageService],
     template: `
+        <p-toast></p-toast>
         <div class="card">
             <div class="flex justify-between items-center mb-6">
                 <h5 class="text-2xl font-bold">Gestion des événements académiques</h5>
@@ -43,7 +58,7 @@ import { FormsModule } from '@angular/forms';
                         <td>{{ event.participants }}</td>
                         <td>
                             <button pButton type="button" icon="pi pi-pencil" class="p-button-rounded p-button-text mr-2"></button>
-                            <button pButton type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger"></button>
+                            <button pButton type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" (click)="deleteEvenement(event)"></button>
                         </td>
                     </tr>
                 </ng-template>
@@ -53,9 +68,63 @@ import { FormsModule } from '@angular/forms';
 })
 export class EvenementsPage {
     searchValue = '';
-    evenements = [
-        { nom: 'Séminaire IA', type: 'Séminaire', date: new Date(2025, 2, 15), salle: 'B201', participants: 150 },
-        { nom: 'Conférence Cybersécurité', type: 'Conférence', date: new Date(2025, 2, 20), salle: 'B201', participants: 200 },
-        { nom: 'Compétition Programmation', type: 'Compétition', date: new Date(2025, 3, 5), salle: 'C301', participants: 80 }
-    ];
+    private allEvenements: EvenementItem[] = [];
+
+    constructor(
+        private messageService: MessageService,
+        private notificationApiService: NotificationApiService
+    ) {}
+
+    ngOnInit() {
+        this.loadEvenements();
+    }
+
+    get evenements(): EvenementItem[] {
+        const term = this.searchValue.trim().toLowerCase();
+        if (!term) {
+            return this.allEvenements;
+        }
+
+        return this.allEvenements.filter((event) => {
+            return event.nom.toLowerCase().includes(term) || event.type.toLowerCase().includes(term);
+        });
+    }
+
+    private loadEvenements() {
+        this.notificationApiService.getAll().subscribe({
+            next: (notifications) => {
+                this.allEvenements = notifications.map((notification) => this.fromNotification(notification));
+            },
+            error: () => {
+                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Chargement des evenements impossible' });
+            }
+        });
+    }
+
+    deleteEvenement(event: EvenementItem) {
+        if (!event.id) {
+            return;
+        }
+
+        this.notificationApiService.delete(event.id).subscribe({
+            next: () => {
+                this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Evenement supprime avec succes' });
+                this.loadEvenements();
+            },
+            error: () => {
+                this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Echec de suppression de l evenement' });
+            }
+        });
+    }
+
+    private fromNotification(notification: AppNotification): EvenementItem {
+        return {
+            id: notification.id,
+            nom: notification.titre,
+            type: notification.type || 'Evenement',
+            date: notification.dateCreation ? new Date(notification.dateCreation) : new Date(),
+            salle: '-',
+            participants: 0
+        };
+    }
 }
