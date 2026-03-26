@@ -8,7 +8,7 @@
     </a>
   </div>
   <div class="navbar-menu-wrapper d-flex align-items-stretch">
-    <button class="navbar-toggler navbar-toggler align-self-center" type="button" data-toggle="minimize" (click)="toggleSidebar()">
+    <button class="navbar-toggler navbar-toggler align-self-center" type="button" data-toggle="minimize" (click)="toggleSidebar()" aria-label="Ouvrir ou fermer la barre laterale">
       <span class="mdi mdi-menu"></span>
     </button>
     <div class="search-field d-none d-md-block">
@@ -24,7 +24,7 @@
     <ul class="navbar-nav navbar-nav-right">
       <!-- Notifications -->
       <li class="nav-item dropdown" ngbDropdown>
-        <a class="nav-link count-indicator dropdown-toggle" id="notificationDropdown" ngbDropdownToggle>
+        <a class="nav-link count-indicator dropdown-toggle" id="notificationDropdown" ngbDropdownToggle aria-label="Notifications">
           <i class="mdi mdi-bell-outline"></i>
           <span *ngIf="unreadCount > 0" class="badge bg-danger rounded-pill ms-1">{{ unreadCount }}</span>
         </a>
@@ -75,7 +75,7 @@
       
       <!-- Profile -->
       <li class="nav-item nav-profile dropdown" ngbDropdown>
-        <a class="nav-link dropdown-toggle" id="profileDropdown" ngbDropdownToggle>
+        <a class="nav-link dropdown-toggle" id="profileDropdown" ngbDropdownToggle aria-label="Menu profil utilisateur">
           <div class="nav-profile-img">
             <img src="assets/images/faces/face1.jpg" alt="image">
             <span class="availability-status online"></span>
@@ -102,7 +102,7 @@
         </div>
       </li>
     </ul>
-    <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center" type="button" (click)="toggleOffcanvas()">
+    <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center" type="button" (click)="toggleOffcanvas()" aria-label="Ouvrir le menu mobile">
       <span class="mdi mdi-menu"></span>
     </button>
   </div>

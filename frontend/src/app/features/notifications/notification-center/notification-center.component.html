@@ -34,12 +34,12 @@
 
 <div class="card">
 	<div class="card-body">
-		<div *ngIf="loading" class="text-center py-4">
+		<div *ngIf="loading" class="text-center py-4 ux-state ux-state-loading" role="status" aria-live="polite">
 			<div class="spinner-border text-primary" role="status"></div>
 			<p class="text-muted mt-2 mb-0">Chargement des notifications...</p>
 		</div>
 
-		<div *ngIf="!loading && filteredNotifications.length === 0" class="text-center py-5 text-muted">
+		<div *ngIf="!loading && filteredNotifications.length === 0" class="text-center py-5 text-muted ux-state ux-state-empty" aria-live="polite">
 			<i class="mdi mdi-bell-off-outline d-block mb-2" style="font-size: 2rem;"></i>
 			Aucune notification pour ce filtre.
 		</div>
