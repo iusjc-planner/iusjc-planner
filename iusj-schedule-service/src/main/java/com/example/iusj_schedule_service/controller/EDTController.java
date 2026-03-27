@@ -120,6 +120,23 @@ public class EDTController {
         return ResponseEntity.status(HttpStatus.CREATED).body(edtService.addEntry(id, entry));
     }
 
+    @PutMapping("/entries/{entryId}")
+    public ResponseEntity<?> updateEntry(@PathVariable Long entryId, @Valid @RequestBody ScheduleEntry entry) {
+        try {
+            return edtService.updateEntry(entryId, entry)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+        }
+    }
+
+    @DeleteMapping("/entries/{entryId}")
+    public ResponseEntity<Void> deleteEntry(@PathVariable Long entryId) {
+        edtService.deleteEntry(entryId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PutMapping("/{id}/validate")
     public ResponseEntity<ValidationReport> validate(@PathVariable Long id) {
         return ResponseEntity.ok(edtService.validate(id));

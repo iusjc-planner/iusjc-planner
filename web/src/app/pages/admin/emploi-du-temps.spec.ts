@@ -6,16 +6,16 @@ import { EdtService } from '../../core/services/edt.service';
 import { GroupService } from '../../core/services/group.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { RoomService } from '../../core/services/room.service';
-import { ScheduleService } from '../../core/services/schedule.service';
 import { TeacherService } from '../../core/services/teacher.service';
+import { UserService } from '../../core/services/user.service';
 
 describe('EmploiDuTempsPage', () => {
     let edtService: jasmine.SpyObj<EdtService>;
-    let scheduleService: jasmine.SpyObj<ScheduleService>;
     let courseService: jasmine.SpyObj<CourseService>;
     let groupService: jasmine.SpyObj<GroupService>;
     let teacherService: jasmine.SpyObj<TeacherService>;
     let roomService: jasmine.SpyObj<RoomService>;
+    let userService: jasmine.SpyObj<UserService>;
     let notificationService: jasmine.SpyObj<NotificationService>;
     let page: EmploiDuTempsPage;
 
@@ -36,13 +36,15 @@ describe('EmploiDuTempsPage', () => {
             'addEntry',
             'suggestions',
             'exportByView',
-            'createEdt'
+            'createEdt',
+            'updateEntry',
+            'deleteEntry'
         ]);
-        scheduleService = jasmine.createSpyObj<ScheduleService>('ScheduleService', ['update', 'delete']);
         courseService = jasmine.createSpyObj<CourseService>('CourseService', ['getAll']);
         groupService = jasmine.createSpyObj<GroupService>('GroupService', ['getAll']);
         teacherService = jasmine.createSpyObj<TeacherService>('TeacherService', ['getAll']);
         roomService = jasmine.createSpyObj<RoomService>('RoomService', ['getAll']);
+        userService = jasmine.createSpyObj<UserService>('UserService', ['getAll']);
         notificationService = jasmine.createSpyObj<NotificationService>('NotificationService', ['info', 'warn', 'error']);
 
         const edt = { id: 101, semaine: 12, annee: 2026, periode: 'ANNUEL', vue: 'GROUPE', targetId: 1, status: 'DRAFT' };
@@ -52,8 +54,9 @@ describe('EmploiDuTempsPage', () => {
 
         courseService.getAll.and.returnValue(of([{ id: 11, nom: 'Maths', matiereId: 44 }]));
         groupService.getAll.and.returnValue(of([{ id: 1, nom: 'G1', effectif: 30 }]));
-        teacherService.getAll.and.returnValue(of([{ id: 21, nom: 'Dupont', prenom: 'Jean' }]));
+        teacherService.getAll.and.returnValue(of([{ id: 21, userId: 201, nom: 'Dupont', prenom: 'Jean' }]));
         roomService.getAll.and.returnValue(of([{ id: 31, code: 'A1', nom: 'Salle A1', capacite: 40 }]));
+        userService.getAll.and.returnValue(of([{ id: 201, nom: 'Dupont', prenom: 'Jean', email: 'j@x.com', login: 'dupont', role: 'ENSEIGNANT' }]));
 
         edtService.listEdt.and.returnValue(of([edt] as any));
         edtService.getByGroupe.and.returnValue(of(edt as any));
@@ -72,10 +75,10 @@ describe('EmploiDuTempsPage', () => {
         edtService.exportByView.and.returnValue(of(new Blob(['test'], { type: 'application/pdf' })));
         edtService.createEdt.and.returnValue(of(edt as any));
 
-        scheduleService.update.and.returnValue(of(entry as any));
-        scheduleService.delete.and.returnValue(of(void 0));
+        edtService.updateEntry.and.returnValue(of(entry as any));
+        edtService.deleteEntry.and.returnValue(of(void 0));
 
-        page = new EmploiDuTempsPage(edtService, scheduleService, courseService, groupService, teacherService, roomService, notificationService);
+        page = new EmploiDuTempsPage(edtService, courseService, groupService, teacherService, roomService, userService, notificationService);
     });
 
     it('loads global EDT view and computes rows', () => {
@@ -154,7 +157,7 @@ describe('EmploiDuTempsPage', () => {
         page.onDragStart(501);
         page.onDropToSlot({ label: 'A', dayOffset: 0, startTime: '10:00', endTime: '12:00' });
 
-        expect(scheduleService.update).not.toHaveBeenCalled();
+        expect(edtService.updateEntry).not.toHaveBeenCalled();
         expect(notificationService.error).toHaveBeenCalled();
     });
 
@@ -165,7 +168,7 @@ describe('EmploiDuTempsPage', () => {
         page.onDragStart(501);
         page.onDropToSlot({ label: 'A', dayOffset: 0, startTime: '10:00', endTime: '12:00' });
 
-        expect(scheduleService.update).toHaveBeenCalled();
+        expect(edtService.updateEntry).toHaveBeenCalled();
     });
 
     it('exports EDT by selected view/target', () => {

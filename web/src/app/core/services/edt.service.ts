@@ -86,6 +86,14 @@ export class EdtService {
         return this.http.post<ScheduleEntry>(`${this.endpoint}/${edtId}/entries`, payload);
     }
 
+    updateEntry(entryId: number, payload: ScheduleEntry): Observable<ScheduleEntry> {
+        return this.http.put<ScheduleEntry>(`${this.endpoint}/entries/${entryId}`, payload);
+    }
+
+    deleteEntry(entryId: number): Observable<void> {
+        return this.http.delete<void>(`${this.endpoint}/entries/${entryId}`);
+    }
+
     generate(payload: EdtGenerationRequest): Observable<EdtGenerationResult> {
         return this.http.post<EdtGenerationResult>(`${this.endpoint}/generate`, payload);
     }

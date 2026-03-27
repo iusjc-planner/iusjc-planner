@@ -14,6 +14,10 @@ public interface EDTRepository extends JpaRepository<EDT, Long> {
 
     Optional<EDT> findBySemaineAndAnneeAndVueAndTargetId(Integer semaine, Integer annee, EDT.VueType vue, Long targetId);
 
+    List<EDT> findAllBySemaineAndAnneeAndVueAndTargetIdOrderByDateCreationDesc(Integer semaine, Integer annee, EDT.VueType vue, Long targetId);
+
+    Optional<EDT> findFirstBySemaineAndAnneeAndVueAndTargetIdOrderByDateCreationDesc(Integer semaine, Integer annee, EDT.VueType vue, Long targetId);
+
     List<EDT> findByStatus(EDT.EDTStatus status);
 
     List<EDT> findByPeriodeAndAnnee(EDT.PeriodeType periode, Integer annee);
