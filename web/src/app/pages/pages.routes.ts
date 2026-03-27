@@ -15,6 +15,8 @@ import { EvenementsPage } from './admin/evenements';
 import { ExamensPage } from './admin/examens';
 import { NotificationsPage } from './admin/notifications';
 import { ProfilPage } from './admin/profil';
+import { DisponibilitesPage } from './enseignant/disponibilites';
+import { HistoriqueDisponibilitesPage } from './enseignant/historique-disponibilites';
 import { authGuard } from '../core/guards/auth.guard';
 import { roleGuard } from '../core/guards/role.guard';
 
@@ -24,6 +26,8 @@ export default [
     { path: 'empty', component: Empty, canActivate: [authGuard] },
     { path: 'notifications', component: NotificationsPage, canActivate: [authGuard] },
     { path: 'profil', component: ProfilPage, canActivate: [authGuard] },
+    { path: 'enseignant/disponibilites', component: DisponibilitesPage, canActivate: [authGuard] },
+    { path: 'enseignant/historique-disponibilites', component: HistoriqueDisponibilitesPage, canActivate: [authGuard] },
     { path: 'admin/utilisateurs', component: UtilisateursPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
     { path: 'admin/groupes', component: GroupesPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
     { path: 'admin/ecoles', component: EcolesPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
@@ -39,3 +43,4 @@ export default [
     { path: 'admin/profil', component: ProfilPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
     { path: '**', redirectTo: '/notfound' }
 ] as Routes;
+
