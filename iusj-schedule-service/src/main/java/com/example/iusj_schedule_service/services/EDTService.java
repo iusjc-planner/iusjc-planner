@@ -73,7 +73,7 @@ public class EDTService {
     }
 
     public EDT getOrCreate(Integer semaine, Integer annee, EDT.VueType vue, Long targetId, Long creePar) {
-        return edtRepository.findBySemaineAndAnneeAndVueAndTargetId(semaine, annee, vue, targetId)
+        return findLatestByScope(semaine, annee, vue, targetId)
             .orElseGet(() -> {
                 EDT edt = new EDT();
                 edt.setSemaine(semaine);
@@ -108,7 +108,7 @@ public class EDTService {
             Long userId) {
 
         if (semaine != null && annee != null && vue != null && targetId != null) {
-            return edtRepository.findBySemaineAndAnneeAndVueAndTargetId(semaine, annee, vue, targetId)
+            return findLatestByScope(semaine, annee, vue, targetId)
                 .stream()
                 .filter(edt -> canView(edt, userRole, userId))
                 .toList();
@@ -148,15 +148,15 @@ public class EDTService {
     }
 
     public Optional<EDT> getByGroupe(Long groupeId, Integer semaine, Integer annee) {
-        return edtRepository.findBySemaineAndAnneeAndVueAndTargetId(semaine, annee, EDT.VueType.GROUPE, groupeId);
+        return findLatestByScope(semaine, annee, EDT.VueType.GROUPE, groupeId);
     }
 
     public Optional<EDT> getByEnseignant(Long enseignantId, Integer semaine, Integer annee) {
-        return edtRepository.findBySemaineAndAnneeAndVueAndTargetId(semaine, annee, EDT.VueType.ENSEIGNANT, enseignantId);
+        return findLatestByScope(semaine, annee, EDT.VueType.ENSEIGNANT, enseignantId);
     }
 
     public Optional<EDT> getBySalle(Long salleId, Integer semaine, Integer annee) {
-        return edtRepository.findBySemaineAndAnneeAndVueAndTargetId(semaine, annee, EDT.VueType.SALLE, salleId);
+        return findLatestByScope(semaine, annee, EDT.VueType.SALLE, salleId);
     }
 
     public EDT create(EDT edt) {
@@ -181,6 +181,14 @@ public class EDTService {
 
         entry.setEdt(edt);
         return scheduleService.create(entry);
+    }
+
+    public Optional<ScheduleEntry> updateEntry(Long entryId, ScheduleEntry entry) {
+        return scheduleService.update(entryId, entry);
+    }
+
+    public void deleteEntry(Long entryId) {
+        scheduleService.delete(entryId);
     }
 
     public ValidationReport validate(Long edtId) {
@@ -414,6 +422,15 @@ public class EDTService {
             return EDT.PeriodeType.ANNUEL;
         }
         return semaine <= 26 ? EDT.PeriodeType.SEMESTRE2 : EDT.PeriodeType.SEMESTRE1;
+    }
+
+    private Optional<EDT> findLatestByScope(Integer semaine, Integer annee, EDT.VueType vue, Long targetId) {
+        List<EDT> matches = edtRepository.findAllBySemaineAndAnneeAndVueAndTargetIdOrderByDateCreationDesc(semaine, annee, vue, targetId);
+        if (matches.size() > 1) {
+            log.warn("Doublons EDT detectes: semaine={} annee={} vue={} targetId={} count={} -> conservation du plus recent",
+                    semaine, annee, vue, targetId, matches.size());
+        }
+        return matches.stream().findFirst();
     }
 
     private LocalDate isoWeekStart(Integer annee, Integer semaine) {

@@ -15,13 +15,14 @@ import { Group } from '../../core/models/group.model';
 import { Room } from '../../core/models/room.model';
 import { ScheduleEntry } from '../../core/models/schedule.model';
 import { Teacher } from '../../core/models/teacher.model';
+import { User } from '../../core/models/user.model';
 import { CourseService } from '../../core/services/course.service';
 import { EdtService } from '../../core/services/edt.service';
 import { GroupService } from '../../core/services/group.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { RoomService } from '../../core/services/room.service';
-import { ScheduleService } from '../../core/services/schedule.service';
 import { TeacherService } from '../../core/services/teacher.service';
+import { UserService } from '../../core/services/user.service';
 
 type PlanningViewMode = 'global' | 'group' | 'teacher' | 'room';
 type SelectOption = { label: string; value: number };
@@ -125,14 +126,15 @@ export class EmploiDuTempsPage {
     private roomsById = new Map<number, Room>();
     private teachersById = new Map<number, Teacher>();
     private coursesById = new Map<number, Course>();
+    private usersById = new Map<number, User>();
 
     constructor(
         private readonly edtService: EdtService,
-        private readonly scheduleService: ScheduleService,
         private readonly courseService: CourseService,
         private readonly groupService: GroupService,
         private readonly teacherService: TeacherService,
         private readonly roomService: RoomService,
+        private readonly userService: UserService,
         private readonly notificationService: NotificationService
     ) {}
 
@@ -386,7 +388,7 @@ export class EmploiDuTempsPage {
                         return;
                     }
                     if (this.isEditMode && this.editingEntryId) {
-                        this.scheduleService.update(this.editingEntryId, payload).subscribe({
+                        this.edtService.updateEntry(this.editingEntryId, payload).subscribe({
                             next: () => {
                                 this.displayEntryDialog = false;
                                 this.notificationService.info('Succes', 'Seance mise a jour');
@@ -415,7 +417,7 @@ export class EmploiDuTempsPage {
 
     deleteEntry(entry: ScheduleEntry) {
         if (!entry.id) return;
-        this.scheduleService.delete(entry.id).subscribe({
+        this.edtService.deleteEntry(entry.id).subscribe({
             next: () => {
                 this.notificationService.info('Succes', 'Seance supprimee');
                 this.refreshView();
@@ -460,7 +462,7 @@ export class EmploiDuTempsPage {
                         this.notificationService.error('Conflit', 'Deplacement bloque');
                         return;
                     }
-                    this.scheduleService.update(current.id as number, updated).subscribe({
+                    this.edtService.updateEntry(current.id as number, updated).subscribe({
                         next: () => {
                             this.draggedEntryId = undefined;
                             this.notificationService.info('Succes', 'Seance deplacee');
@@ -489,9 +491,10 @@ export class EmploiDuTempsPage {
             courses: this.courseService.getAll().pipe(catchError(() => of([] as Course[]))),
             groups: this.groupService.getAll().pipe(catchError(() => of([] as Group[]))),
             teachers: this.teacherService.getAll().pipe(catchError(() => of([] as Teacher[]))),
-            rooms: this.roomService.getAll().pipe(catchError(() => of([] as Room[])))
+            rooms: this.roomService.getAll().pipe(catchError(() => of([] as Room[]))),
+            users: this.userService.getAll().pipe(catchError(() => of([] as User[])))
         }).subscribe({
-            next: ({ courses, groups, teachers, rooms }) => {
+            next: ({ courses, groups, teachers, rooms, users }) => {
                 this.courses = courses;
                 this.groups = groups;
                 this.teachers = teachers;
@@ -500,6 +503,7 @@ export class EmploiDuTempsPage {
                 this.groupsById = new Map(groups.filter((item) => item.id !== undefined).map((item) => [item.id as number, item]));
                 this.teachersById = new Map(teachers.filter((item) => item.id !== undefined).map((item) => [item.id as number, item]));
                 this.roomsById = new Map(rooms.filter((item) => item.id !== undefined).map((item) => [item.id as number, item]));
+                this.usersById = new Map(users.filter((item) => item.id !== undefined).map((item) => [item.id as number, item]));
                 this.courseOptions = courses
                     .filter((item) => item.id !== undefined)
                     .map((item) => ({ label: item.nom || item.title || `Cours #${item.id}`, value: item.id as number }));
@@ -658,6 +662,12 @@ export class EmploiDuTempsPage {
     }
 
     private teacherDisplayName(teacher: Teacher): string {
+        if (teacher.userId) {
+            const user = this.usersById.get(teacher.userId);
+            if (user) {
+                return `${user.nom} ${user.prenom}`.trim();
+            }
+        }
         const fullName = `${teacher.prenom || ''} ${teacher.nom || ''}`.trim();
         return fullName || `Enseignant #${teacher.id}`;
     }

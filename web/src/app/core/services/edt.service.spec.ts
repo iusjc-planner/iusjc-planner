@@ -112,4 +112,30 @@ describe('EdtService', () => {
         expect(req.request.responseType).toBe('blob');
         req.flush(new Blob(['file'], { type: 'application/pdf' }));
     });
+
+    it('updates and deletes an EDT entry through /api/edt/entries', () => {
+        service
+            .updateEntry(77, {
+                id: 77,
+                courseId: 11,
+                teacherId: 4,
+                roomId: 2,
+                groupId: 8,
+                day: 'MONDAY',
+                startTime: '2026-03-23T08:00:00',
+                endTime: '2026-03-23T10:00:00'
+            })
+            .subscribe((entry) => {
+                expect(entry.id).toBe(77);
+            });
+
+        const updateReq = httpMock.expectOne('/api/edt/entries/77');
+        expect(updateReq.request.method).toBe('PUT');
+        updateReq.flush({ id: 77 });
+
+        service.deleteEntry(77).subscribe();
+        const deleteReq = httpMock.expectOne('/api/edt/entries/77');
+        expect(deleteReq.request.method).toBe('DELETE');
+        deleteReq.flush(null);
+    });
 });
