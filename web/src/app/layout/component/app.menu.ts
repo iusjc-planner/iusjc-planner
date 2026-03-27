@@ -71,6 +71,13 @@ export class AppMenu {
                 { label: 'Profil', icon: 'pi pi-fw pi-user', routerLink: ['/pages/admin/profil'] }
             );
         } else {
+            this.model.push({
+                label: 'Enseignant',
+                items: [
+                    { label: 'Disponibilités', icon: 'pi pi-fw pi-calendar', routerLink: ['/pages/enseignant/disponibilites'] },
+                    { label: 'Historique', icon: 'pi pi-fw pi-history', routerLink: ['/pages/enseignant/historique-disponibilites'] }
+                ]
+            });
             settingsItems.push(
                 { label: 'Notifications', icon: 'pi pi-fw pi-bell', routerLink: ['/pages/notifications'] },
                 { label: 'Profil', icon: 'pi pi-fw pi-user', routerLink: ['/pages/profil'] }

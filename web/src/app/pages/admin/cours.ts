@@ -105,10 +105,6 @@ type CoursItem = Course & {
         >
             <div class="grid grid-cols-12 gap-4">
                 <div class="col-span-12 md:col-span-6">
-                    <label class="block mb-2 font-medium">Titre</label>
-                    <input pInputText type="text" [(ngModel)]="form.nom" class="w-full" />
-                </div>
-                <div class="col-span-12 md:col-span-6">
                     <label class="block mb-2 font-medium">Matiere</label>
                     <p-select
                         [(ngModel)]="form.matiereId"
@@ -121,6 +117,10 @@ type CoursItem = Course & {
                         appendTo="body"
                         class="w-full"
                     />
+                </div>
+                <div class="col-span-12 md:col-span-6">
+                    <label class="block mb-2 font-medium">Titre (auto)</label>
+                    <input pInputText type="text" [value]="resolvedTitle" class="w-full" [disabled]="true" />
                 </div>
                 <div class="col-span-12 md:col-span-4">
                     <label class="block mb-2 font-medium">Date</label>
@@ -225,7 +225,6 @@ export class CoursPage {
     selectedCours: CoursItem | null = null;
     editingId?: number;
     form: {
-        nom: string;
         matiereId?: number;
         date: string;
         startTime: string;
@@ -281,7 +280,6 @@ export class CoursPage {
         this.editingId = course.id;
         this.selectedCours = { ...course };
         this.form = {
-            nom: course.nom,
             matiereId: course.matiereId,
             date: course.date || '',
             startTime: course.startTime || '',
@@ -301,6 +299,12 @@ export class CoursPage {
         this.displayDeleteDialog = true;
     }
 
+    get resolvedTitle(): string {
+        if (!this.form.matiereId) return '';
+        const matiere = this.matieresById.get(this.form.matiereId);
+        return matiere ? matiere.nom : '';
+    }
+
     saveCours() {
         const validationMessage = this.getValidationMessage();
         if (validationMessage) {
@@ -308,9 +312,10 @@ export class CoursPage {
             return;
         }
 
+        const matiereNom = this.resolvedTitle || `Matiere #${this.form.matiereId}`;
         const payload: Course = {
-            nom: this.form.nom.trim(),
-            title: this.form.nom.trim(),
+            nom: matiereNom,
+            title: matiereNom,
             matiereId: this.form.matiereId,
             date: this.form.date,
             startTime: this.form.startTime,
@@ -578,8 +583,8 @@ export class CoursPage {
     }
 
     private getValidationMessage(): string | null {
-        if (!this.form.nom.trim() || !this.form.matiereId || !this.form.date || !this.form.startTime || !this.form.endTime) {
-            return 'Titre, matiere, date et heures sont obligatoires';
+        if (!this.form.matiereId || !this.form.date || !this.form.startTime || !this.form.endTime) {
+            return 'Matiere, date et heures sont obligatoires';
         }
 
         if (this.form.startTime >= this.form.endTime) {
@@ -591,7 +596,6 @@ export class CoursPage {
 
     private getEmptyForm() {
         return {
-            nom: '',
             matiereId: undefined,
             date: '',
             startTime: '',

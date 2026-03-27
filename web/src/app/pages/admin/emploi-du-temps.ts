@@ -210,6 +210,86 @@ export class EmploiDuTempsPage {
         });
     }
 
+    generateFromAvailabilities() {
+        this.loading = true;
+        this.courseService.getAll().subscribe({
+            next: (allCourses) => {
+                const scheduled = allCourses.filter(c => (c.status || 'SCHEDULED') === 'SCHEDULED' && c.teacherId && c.groupId && c.date && c.startTime && c.endTime);
+                if (scheduled.length === 0) {
+                    this.loading = false;
+                    this.notificationService.warn('Aucune disponibilité', 'Aucun cours planifié trouvé depuis les disponibilités des enseignants');
+                    return;
+                }
+
+                const groupIds = [...new Set(scheduled.map(c => c.groupId!))];
+                const edtCreations = groupIds.map(groupId => {
+                    const payload: Edt = {
+                        semaine: this.semaine,
+                        annee: this.annee,
+                        periode: this.selectedPeriode || 'ANNUEL',
+                        vue: 'GROUPE',
+                        targetId: groupId,
+                        status: 'DRAFT'
+                    };
+                    return this.edtService.createEdt(payload).pipe(catchError(() => of(null)));
+                });
+
+                forkJoin(edtCreations).subscribe({
+                    next: (edts) => {
+                        const edtByGroup = new Map<number, number>();
+                        edts.forEach((edt, idx) => {
+                            if (edt?.id) edtByGroup.set(groupIds[idx], edt.id);
+                        });
+
+                        const entryCreations = scheduled
+                            .filter(c => edtByGroup.has(c.groupId!))
+                            .map(c => {
+                                const edtId = edtByGroup.get(c.groupId!)!;
+                                const entry: ScheduleEntry = {
+                                    courseId: c.id,
+                                    teacherId: c.teacherId,
+                                    roomId: c.roomId,
+                                    groupId: c.groupId,
+                                    day: this.dayCode(c.date!),
+                                    startTime: `${c.date}T${c.startTime}:00`,
+                                    endTime: `${c.date}T${c.endTime}:00`,
+                                    status: 'SCHEDULED'
+                                };
+                                return this.edtService.addEntry(edtId, entry).pipe(catchError(() => of(null)));
+                            });
+
+                        if (entryCreations.length === 0) {
+                            this.loading = false;
+                            this.notificationService.warn('Aucune séance', 'Aucun EDT créé pour les groupes concernés');
+                            return;
+                        }
+
+                        forkJoin(entryCreations).subscribe({
+                            next: (results) => {
+                                const success = results.filter(r => r !== null).length;
+                                this.loading = false;
+                                this.notificationService.info('Séances générées', `${success} séance(s) créée(s) depuis les disponibilités`);
+                                this.refreshView();
+                            },
+                            error: () => {
+                                this.loading = false;
+                                this.notificationService.error('Erreur', 'Echec de création des séances');
+                            }
+                        });
+                    },
+                    error: () => {
+                        this.loading = false;
+                        this.notificationService.error('Erreur', 'Echec de création des EDTs');
+                    }
+                });
+            },
+            error: () => {
+                this.loading = false;
+                this.notificationService.error('Erreur', 'Impossible de charger les disponibilités');
+            }
+        });
+    }
+
     createTargetEdt() {
         if (!this.canCreateTargetEdt()) {
             this.notificationService.warn('Validation', 'Selectionnez une cible pour creer un EDT');

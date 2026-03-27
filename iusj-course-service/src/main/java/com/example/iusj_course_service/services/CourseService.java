@@ -10,7 +10,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.iusj_course_service.entities.Course;
+import com.example.iusj_course_service.entities.Matiere;
 import com.example.iusj_course_service.repositories.CourseRepository;
+import com.example.iusj_course_service.repositories.MatiereRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 
@@ -19,9 +21,11 @@ import jakarta.persistence.EntityNotFoundException;
 public class CourseService {
 
     private final CourseRepository courseRepository;
+    private final MatiereRepository matiereRepository;
 
-    public CourseService(CourseRepository courseRepository) {
+    public CourseService(CourseRepository courseRepository, MatiereRepository matiereRepository) {
         this.courseRepository = courseRepository;
+        this.matiereRepository = matiereRepository;
     }
 
     public List<Course> getAll(Long matiereId, Course.CourseStatus status, Course.CourseType type,
@@ -58,14 +62,27 @@ public class CourseService {
     }
 
     public Course create(Course course) {
+        resolveTitle(course);
         return courseRepository.save(course);
     }
 
     public Optional<Course> update(Long id, Course course) {
         return courseRepository.findById(id).map(existing -> {
             course.setId(id);
+            resolveTitle(course);
             return courseRepository.save(course);
         });
+    }
+
+    /**
+     * Sets the course title from the matière name if not already set.
+     */
+    private void resolveTitle(Course course) {
+        if (course.getMatiereId() != null) {
+            matiereRepository.findById(course.getMatiereId()).ifPresent(matiere ->
+                course.setTitle(matiere.getNom())
+            );
+        }
     }
 
     public void delete(Long id) {
