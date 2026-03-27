@@ -1,0 +1,109 @@
+<nav class="navbar default-layout-navbar col-lg-12 col-12 p-0 fixed-top d-flex flex-row">
+  <div class="text-center navbar-brand-wrapper d-flex align-items-center justify-content-center">
+    <a class="navbar-brand brand-logo" routerLink="/app/dashboard">
+      <span class="text-primary fw-bold fs-4">IUSJ Planner</span>
+    </a>
+    <a class="navbar-brand brand-logo-mini" routerLink="/app/dashboard">
+      <span class="text-primary fw-bold">IP</span>
+    </a>
+  </div>
+  <div class="navbar-menu-wrapper d-flex align-items-stretch">
+    <button class="navbar-toggler navbar-toggler align-self-center" type="button" data-toggle="minimize" (click)="toggleSidebar()" aria-label="Ouvrir ou fermer la barre laterale">
+      <span class="mdi mdi-menu"></span>
+    </button>
+    <div class="search-field d-none d-md-block">
+      <form class="d-flex align-items-center h-100" action="#">
+        <div class="input-group">
+          <div class="input-group-prepend bg-transparent">
+            <i class="input-group-text border-0 mdi mdi-magnify"></i>
+          </div>
+          <input type="text" class="form-control bg-transparent border-0" placeholder="Rechercher...">
+        </div>
+      </form>
+    </div>
+    <ul class="navbar-nav navbar-nav-right">
+      <!-- Notifications -->
+      <li class="nav-item dropdown" ngbDropdown>
+        <a class="nav-link count-indicator dropdown-toggle" id="notificationDropdown" ngbDropdownToggle aria-label="Notifications">
+          <i class="mdi mdi-bell-outline"></i>
+          <span *ngIf="unreadCount > 0" class="badge bg-danger rounded-pill ms-1">{{ unreadCount }}</span>
+        </a>
+        <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list" ngbDropdownMenu aria-labelledby="notificationDropdown">
+          <div class="d-flex justify-content-between align-items-center p-3">
+            <h6 class="mb-0">Notifications</h6>
+            <button class="btn btn-sm btn-link text-decoration-none" *ngIf="unreadCount > 0" (click)="markAllAsRead($event)">
+              Tout marquer lu
+            </button>
+          </div>
+          <div class="dropdown-divider"></div>
+          <div *ngIf="loadingNotifications" class="text-center p-3">
+            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+          </div>
+          <ng-container *ngIf="!loadingNotifications">
+            <a class="dropdown-item preview-item" *ngFor="let notification of previewNotifications" (click)="markAsRead(notification, $event)">
+              <div class="preview-thumbnail">
+                <div class="preview-icon" [ngClass]="{
+                    'bg-info': notification.type === 'INFO',
+                    'bg-success': notification.type === 'SUCCESS',
+                    'bg-warning': notification.type === 'WARNING',
+                    'bg-danger': notification.type === 'ERROR'
+                  }">
+                  <i class="mdi" [ngClass]="notification.read ? 'mdi-bell-check' : 'mdi-bell-ring'"></i>
+                </div>
+              </div>
+              <div class="preview-item-content d-flex align-items-start flex-column justify-content-center">
+                <h6 class="preview-subject font-weight-normal mb-1">
+                  {{ notification.title }}
+                  <span class="badge bg-danger ms-1" *ngIf="!notification.read">Nouveau</span>
+                </h6>
+                <p class="text-gray ellipsis mb-0">{{ formatRelativeDate(notification.createdAt) }}</p>
+              </div>
+              <button class="btn btn-link text-danger p-0 ms-2" (click)="removeNotification(notification, $event)" title="Supprimer">
+                <i class="mdi mdi-delete"></i>
+              </button>
+            </a>
+            <div class="text-muted text-center p-3" *ngIf="previewNotifications.length === 0">
+              Aucune notification
+            </div>
+          </ng-container>
+          <div class="dropdown-divider"></div>
+          <button class="dropdown-item text-center" (click)="openNotificationCenter($event)">
+            Voir toutes les notifications
+          </button>
+        </div>
+      </li>
+      
+      <!-- Profile -->
+      <li class="nav-item nav-profile dropdown" ngbDropdown>
+        <a class="nav-link dropdown-toggle" id="profileDropdown" ngbDropdownToggle aria-label="Menu profil utilisateur">
+          <div class="nav-profile-img">
+            <img src="assets/images/faces/face1.jpg" alt="image">
+            <span class="availability-status online"></span>
+          </div>
+          <div class="nav-profile-text">
+            <p class="mb-1 text-black">Utilisateur</p>
+          </div>
+        </a>
+        <div class="dropdown-menu navbar-dropdown" ngbDropdownMenu aria-labelledby="profileDropdown">
+          <a class="dropdown-item" routerLink="/app/profile">
+            <i class="mdi mdi-account mr-2 text-primary"></i>
+            Mon profil
+          </a>
+          <div class="dropdown-divider"></div>
+          <a class="dropdown-item" routerLink="/app/settings">
+            <i class="mdi mdi-cog mr-2 text-success"></i>
+            Paramètres
+          </a>
+          <div class="dropdown-divider"></div>
+          <a class="dropdown-item" routerLink="/login">
+            <i class="mdi mdi-logout mr-2 text-danger"></i>
+            Déconnexion
+          </a>
+        </div>
+      </li>
+    </ul>
+    <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center" type="button" (click)="toggleOffcanvas()" aria-label="Ouvrir le menu mobile">
+      <span class="mdi mdi-menu"></span>
+    </button>
+  </div>
+</nav>

@@ -1,0 +1,218 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1"><i class="mdi mdi-calendar me-2"></i>Planning Global</h2>
+      <p class="text-muted mb-0">Vue d'ensemble des séances planifiées</p>
+    </div>
+    <div class="d-flex gap-2">
+      <!-- Dropdown pour créer une séance -->
+      <div class="dropdown">
+        <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+          <i class="mdi mdi-plus me-1"></i>Nouvelle Séance
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li>
+            <a class="dropdown-item" routerLink="/app/schedules/session/new">
+              <i class="mdi mdi-pencil me-2 text-primary"></i>
+              <span>
+                <strong>Création manuelle</strong>
+                <small class="d-block text-muted">Formulaire progressif pas à pas</small>
+              </span>
+            </a>
+          </li>
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <a class="dropdown-item" routerLink="/app/schedules/session/generate">
+              <i class="mdi mdi-auto-fix me-2 text-success"></i>
+              <span>
+                <strong>Génération automatique</strong>
+                <small class="d-block text-muted">Algorithme Ford-Fulkerson</small>
+              </span>
+            </a>
+          </li>
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <a class="dropdown-item" routerLink="/app/schedules/new">
+              <i class="mdi mdi-form-select me-2 text-secondary"></i>
+              <span>
+                <strong>Formulaire classique</strong>
+                <small class="d-block text-muted">Ancien formulaire simple</small>
+              </span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation tabs -->
+  <ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+      <a class="nav-link active" routerLink="/app/schedules" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+        <i class="mdi mdi-calendar-month me-1"></i>Global
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" routerLink="/app/schedules/teacher">
+        <i class="mdi mdi-account-tie me-1"></i>Par Enseignant
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" routerLink="/app/schedules/room">
+        <i class="mdi mdi-door me-1"></i>Par Salle
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" routerLink="/app/schedules/group">
+        <i class="mdi mdi-account-group me-1"></i>Par Groupe
+      </a>
+    </li>
+  </ul>
+
+  <!-- Stats Cards -->
+  <div class="row mb-4" *ngIf="stats">
+    <div class="col-md-3">
+      <div class="card bg-primary text-white">
+        <div class="card-body py-3">
+          <h6 class="card-subtitle mb-2">Total Séances</h6>
+          <h3 class="card-title mb-0">{{ stats.total }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-info text-white">
+        <div class="card-body py-3">
+          <h6 class="card-subtitle mb-2">Planifiées</h6>
+          <h3 class="card-title mb-0">{{ stats.scheduled }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-success text-white">
+        <div class="card-body py-3">
+          <h6 class="card-subtitle mb-2">Terminées</h6>
+          <h3 class="card-title mb-0">{{ stats.completed }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-danger text-white">
+        <div class="card-body py-3">
+          <h6 class="card-subtitle mb-2">Annulées</h6>
+          <h3 class="card-title mb-0">{{ stats.cancelled }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row align-items-end g-2">
+        <div class="col-md-3">
+          <label class="form-label">Date cible</label>
+          <input class="form-control" type="date" [(ngModel)]="dropDate">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Heure de début cible</label>
+          <input class="form-control" type="time" [(ngModel)]="dropStartTime">
+        </div>
+        <div class="col-md-6">
+          <div
+            class="border border-2 border-primary rounded p-3 text-center bg-light"
+            pDroppable="schedule-slot"
+            (onDrop)="onSessionDrop($event)">
+            <strong>Déposez une séance ici pour la déplacer</strong>
+            <small class="d-block text-muted" *ngIf="!dropping">Le déplacement est bloqué automatiquement en cas de conflit backend.</small>
+            <small class="d-block text-primary" *ngIf="dropping">Déplacement en cours...</small>
+          </div>
+        </div>
+      </div>
+      <div class="alert alert-danger mt-3 mb-0" *ngIf="conflictMessage">
+        {{ conflictMessage }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card" *ngIf="!loading">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Liste des séances</h5>
+      <button class="btn btn-sm btn-outline-secondary" (click)="load()">
+        <i class="mdi mdi-refresh"></i> Actualiser
+      </button>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Cours</th>
+              <th>Enseignant</th>
+              <th>Salle</th>
+              <th>Groupe</th>
+              <th>Date/Heure</th>
+              <th>Statut</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="entries.length === 0">
+              <td colspan="7" class="text-center py-4 text-muted">
+                <i class="mdi mdi-calendar-blank mdi-48px"></i>
+                <p class="mb-0 mt-2">Aucune séance planifiée</p>
+                <a routerLink="/app/schedules/new" class="btn btn-primary btn-sm mt-2">
+                  <i class="mdi mdi-plus me-1"></i>Créer une séance
+                </a>
+              </td>
+            </tr>
+            <tr *ngFor="let e of entries" pDraggable="schedule-slot" [dragData]="e" dragEffect="move">
+              <td>{{ e.courseName || e.courseId }}</td>
+              <td>{{ e.teacherName || e.teacherId }}</td>
+              <td>{{ e.roomName || e.roomId }}</td>
+              <td>{{ e.groupName || e.groupId }}</td>
+              <td>
+                <small class="d-block">{{ e.startTime | date:'dd/MM/yyyy' }}</small>
+                <span class="badge bg-light text-dark">
+                  {{ e.startTime | date:'HH:mm' }} - {{ e.endTime | date:'HH:mm' }}
+                </span>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="{
+                  'bg-primary': e.status === 'SCHEDULED',
+                  'bg-success': e.status === 'COMPLETED',
+                  'bg-danger': e.status === 'CANCELLED'
+                }">
+                  {{ e.status === 'SCHEDULED' ? 'Planifié' : e.status === 'COMPLETED' ? 'Terminé' : 'Annulé' }}
+                </span>
+              </td>
+              <td class="text-end">
+                <div class="btn-group btn-group-sm">
+                  <a [routerLink]="['/app/schedules', e.id, 'edit']" class="btn btn-outline-warning" title="Modifier">
+                    <i class="mdi mdi-pencil"></i>
+                  </a>
+                  <button class="btn btn-outline-primary" [disabled]="exporting" (click)="exportPdf(e.id!)" title="PDF">
+                    <i class="mdi mdi-file-pdf-box"></i>
+                  </button>
+                  <button class="btn btn-outline-success" [disabled]="exporting" (click)="exportExcel(e.id!)" title="Excel">
+                    <i class="mdi mdi-file-excel"></i>
+                  </button>
+                  <button class="btn btn-outline-danger" (click)="deleteEntry(e.id!)" title="Supprimer">
+                    <i class="mdi mdi-delete"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,28 @@
+import { Routes } from '@angular/router';
+import { AppLayout } from './app/layout/component/app.layout';
+import { Dashboard } from './app/pages/dashboard/dashboard';
+import { AdminDashboard } from './app/pages/dashboard/admin-dashboard';
+import { Documentation } from './app/pages/documentation/documentation';
+import { Landing } from './app/pages/landing/landing';
+import { Notfound } from './app/pages/notfound/notfound';
+import { authChildGuard, authGuard } from './app/core/guards/auth.guard';
+import { roleGuard } from './app/core/guards/role.guard';
+
+export const appRoutes: Routes = [
+    {
+        path: '',
+        component: AppLayout,
+        canActivateChild: [authChildGuard],
+        children: [
+            { path: '', component: Dashboard },
+            { path: 'dashboard', component: AdminDashboard, canActivate: [roleGuard], data: { roles: ['ADMIN'] } },
+            { path: 'uikit', loadChildren: () => import('./app/pages/uikit/uikit.routes'), canActivate: [authGuard] },
+            { path: 'documentation', component: Documentation },
+            { path: 'pages', loadChildren: () => import('./app/pages/pages.routes'), canActivate: [authGuard] }
+        ]
+    },
+    { path: 'landing', component: Landing },
+    { path: 'notfound', component: Notfound },
+    { path: 'auth', loadChildren: () => import('./app/pages/auth/auth.routes') },
+    { path: '**', redirectTo: '/notfound' }
+];

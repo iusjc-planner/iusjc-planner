@@ -1,0 +1,12 @@
+.avatar {
+  font-size: 2rem;
+}
+
+.list-group-item.active {
+  background-color: var(--bs-primary);
+  border-color: var(--bs-primary);
+}
+
+.list-group-item-action:hover {
+  background-color: rgba(var(--bs-primary-rgb), 0.1);
+}

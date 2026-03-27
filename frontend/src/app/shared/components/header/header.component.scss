@@ -1,0 +1,11 @@
+// Header component styles
+// Les styles principaux sont dans assets/scss/_custom-layout.scss
+
+:host {
+  display: block;
+}
+
+.navbar {
+  display: flex !important;
+  visibility: visible !important;
+}

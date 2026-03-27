@@ -1,0 +1,142 @@
+{
+  "info": {
+    "name": "IUSJ Planner API",
+    "description": "Collection Postman officielle IUSJ Planner. Structure par service avec tests de base et login qui stocke le token.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /auth/login",
+          "request": {
+            "description": "Authentifie un utilisateur. Sauvegarde automatiquement le JWT.",
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"admin\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": "{{base_url}}/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function(){ pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "pm.test('Token present', function(){ pm.expect(data.token).to.not.be.undefined; });",
+                  "if (data.token) {",
+                  "  pm.environment.set('token', data.token);",
+                  "  pm.environment.set('jwt_token', data.token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        { "name": "GET /api/users", "request": { "description": "Liste des utilisateurs.", "method": "GET", "url": "{{base_url}}/api/users" } },
+        { "name": "GET /api/users/{id}", "request": { "description": "Détails utilisateur.", "method": "GET", "url": "{{base_url}}/api/users/{{user_id}}" } },
+        { "name": "POST /api/users", "request": { "description": "Création utilisateur.", "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nom\": \"Doe\",\n  \"prenom\": \"John\",\n  \"email\": \"john@example.com\",\n  \"login\": \"jdoe\",\n  \"password\": \"Password123!\",\n  \"role\": \"ENSEIGNANT\",\n  \"status\": \"ACTIVE\"\n}" }, "url": "{{base_url}}/api/users" } },
+        { "name": "PUT /api/users/{id}", "request": { "description": "Mise à jour utilisateur.", "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nom\": \"Doe\",\n  \"prenom\": \"Jane\",\n  \"email\": \"jane@example.com\",\n  \"login\": \"jdoe\",\n  \"password\": \"Password123!\",\n  \"role\": \"ENSEIGNANT\",\n  \"status\": \"ACTIVE\"\n}" }, "url": "{{base_url}}/api/users/{{user_id}}" } },
+        { "name": "DELETE /api/users/{id}", "request": { "description": "Suppression utilisateur.", "method": "DELETE", "url": "{{base_url}}/api/users/{{user_id}}" } }
+      ]
+    },
+    {
+      "name": "Teachers",
+      "item": [
+        { "name": "GET /api/teachers", "request": { "description": "Liste enseignants.", "method": "GET", "url": "{{base_url}}/api/teachers" } },
+        { "name": "POST /api/teachers", "request": { "description": "Création enseignant.", "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"userId\": {{user_id}},\n  \"specialities\": [\"Math\"]\n}" }, "url": "{{base_url}}/api/teachers" } },
+        { "name": "GET /api/teachers/{id}/availability", "request": { "description": "Disponibilités enseignant.", "method": "GET", "url": "{{base_url}}/api/teachers/{{teacher_id}}/availability?date=2026-03-25" } },
+        { "name": "POST /api/teachers/{id}/availability/import-ics", "request": { "description": "Import ICS enseignant.", "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"icsUrl\": \"https://example.com/cal.ics\"\n}" }, "url": "{{base_url}}/api/teachers/{{teacher_id}}/availability/import-ics" } }
+      ]
+    },
+    {
+      "name": "Rooms",
+      "item": [
+        { "name": "GET /api/rooms", "request": { "description": "Liste salles.", "method": "GET", "url": "{{base_url}}/api/rooms" } },
+        { "name": "POST /api/rooms", "request": { "description": "Création salle.", "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"A101\",\n  \"capacity\": 60,\n  \"type\": \"CLASSROOM\",\n  \"status\": \"ACTIVE\"\n}" }, "url": "{{base_url}}/api/rooms" } },
+        { "name": "GET /api/rooms/available", "request": { "description": "Salles disponibles sur créneau.", "method": "GET", "url": "{{base_url}}/api/rooms/available?start=2026-03-25T08:00:00&end=2026-03-25T10:00:00&minCapacity=30" } },
+        { "name": "POST /api/rooms/{id}/reserve", "request": { "description": "Réserver une salle.", "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"date\": \"2026-03-25\",\n  \"heureDebut\": \"14:00:00\",\n  \"duree\": 120,\n  \"reservePar\": {{user_id}},\n  \"motif\": \"Cours\"\n}" }, "url": "{{base_url}}/api/rooms/{{room_id}}/reserve" } }
+      ]
+    },
+    {
+      "name": "Courses-Matieres",
+      "item": [
+        { "name": "GET /api/courses", "request": { "description": "Liste cours.", "method": "GET", "url": "{{base_url}}/api/courses" } },
+        { "name": "POST /api/courses", "request": { "description": "Créer cours.", "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Algorithmique\",\n  \"code\": \"ALG101\",\n  \"schoolId\": {{school_id}}\n}" }, "url": "{{base_url}}/api/courses" } },
+        { "name": "GET /api/matieres", "request": { "description": "Liste matières.", "method": "GET", "url": "{{base_url}}/api/matieres" } },
+        { "name": "POST /api/matieres", "request": { "description": "Créer matière.", "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nom\": \"Maths\",\n  \"code\": \"MATH101\",\n  \"coefficient\": 2,\n  \"filiereId\": 1\n}" }, "url": "{{base_url}}/api/matieres" } }
+      ]
+    },
+    {
+      "name": "Groups",
+      "item": [
+        { "name": "GET /api/groups", "request": { "description": "Liste groupes.", "method": "GET", "url": "{{base_url}}/api/groups" } },
+        { "name": "POST /api/groups", "request": { "description": "Créer groupe.", "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"L2 Info A\",\n  \"level\": \"L2\",\n  \"filiereId\": 1,\n  \"size\": 60\n}" }, "url": "{{base_url}}/api/groups" } },
+        { "name": "POST /api/groups/{id}/split", "request": { "description": "Diviser un groupe.", "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"count\": 2,\n  \"type\": \"TD\"\n}" }, "url": "{{base_url}}/api/groups/{{group_id}}/split" } }
+      ]
+    },
+    {
+      "name": "Schools-Filieres",
+      "item": [
+        { "name": "GET /api/schools", "request": { "description": "Liste écoles.", "method": "GET", "url": "{{base_url}}/api/schools" } },
+        { "name": "POST /api/schools", "request": { "description": "Créer école.", "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"IUSJ\",\n  \"code\": \"IUSJ\",\n  \"email\": \"contact@iusj.edu\"\n}" }, "url": "{{base_url}}/api/schools" } },
+        { "name": "GET /api/filieres", "request": { "description": "Liste filières.", "method": "GET", "url": "{{base_url}}/api/filieres?schoolId={{school_id}}" } }
+      ]
+    },
+    {
+      "name": "Schedule-EDT",
+      "item": [
+        { "name": "GET /api/schedule", "request": { "description": "Liste séances.", "method": "GET", "url": "{{base_url}}/api/schedule" } },
+        { "name": "POST /api/schedule", "request": { "description": "Créer séance.", "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"courseId\": {{course_id}},\n  \"teacherId\": {{teacher_id}},\n  \"roomId\": {{room_id}},\n  \"groupId\": {{group_id}},\n  \"startTime\": \"2026-03-25T08:00:00\",\n  \"endTime\": \"2026-03-25T10:00:00\"\n}" }, "url": "{{base_url}}/api/schedule" } },
+        { "name": "POST /api/schedule/validate", "request": { "description": "Valider conflits d'une séance.", "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"courseId\": {{course_id}},\n  \"teacherId\": {{teacher_id}},\n  \"roomId\": {{room_id}},\n  \"groupId\": {{group_id}},\n  \"startTime\": \"2026-03-25T10:00:00\",\n  \"endTime\": \"2026-03-25T12:00:00\"\n}" }, "url": "{{base_url}}/api/schedule/validate" } },
+        { "name": "GET /api/schedule/suggest-rooms", "request": { "description": "Suggestion salles.", "method": "GET", "url": "{{base_url}}/api/schedule/suggest-rooms?effectif=60&date=2026-03-25&time=14:00:00&duration=120" } },
+        { "name": "PUT /api/edt/{id}/validate", "request": { "description": "Valider EDT.", "method": "PUT", "url": "{{base_url}}/api/edt/{{edt_id}}/validate" } },
+        { "name": "GET /api/edt/{id}/validation-report", "request": { "description": "Rapport validation EDT.", "method": "GET", "url": "{{base_url}}/api/edt/{{edt_id}}/validation-report" } },
+        { "name": "PUT /api/edt/{id}/publish", "request": { "description": "Publier EDT.", "method": "PUT", "url": "{{base_url}}/api/edt/{{edt_id}}/publish" } },
+        { "name": "PUT /api/edt/{id}/unpublish", "request": { "description": "Dépublier EDT.", "method": "PUT", "url": "{{base_url}}/api/edt/{{edt_id}}/unpublish" } },
+        { "name": "GET /api/edt/{id}/export", "request": { "description": "Exporter EDT (pdf|excel).", "method": "GET", "url": "{{base_url}}/api/edt/{{edt_id}}/export?format=pdf" } }
+      ]
+    },
+    {
+      "name": "Students",
+      "item": [
+        { "name": "GET /api/students", "request": { "description": "Liste étudiants.", "method": "GET", "url": "{{base_url}}/api/students" } },
+        { "name": "POST /api/students", "request": { "description": "Créer étudiant.", "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"userId\": {{user_id}},\n  \"groupId\": {{group_id}},\n  \"matricule\": \"MAT-2026-001\"\n}" }, "url": "{{base_url}}/api/students" } }
+      ]
+    },
+    {
+      "name": "Resources",
+      "item": [
+        { "name": "GET /api/resources", "request": { "description": "Liste ressources.", "method": "GET", "url": "{{base_url}}/api/resources" } },
+        { "name": "POST /api/resources", "request": { "description": "Créer ressource.", "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Videoprojecteur\",\n  \"type\": \"VIDEO\",\n  \"quantityTotal\": 5,\n  \"quantityAvailable\": 5,\n  \"location\": \"Magasin\",\n  \"status\": \"ACTIVE\"\n}" }, "url": "{{base_url}}/api/resources" } },
+        { "name": "POST /api/resources/{id}/reserve", "request": { "description": "Réserver équipement.", "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"date\": \"2026-03-25\",\n  \"heureDebut\": \"14:00:00\",\n  \"duree\": 120,\n  \"quantite\": 1,\n  \"motif\": \"Cours amphi B\"\n}" }, "url": "{{base_url}}/api/resources/{{resource_id}}/reserve?userId={{user_id}}" } },
+        { "name": "GET /api/resources/{id}/availability", "request": { "description": "Disponibilité ressource.", "method": "GET", "url": "{{base_url}}/api/resources/{{resource_id}}/availability?date=2026-03-25&time=14:00:00" } },
+        { "name": "PUT /api/resources/reservations/{id}/cancel", "request": { "description": "Annuler réservation ressource.", "method": "PUT", "url": "{{base_url}}/api/resources/reservations/{{reservation_id}}/cancel" } },
+        { "name": "PUT /api/resources/reservations/{id}/return", "request": { "description": "Retourner équipement.", "method": "PUT", "url": "{{base_url}}/api/resources/reservations/{{reservation_id}}/return" } }
+      ]
+    }
+  ]
+}

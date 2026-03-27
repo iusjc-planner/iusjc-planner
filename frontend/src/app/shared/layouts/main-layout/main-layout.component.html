@@ -1,0 +1,30 @@
+<div class="container-scroller">
+  <!-- Header -->
+  <app-header *ngIf="showNavbar"></app-header>
+  
+  <div class="container-fluid page-body-wrapper">
+    <!-- Sidebar -->
+    <app-sidebar *ngIf="showSidebar"></app-sidebar>
+    
+    <!-- Main Panel -->
+    <div class="main-panel">
+      <div class="content-wrapper">
+        <!-- Loading Spinner -->
+        <div *ngIf="isLoading" class="spinner-wrapper">
+          <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Chargement...</span>
+          </div>
+        </div>
+        
+        <!-- Router Outlet -->
+        <router-outlet></router-outlet>
+      </div>
+      
+      <!-- Footer -->
+      <app-footer *ngIf="showFooter"></app-footer>
+    </div>
+  </div>
+  
+  <!-- Toast Notifications -->
+  <app-toast></app-toast>
+</div>

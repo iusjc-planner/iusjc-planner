@@ -6,10 +6,11 @@ import org.springframework.util.StringUtils;
 
 public class GroupSpecifications {
 
-    public static Specification<Group> withFilters(String name, String level, Long schoolId, Group.Status status) {
+    public static Specification<Group> withFilters(String name, String level, Long schoolId, Long filiereId, Group.Status status) {
         return Specification.where(hasName(name))
                 .and(hasLevel(level))
                 .and(hasSchool(schoolId))
+                .and(hasFiliere(filiereId))
                 .and(hasStatus(status));
     }
 
@@ -27,6 +28,10 @@ public class GroupSpecifications {
 
     private static Specification<Group> hasSchool(Long schoolId) {
         return (root, query, cb) -> schoolId == null ? cb.conjunction() : cb.equal(root.get("schoolId"), schoolId);
+    }
+
+    private static Specification<Group> hasFiliere(Long filiereId) {
+        return (root, query, cb) -> filiereId == null ? cb.conjunction() : cb.equal(root.get("filiereId"), filiereId);
     }
 
     private static Specification<Group> hasStatus(Group.Status status) {

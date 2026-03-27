@@ -1,0 +1,8 @@
+/* Styles pour le formulaire de matière */
+.is-invalid {
+  border-color: #dc3545;
+}
+
+.input-group-text {
+  background-color: #f8f9fa;
+}

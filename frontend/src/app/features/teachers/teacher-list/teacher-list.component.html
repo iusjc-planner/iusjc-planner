@@ -1,0 +1,228 @@
+<div class="page-header">
+  <h3 class="page-title">
+    <i class="mdi mdi-account-tie menu-icon"></i>
+    Gestion des Enseignants
+  </h3>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a routerLink="/app/dashboard">Accueil</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Enseignants</li>
+    </ol>
+  </nav>
+</div>
+
+<div class="row">
+  <div class="col-lg-12 grid-margin stretch-card">
+    <div class="card">
+      <div class="card-body">
+        <!-- En-tête avec actions -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h4 class="card-title mb-0">Liste des Enseignants</h4>
+          <div class="d-flex align-items-center">
+            <!-- Bouton Vue grille/liste -->
+            <button class="btn btn-outline-secondary btn-sm mr-2" (click)="toggleViewMode()" title="Changer de vue">
+              <i class="mdi" [ngClass]="viewMode === 'list' ? 'mdi-view-grid' : 'mdi-view-list'"></i>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Statistiques en blocs colorés -->
+        <div class="row mb-4">
+          <div class="col-md-3">
+            <div class="card bg-gradient-primary text-white mb-0">
+              <div class="card-body py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <p class="mb-0 text-white" style="font-size: 0.875rem;">Enseignants</p>
+                    <h3 class="mb-0 font-weight-bold">{{ getTotalTeachers() }}</h3>
+                  </div>
+                  <i class="mdi mdi-account-tie" style="font-size: 2.5rem; opacity: 0.8;"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card bg-gradient-success text-white mb-0">
+              <div class="card-body py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <p class="mb-0 text-white" style="font-size: 0.875rem;">Cours</p>
+                    <h3 class="mb-0 font-weight-bold">{{ getTotalCourses() }}</h3>
+                  </div>
+                  <i class="mdi mdi-book-open-variant" style="font-size: 2.5rem; opacity: 0.8;"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card bg-gradient-warning text-white mb-0">
+              <div class="card-body py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <p class="mb-0 text-white" style="font-size: 0.875rem;">Écoles</p>
+                    <h3 class="mb-0 font-weight-bold">{{ getTotalSchools() }}</h3>
+                  </div>
+                  <i class="mdi mdi-school" style="font-size: 2.5rem; opacity: 0.8;"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card bg-gradient-info text-white mb-0">
+              <div class="card-body py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <p class="mb-0 text-white" style="font-size: 0.875rem;">Salles</p>
+                    <h3 class="mb-0 font-weight-bold">{{ getTotalRooms() }}</h3>
+                  </div>
+                  <i class="mdi mdi-door" style="font-size: 2.5rem; opacity: 0.8;"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Barre de recherche simplifiée -->
+        <div class="row mb-4">
+          <div class="col-md-8">
+            <div class="form-group">
+              <label class="form-label">Recherche par nom</label>
+              <div class="input-group">
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  placeholder="Nom, prénom, email..."
+                  [(ngModel)]="searchTerm"
+                  (input)="applyFilters()">
+                <div class="input-group-append">
+                  <button class="btn btn-outline-secondary" type="button" (click)="resetFilters()" title="Réinitialiser">
+                    <i class="mdi mdi-refresh"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Loader -->
+        <div *ngIf="loading" class="text-center py-4">
+          <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Chargement...</span>
+          </div>
+        </div>
+
+        <!-- Message d'erreur -->
+        <div *ngIf="errorMessage" class="alert alert-danger">
+          {{ errorMessage }}
+        </div>
+
+        <!-- Vue Liste (par défaut) -->
+        <div *ngIf="viewMode === 'list' && !loading" class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Photo</th>
+                <th>Nom complet</th>
+                <th>Email/Téléphone</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let teacher of getPaginatedTeachers()">
+                <td class="py-1">
+                  <img [src]="teacher.photo || 'assets/images/faces/face1.jpg'" alt="photo" class="teacher-photo">
+                </td>
+                <td>
+                  <strong>{{ teacher.prenom }} {{ teacher.nom }}</strong>
+                </td>
+                <td>
+                  <div>{{ teacher.email }}</div>
+                  <small class="text-muted">{{ teacher.telephone || 'Non renseigné' }}</small>
+                </td>
+                <td>
+                  <div class="btn-group" role="group">
+                    <button class="btn btn-sm btn-outline-primary" [routerLink]="['/app/teachers', teacher.id]" title="Voir détails">
+                      <i class="mdi mdi-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-info" [routerLink]="['/app/teachers', teacher.id, 'availability']" title="Disponibilités">
+                      <i class="mdi mdi-calendar-clock"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning" [routerLink]="['/app/teachers', teacher.id, 'edit']" title="Modifier">
+                      <i class="mdi mdi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" (click)="deleteTeacher(teacher.id)" title="Supprimer">
+                      <i class="mdi mdi-delete"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="filteredTeachers.length === 0 && !loading">
+                <td colspan="4" class="text-center text-muted py-4">
+                  <i class="mdi mdi-account-search mdi-48px d-block mb-2"></i>
+                  Aucun enseignant trouvé
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Vue Grille -->
+        <div *ngIf="viewMode === 'grid' && !loading" class="row">
+          <div class="col-md-4 col-lg-3 mb-3" *ngFor="let teacher of getPaginatedTeachers()">
+            <div class="card teacher-card">
+              <div class="card-body text-center">
+                <img [src]="teacher.photo || 'assets/images/faces/face1.jpg'" alt="photo" class="teacher-photo-grid mb-3">
+                <h6 class="card-title">{{ teacher.prenom }} {{ teacher.nom }}</h6>
+                <p class="card-text">
+                  <small class="text-muted">{{ teacher.email }}</small>
+                </p>
+                <div class="btn-group btn-group-sm" role="group">
+                  <button class="btn btn-outline-primary" [routerLink]="['/app/teachers', teacher.id]" title="Voir">
+                    <i class="mdi mdi-eye"></i>
+                  </button>
+                  <button class="btn btn-outline-info" [routerLink]="['/app/teachers', teacher.id, 'availability']" title="Disponibilités">
+                    <i class="mdi mdi-calendar-clock"></i>
+                  </button>
+                  <button class="btn btn-outline-warning" [routerLink]="['/app/teachers', teacher.id, 'edit']" title="Modifier">
+                    <i class="mdi mdi-pencil"></i>
+                  </button>
+                  <button class="btn btn-outline-danger" (click)="deleteTeacher(teacher.id)" title="Supprimer">
+                    <i class="mdi mdi-delete"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="filteredTeachers.length === 0 && !loading" class="col-12 text-center py-4">
+            <i class="mdi mdi-account-search mdi-48px d-block mb-2 text-muted"></i>
+            <p class="text-muted">Aucun enseignant trouvé</p>
+          </div>
+        </div>
+
+        <!-- Pagination fonctionnelle -->
+        <div *ngIf="filteredTeachers.length > 0" class="d-flex justify-content-between align-items-center mt-4">
+          <div>
+            Affichage de {{ (currentPage - 1) * itemsPerPage + 1 }} à 
+            {{ min(currentPage * itemsPerPage, filteredTeachers.length) }} 
+            sur {{ filteredTeachers.length }} enseignant(s)
+          </div>
+          <nav>
+            <ul class="pagination mb-0">
+              <li class="page-item" [class.disabled]="currentPage === 1">
+                <a class="page-link" href="javascript:void(0)" (click)="changePage(currentPage - 1)">Précédent</a>
+              </li>
+              <li class="page-item" 
+                  *ngFor="let page of [].constructor(totalPages); let i = index" 
+                  [class.active]="currentPage === i + 1">
+                <a class="page-link" href="javascript:void(0)" (click)="changePage(i + 1)">{{ i + 1 }}</a>
+              </li>
+              <li class="page-item" [class.disabled]="currentPage === totalPages">
+                <a class="page-link" href="javascript:void(0)" (click)="changePage(currentPage + 1)">Suivant</a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

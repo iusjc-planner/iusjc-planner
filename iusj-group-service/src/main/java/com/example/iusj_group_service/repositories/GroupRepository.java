@@ -5,7 +5,17 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import com.example.iusj_group_service.entities.Group;
 
+import java.util.List;
+
 public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecificationExecutor<Group> {
 
 	long countByStatus(Group.Status status);
+
+	List<Group> findByFiliereIdOrderByNameAsc(Long filiereId);
+
+	long countByFiliereId(Long filiereId);
+
+	List<Group> findByParentGroupIdOrderByNameAsc(Long parentGroupId);
+
+	boolean existsByName(String name);
 }

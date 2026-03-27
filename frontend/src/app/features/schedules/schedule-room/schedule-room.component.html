@@ -1,0 +1,117 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1"><i class="mdi mdi-door-open me-2"></i>Planning Salle</h2>
+      <p class="text-muted mb-0">Occupation des salles</p>
+    </div>
+  </div>
+
+  <!-- Room Selector -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row align-items-end">
+        <div class="col-md-6">
+          <label class="form-label">Sélectionner une salle</label>
+          <select class="form-select" [(ngModel)]="selectedRoomId" (change)="loadSchedule()">
+            <option value="">-- Choisir une salle --</option>
+            <option *ngFor="let r of rooms" [value]="r.id">{{ r.name }} ({{ r.capacity }} places) - {{ r.building }}</option>
+          </select>
+        </div>
+        <div class="col-md-6" *ngIf="getSelectedRoom() as room">
+          <div class="d-flex align-items-center">
+            <div class="avatar bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+              <i class="mdi mdi-door mdi-24px"></i>
+            </div>
+            <div>
+              <h6 class="mb-0">{{ room.name }}</h6>
+              <small class="text-muted">{{ room.building }} - {{ room.capacity }} places</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loadingEntries" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+  </div>
+
+  <!-- No selection -->
+  <div *ngIf="!selectedRoomId && !loading" class="text-center py-5">
+    <i class="mdi mdi-calendar-blank mdi-48px text-muted"></i>
+    <p class="text-muted mt-2">Sélectionnez une salle pour voir son planning</p>
+  </div>
+
+  <!-- Schedule Table -->
+  <div class="card mb-4" *ngIf="selectedRoomId">
+    <div class="card-body">
+      <div class="row align-items-end g-2">
+        <div class="col-md-3">
+          <label class="form-label">Date cible</label>
+          <input class="form-control" type="date" [(ngModel)]="dropDate">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Heure cible</label>
+          <input class="form-control" type="time" [(ngModel)]="dropStartTime">
+        </div>
+        <div class="col-md-6">
+          <div class="border border-2 border-primary rounded p-3 text-center bg-light" pDroppable="schedule-slot" (onDrop)="onSessionDrop($event)">
+            <strong>Déposez une séance ici pour la déplacer</strong>
+            <small class="d-block text-primary" *ngIf="dropping">Déplacement en cours...</small>
+          </div>
+        </div>
+      </div>
+      <div class="alert alert-danger mt-3 mb-0" *ngIf="conflictMessage">{{ conflictMessage }}</div>
+    </div>
+  </div>
+
+  <div class="card" *ngIf="selectedRoomId && !loadingEntries">
+    <div class="card-header">
+      <h5 class="mb-0"><i class="mdi mdi-calendar me-2"></i>Occupation ({{ entries.length }} séances)</h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Date</th>
+              <th>Horaire</th>
+              <th>Cours</th>
+              <th>Enseignant</th>
+              <th>Groupe</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="entries.length === 0">
+              <td colspan="6" class="text-center py-4 text-muted">
+                <i class="mdi mdi-calendar-check mdi-36px"></i>
+                <p class="mb-0 mt-2">Salle disponible - Aucune séance</p>
+              </td>
+            </tr>
+            <tr *ngFor="let entry of entries" pDraggable="schedule-slot" [dragData]="entry" dragEffect="move">
+              <td>{{ formatDate(entry.startTime) }}</td>
+              <td>
+                <span class="badge bg-light text-dark">
+                  {{ formatTime(entry.startTime) }} - {{ formatTime(entry.endTime) }}
+                </span>
+              </td>
+              <td>{{ entry.courseName || entry.courseId }}</td>
+              <td>{{ entry.teacherName || entry.teacherId }}</td>
+              <td>{{ entry.groupName || entry.groupId }}</td>
+              <td>
+                <span class="badge" [ngClass]="getStatusClass(entry.status)">
+                  {{ entry.status }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

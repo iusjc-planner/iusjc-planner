@@ -1,0 +1,348 @@
+<div class="card">
+    <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
+        <h5 class="text-2xl font-bold">Gestion des emplois du temps</h5>
+        <div class="flex flex-wrap gap-2">
+            <button pButton type="button" label="Generer EDT" icon="pi pi-cog" class="p-button-text" (click)="openGenerateDialog()"></button>
+            <button pButton type="button" label="Nouvelle seance" icon="pi pi-plus" class="p-button-text" (click)="openCreateEntryDialog()"></button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-12 gap-4 mb-4">
+        <div class="col-span-12 md:col-span-2">
+            <label class="block mb-2 font-medium">Semaine ISO</label>
+            <input pInputText type="number" [(ngModel)]="semaine" min="1" max="53" class="w-full" />
+        </div>
+        <div class="col-span-12 md:col-span-2">
+            <label class="block mb-2 font-medium">Annee</label>
+            <input pInputText type="number" [(ngModel)]="annee" min="2000" max="2100" class="w-full" />
+        </div>
+        <div class="col-span-12 md:col-span-3">
+            <label class="block mb-2 font-medium">Vue</label>
+            <p-select
+                [(ngModel)]="viewMode"
+                [options]="viewModeOptions"
+                optionLabel="label"
+                optionValue="value"
+                appendTo="body"
+                class="w-full"
+                (ngModelChange)="onViewModeChange()"
+            />
+        </div>
+        <div class="col-span-12 md:col-span-3" *ngIf="requiresTarget()">
+            <label class="block mb-2 font-medium">Cible</label>
+            <p-select
+                [(ngModel)]="selectedTargetId"
+                [options]="targetOptions"
+                optionLabel="label"
+                optionValue="value"
+                [filter]="true"
+                filterBy="label"
+                [showClear]="true"
+                placeholder="Selectionner une cible"
+                appendTo="body"
+                class="w-full"
+            />
+        </div>
+        <div class="col-span-12 md:col-span-2" *ngIf="requiresTarget()">
+            <label class="block mb-2 font-medium">Periode EDT</label>
+            <p-select
+                [(ngModel)]="selectedPeriode"
+                [options]="periodeOptions"
+                optionLabel="label"
+                optionValue="value"
+                appendTo="body"
+                class="w-full"
+            />
+        </div>
+    </div>
+
+    <div class="flex flex-wrap gap-2 mb-5">
+        <button pButton type="button" label="Charger" icon="pi pi-refresh" class="p-button-text" (click)="refreshView()"></button>
+        <button pButton type="button" label="Creer EDT cible" icon="pi pi-plus-circle" class="p-button-text" [disabled]="!canCreateTargetEdt()" (click)="createTargetEdt()"></button>
+        <button pButton type="button" label="Valider EDT" icon="pi pi-check-circle" class="p-button-text" [disabled]="!selectedEdt?.id" (click)="validateSelectedEdt()"></button>
+        <button pButton type="button" label="Publier" icon="pi pi-send" class="p-button-text" [disabled]="!selectedEdt?.id" (click)="publishSelectedEdt()"></button>
+        <button pButton type="button" label="Depublier" icon="pi pi-replay" class="p-button-text" [disabled]="!selectedEdt?.id" (click)="unpublishSelectedEdt()"></button>
+        <button pButton type="button" label="Rapport validation" icon="pi pi-file" class="p-button-text" [disabled]="!selectedEdt?.id" (click)="loadValidationReport()"></button>
+        <button pButton type="button" label="Export PDF" icon="pi pi-file-pdf" class="p-button-text" [disabled]="!canExport()" (click)="exportEdt('pdf')"></button>
+        <button pButton type="button" label="Export Excel" icon="pi pi-file-excel" class="p-button-text" [disabled]="!canExport()" (click)="exportEdt('excel')"></button>
+    </div>
+
+    <div class="grid grid-cols-12 gap-4 mb-6">
+        <div class="col-span-12 md:col-span-3">
+            <div class="p-3 rounded border bg-surface-50 dark:bg-surface-900">
+                <p class="text-sm text-muted-color mb-1">Seances</p>
+                <p class="text-2xl font-bold">{{ stats.totalEntries }}</p>
+            </div>
+        </div>
+        <div class="col-span-12 md:col-span-3">
+            <div class="p-3 rounded border bg-surface-50 dark:bg-surface-900">
+                <p class="text-sm text-muted-color mb-1">Enseignants</p>
+                <p class="text-2xl font-bold">{{ stats.uniqueTeachers }}</p>
+            </div>
+        </div>
+        <div class="col-span-12 md:col-span-3">
+            <div class="p-3 rounded border bg-surface-50 dark:bg-surface-900">
+                <p class="text-sm text-muted-color mb-1">Groupes</p>
+                <p class="text-2xl font-bold">{{ stats.uniqueGroups }}</p>
+            </div>
+        </div>
+        <div class="col-span-12 md:col-span-3">
+            <div class="p-3 rounded border bg-surface-50 dark:bg-surface-900">
+                <p class="text-sm text-muted-color mb-1">Salles</p>
+                <p class="text-2xl font-bold">{{ stats.uniqueRooms }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div *ngIf="selectedEdt" class="mb-4 p-3 rounded border bg-blue-50 dark:bg-blue-900/20">
+        <p class="font-medium">EDT courant: #{{ selectedEdt.id }} | Vue {{ selectedEdt.vue }} | Status {{ selectedEdt.status }}</p>
+    </div>
+    <div *ngIf="noTargetEdt" class="mb-4 p-3 rounded border bg-yellow-50 dark:bg-yellow-900/20">
+        <p>Aucun EDT trouve pour cette cible et cette semaine. Creez-le d'abord ou lancez la generation.</p>
+    </div>
+    <div *ngIf="loading" class="mb-4 text-sm text-muted-color">Chargement en cours...</div>
+
+    <div *ngIf="generationResult" class="mb-5 p-3 rounded border bg-green-50 dark:bg-green-900/20">
+        <p class="font-semibold mb-2">Resultat generation</p>
+        <p>Requested: {{ generationResult.requested }} | Placed: {{ generationResult.placed }} | Unplaced: {{ generationResult.unplaced }}</p>
+        <p *ngIf="generationResult.algorithmUsed">Algorithm: {{ generationResult.algorithmUsed }}</p>
+        <ul class="list-disc ml-5 mt-2" *ngIf="generationResult.conflicts?.length">
+            <li *ngFor="let conflict of generationResult.conflicts">{{ conflict }}</li>
+        </ul>
+    </div>
+
+    <div *ngIf="lastValidationReport" class="mb-5 p-3 rounded border bg-orange-50 dark:bg-orange-900/20">
+        <p class="font-semibold mb-2">Rapport validation: {{ lastValidationReport.status }}</p>
+        <div *ngIf="lastValidationReport.errors?.length">
+            <p class="font-medium">Erreurs:</p>
+            <ul class="list-disc ml-5">
+                <li *ngFor="let item of lastValidationReport.errors">{{ item.type }} - {{ item.message }}</li>
+            </ul>
+        </div>
+        <div *ngIf="lastValidationReport.warnings?.length" class="mt-2">
+            <p class="font-medium">Warnings:</p>
+            <ul class="list-disc ml-5">
+                <li *ngFor="let item of lastValidationReport.warnings">{{ item.type }} - {{ item.message }}</li>
+            </ul>
+        </div>
+    </div>
+
+    <p-table [value]="entryRows" [rows]="10" [paginator]="true" responsiveLayout="scroll">
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Cours</th>
+                <th>Enseignant</th>
+                <th>Groupe</th>
+                <th>Salle</th>
+                <th>Date</th>
+                <th>Debut</th>
+                <th>Fin</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row let-rowData="rowData">
+            <tr draggable="true" (dragstart)="onDragStart(rowData.id)">
+                <td>{{ row.courseLabel }}</td>
+                <td>{{ row.teacherLabel }}</td>
+                <td>{{ row.groupLabel }}</td>
+                <td>{{ row.roomLabel }}</td>
+                <td>{{ row.dateLabel }}</td>
+                <td>{{ row.startLabel }}</td>
+                <td>{{ row.endLabel }}</td>
+                <td>{{ row.status }}</td>
+                <td class="whitespace-nowrap">
+                    <button pButton type="button" icon="pi pi-pencil" class="p-button-rounded p-button-text mr-1" (click)="openEditEntryDialog(rowData)"></button>
+                    <button pButton type="button" icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" (click)="deleteEntry(rowData)"></button>
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
+
+    <div class="card mt-6 bg-surface-50 dark:bg-surface-800">
+        <h6 class="font-bold mb-3">Deplacement rapide (drag and drop)</h6>
+        <p class="text-sm text-muted-color mb-4">Glissez une seance puis deposez-la sur un creneau.</p>
+        <div class="grid grid-cols-12 gap-3">
+            <div
+                *ngFor="let slot of quickMoveSlots"
+                class="col-span-12 md:col-span-4 p-3 border rounded-lg bg-white dark:bg-surface-700"
+                (dragover)="$event.preventDefault()"
+                (drop)="onDropToSlot(slot)"
+            >
+                <p class="font-semibold">{{ slot.label }}</p>
+                <p class="text-sm text-muted-color">{{ labelForSlotDate(slot.dayOffset) }} | {{ slot.startTime }} - {{ slot.endTime }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div *ngIf="entryValidationMessages.length" class="mt-4 p-3 rounded border bg-red-50 dark:bg-red-900/20">
+        <p class="font-semibold mb-2">Validation seance</p>
+        <ul class="list-disc ml-5">
+            <li *ngFor="let message of entryValidationMessages">{{ message }}</li>
+        </ul>
+    </div>
+</div>
+
+<p-dialog
+    [(visible)]="displayGenerateDialog"
+    header="Generation EDT"
+    [modal]="true"
+    [style]="{ width: '68vw', maxWidth: '1200px' }"
+    [contentStyle]="{ maxHeight: '78vh', overflow: 'auto' }"
+    [breakpoints]="{ '1400px': '80vw', '1100px': '90vw', '640px': '96vw' }"
+>
+    <div class="grid grid-cols-12 gap-4">
+        <div class="col-span-12 md:col-span-4">
+            <label class="block mb-2 font-medium">Periode</label>
+            <p-select
+                [(ngModel)]="generationForm.periode"
+                [options]="periodeOptions"
+                optionLabel="label"
+                optionValue="value"
+                appendTo="body"
+                class="w-full"
+            />
+        </div>
+        <div class="col-span-12 md:col-span-4">
+            <label class="block mb-2 font-medium">Algorithme</label>
+            <p-select
+                [(ngModel)]="generationForm.algorithmType"
+                [options]="algorithmOptions"
+                optionLabel="label"
+                optionValue="value"
+                appendTo="body"
+                class="w-full"
+            />
+        </div>
+        <div class="col-span-12 md:col-span-4">
+            <label class="block mb-2 font-medium">Dry run</label>
+            <select [(ngModel)]="generationForm.dryRun" class="w-full px-3 py-2 border rounded">
+                <option [ngValue]="false">Non</option>
+                <option [ngValue]="true">Oui</option>
+            </select>
+        </div>
+        <div class="col-span-12">
+            <label class="block mb-2 font-medium">Groupes cibles</label>
+            <p-multiSelect
+                [(ngModel)]="generationForm.groupIds"
+                [options]="groupOptions"
+                optionLabel="label"
+                optionValue="value"
+                [filter]="true"
+                filterBy="label"
+                appendTo="body"
+                display="chip"
+                placeholder="Selectionner les groupes (optionnel)"
+                class="w-full"
+            />
+        </div>
+    </div>
+    <ng-template pTemplate="footer">
+        <button pButton type="button" label="Annuler" class="p-button-text" (click)="displayGenerateDialog = false"></button>
+        <button pButton type="button" label="Lancer generation" class="p-button-text" (click)="runGeneration()"></button>
+    </ng-template>
+</p-dialog>
+
+<p-dialog
+    [(visible)]="displayEntryDialog"
+    [header]="isEditMode ? 'Modifier seance' : 'Ajouter seance'"
+    [modal]="true"
+    [style]="{ width: '70vw', maxWidth: '1220px' }"
+    [contentStyle]="{ maxHeight: '78vh', overflow: 'auto' }"
+    [breakpoints]="{ '1400px': '82vw', '1100px': '90vw', '640px': '96vw' }"
+>
+    <div class="grid grid-cols-12 gap-4">
+        <div class="col-span-12 md:col-span-6">
+            <label class="block mb-2 font-medium">Cours</label>
+            <p-select
+                [(ngModel)]="entryForm.courseId"
+                [options]="courseOptions"
+                optionLabel="label"
+                optionValue="value"
+                [filter]="true"
+                filterBy="label"
+                appendTo="body"
+                class="w-full"
+            />
+        </div>
+        <div class="col-span-12 md:col-span-6">
+            <label class="block mb-2 font-medium">Enseignant</label>
+            <p-select
+                [(ngModel)]="entryForm.teacherId"
+                [options]="teacherOptions"
+                optionLabel="label"
+                optionValue="value"
+                [filter]="true"
+                filterBy="label"
+                appendTo="body"
+                class="w-full"
+            />
+        </div>
+        <div class="col-span-12 md:col-span-6">
+            <label class="block mb-2 font-medium">Groupe</label>
+            <p-select
+                [(ngModel)]="entryForm.groupId"
+                [options]="groupOptions"
+                optionLabel="label"
+                optionValue="value"
+                [filter]="true"
+                filterBy="label"
+                appendTo="body"
+                class="w-full"
+            />
+        </div>
+        <div class="col-span-12 md:col-span-6">
+            <label class="block mb-2 font-medium">Salle</label>
+            <p-select
+                [(ngModel)]="entryForm.roomId"
+                [options]="roomOptions"
+                optionLabel="label"
+                optionValue="value"
+                [filter]="true"
+                filterBy="label"
+                appendTo="body"
+                class="w-full"
+            />
+        </div>
+        <div class="col-span-12 md:col-span-4">
+            <label class="block mb-2 font-medium">Date</label>
+            <input pInputText type="date" [(ngModel)]="entryForm.date" class="w-full" />
+        </div>
+        <div class="col-span-12 md:col-span-4">
+            <label class="block mb-2 font-medium">Debut</label>
+            <input pInputText type="time" [(ngModel)]="entryForm.startTime" class="w-full" />
+        </div>
+        <div class="col-span-12 md:col-span-4">
+            <label class="block mb-2 font-medium">Fin</label>
+            <input pInputText type="time" [(ngModel)]="entryForm.endTime" class="w-full" />
+        </div>
+        <div class="col-span-12 md:col-span-4">
+            <label class="block mb-2 font-medium">Status</label>
+            <select [(ngModel)]="entryForm.status" class="w-full px-3 py-2 border rounded">
+                <option value="SCHEDULED">SCHEDULED</option>
+                <option value="COMPLETED">COMPLETED</option>
+                <option value="CANCELLED">CANCELLED</option>
+            </select>
+        </div>
+        <div class="col-span-12 md:col-span-8 flex items-end">
+            <button pButton type="button" label="Suggerer creneaux" icon="pi pi-lightbulb" class="p-button-text" (click)="requestSuggestions()"></button>
+        </div>
+    </div>
+
+    <div *ngIf="suggestions.length" class="mt-4">
+        <p class="font-medium mb-2">Suggestions disponibles</p>
+        <div class="grid grid-cols-12 gap-2">
+            <div *ngFor="let suggestion of suggestions" class="col-span-12 md:col-span-6 border rounded p-2">
+                <p class="text-sm">{{ suggestion.startTime }} -> {{ suggestion.endTime }}</p>
+                <p class="text-sm text-muted-color">Salle: {{ roomLabel(suggestion.roomId) }}</p>
+                <p class="text-sm text-muted-color mb-2">{{ suggestion.reason || '-' }}</p>
+                <button pButton type="button" label="Utiliser" class="p-button-text p-button-sm" (click)="applySuggestion(suggestion)"></button>
+            </div>
+        </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+        <button pButton type="button" label="Annuler" class="p-button-text" (click)="displayEntryDialog = false"></button>
+        <button pButton type="button" [label]="isEditMode ? 'Mettre a jour' : 'Ajouter'" class="p-button-text" (click)="saveEntry()"></button>
+    </ng-template>
+</p-dialog>

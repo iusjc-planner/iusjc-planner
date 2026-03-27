@@ -19,9 +19,11 @@ import jakarta.persistence.criteria.Predicate;
 public class MatiereService {
 
     private final MatiereRepository matiereRepository;
+    private final SupportService supportService;
 
-    public MatiereService(MatiereRepository matiereRepository) {
+    public MatiereService(MatiereRepository matiereRepository, SupportService supportService) {
         this.matiereRepository = matiereRepository;
+        this.supportService = supportService;
     }
 
     public List<Matiere> getAll(String code, String nom, Matiere.MatiereStatus status, 
@@ -96,6 +98,7 @@ public class MatiereService {
         if (!matiereRepository.existsById(id)) {
             throw new EntityNotFoundException("Matière non trouvée avec l'id " + id);
         }
+        supportService.deleteByMatiereId(id);
         matiereRepository.deleteById(id);
     }
 

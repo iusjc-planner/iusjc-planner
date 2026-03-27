@@ -1,0 +1,91 @@
+<div class="page-header">
+	<h3 class="page-title">
+		<i class="mdi mdi-door-closed menu-icon"></i>
+		Gestion des Salles
+	</h3>
+	<nav aria-label="breadcrumb">
+		<ol class="breadcrumb">
+			<li class="breadcrumb-item"><a routerLink="/app/dashboard">Accueil</a></li>
+			<li class="breadcrumb-item active" aria-current="page">Salles</li>
+		</ol>
+	</nav>
+</div>
+
+<div class="card">
+	<div class="card-body">
+		<div class="d-flex justify-content-between align-items-center mb-3">
+			<h4 class="card-title mb-0">Liste des salles</h4>
+			<a class="btn btn-primary" routerLink="/app/rooms/new"><i class="mdi mdi-plus"></i> Nouvelle salle</a>
+		</div>
+
+		<div class="row mb-3">
+			<div class="col-md-4">
+				<label>Recherche</label>
+				<input class="form-control" [(ngModel)]="searchTerm" (input)="applyFilters()" placeholder="Nom ou lieu" />
+			</div>
+			<div class="col-md-3">
+				<label>Type</label>
+				<select class="form-control" [(ngModel)]="typeFilter" (change)="applyFilters()">
+					<option [ngValue]="undefined">Tous</option>
+					<option *ngFor="let t of [RoomType.CLASSROOM, RoomType.LAB, RoomType.AUDITORIUM]" [ngValue]="t">{{ t }}</option>
+				</select>
+			</div>
+			<div class="col-md-3">
+				<label>Statut</label>
+				<select class="form-control" [(ngModel)]="statusFilter" (change)="applyFilters()">
+					<option [ngValue]="undefined">Tous</option>
+					<option *ngFor="let s of [RoomStatus.ACTIVE, RoomStatus.MAINTENANCE]" [ngValue]="s">{{ s }}</option>
+				</select>
+			</div>
+			<div class="col-md-2">
+				<label>Capacité min</label>
+				<input type="number" class="form-control" [(ngModel)]="minCapacity" (input)="applyFilters()" />
+			</div>
+		</div>
+		<div class="mb-3">
+			<button class="btn btn-outline-secondary btn-sm" (click)="resetFilters()"><i class="mdi mdi-refresh"></i> Réinitialiser</button>
+		</div>
+
+		<div *ngIf="loading" class="text-center py-4">
+			<div class="spinner-border text-primary" role="status"></div>
+		</div>
+
+		<div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
+
+		<div class="table-responsive" *ngIf="!loading">
+			<table class="table table-hover">
+				<thead>
+					<tr>
+						<th>Nom</th>
+						<th>Type</th>
+						<th>Capacité</th>
+						<th>Statut</th>
+						<th>Lieu</th>
+						<th>Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr *ngFor="let room of filtered">
+						<td>{{ room.name }}</td>
+						<td>{{ room.type }}</td>
+						<td>{{ room.capacity }}</td>
+						<td>
+							<span class="badge" [ngClass]="room.status === RoomStatus.ACTIVE ? 'badge-success' : 'badge-warning'">{{ room.status }}</span>
+						</td>
+						<td>{{ room.location || 'N/A' }}</td>
+						<td>
+							<div class="btn-group btn-group-sm" role="group">
+								<a class="btn btn-outline-primary" [routerLink]="['/app/rooms', room.id]"><i class="mdi mdi-eye"></i></a>
+								<a class="btn btn-outline-warning" [routerLink]="['/app/rooms', room.id, 'edit']"><i class="mdi mdi-pencil"></i></a>
+								<button class="btn btn-outline-danger" (click)="deleteRoom(room.id!)"><i class="mdi mdi-delete"></i></button>
+							</div>
+						</td>
+					</tr>
+					<tr *ngIf="filtered.length === 0">
+						<td colspan="6" class="text-center text-muted">Aucune salle</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
