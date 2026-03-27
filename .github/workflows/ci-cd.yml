@@ -51,7 +51,7 @@ jobs:
         ./mvnw clean package -DskipTests
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ matrix.service }}-jar
         path: ${{ matrix.service }}/target/*.jar
@@ -92,7 +92,7 @@ jobs:
 
     - name: Upload frontend unit coverage
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v7
       with:
         name: frontend-unit-coverage
         path: frontend/coverage/
@@ -109,7 +109,7 @@ jobs:
 
     - name: Upload Playwright report
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v7
       with:
         name: frontend-e2e-report
         path: frontend/playwright-report/
@@ -120,7 +120,7 @@ jobs:
         npm run build:prod
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v7
       with:
         name: frontend-dist
         path: frontend/dist/
