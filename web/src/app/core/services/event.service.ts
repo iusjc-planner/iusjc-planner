@@ -1,37 +1,35 @@
-import {inject, Injectable} from '@angular/core';
-import {HttpClient} from "@angular/common/http";
-import {ApiEndpoints} from "@/core/config/api-endpoints";
-import {map, Observable} from "rxjs";
-import * as events from "node:events";
-
-interface EventApi {
-    id?: number;
-    roomId?: number;
-    startTime?: string;
-    endTime?: string;
-    reservedByUserId?: number;
-    purpose?: string;
-    status?: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'POSTPONED';
-}
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { ApiEndpoints } from '../config/api-endpoints';
+import { Event } from '../models/event.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class EventService {
   private readonly http = inject(HttpClient);
-  private readonly endpoint = ApiEndpoints.events;
+  // Default API endpoint in case ApiEndpoints.events is somehow not aligned
+  private readonly endpoint = ApiEndpoints.events || '/api/events';
 
   getAll(): Observable<Event[]> {
-      return this.http.get<EventApi[]>(this.endpoint).pipe(map((events) => events.map((event) => this.fromApi(event))));
+    return this.http.get<Event[]>(this.endpoint);
   }
 
+  getById(id: number): Observable<Event> {
+    return this.http.get<Event>(`${this.endpoint}/${id}`);
+  }
 
-  private toApi(payload: Event): EventApi {
-      return {
-          id: payload.id,
-          roomId: payload.roomId,
-          startTime: payload.startTime,
+  create(payload: Event): Observable<Event> {
+    return this.http.post<Event>(this.endpoint, payload);
+  }
 
-      }
+  update(id: number, payload: Event): Observable<Event> {
+    return this.http.put<Event>(`${this.endpoint}/${id}`, payload);
+  }
+
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.endpoint}/${id}`);
   }
 }
+
