@@ -11,5 +11,6 @@ export const ApiEndpoints = {
     groups: `${API_BASE_URL}/groups`,
     schools: `${API_BASE_URL}/schools`,
     notifications: `${API_BASE_URL}/notifications`,
-    reports: `${API_BASE_URL}/reports`
+    reports: `${API_BASE_URL}/reports`,
+    events: `${API_BASE_URL}/events`
 };
