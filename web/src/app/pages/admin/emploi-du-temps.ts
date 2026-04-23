@@ -375,6 +375,23 @@ export class EmploiDuTempsPage {
         });
     }
 
+    exportIcs() {
+        if (!this.canExport()) {
+            this.notificationService.warn('Export ICS', 'Selectionnez une vue cible pour exporter');
+            return;
+        }
+        this.edtService.exportIcsByView(this.toEdtVue(this.viewMode), this.selectedTargetId as number, this.semaine, this.annee)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (blob) => {
+                    const filename = `EDT_${this.toEdtVue(this.viewMode)}_${this.selectedTargetId}_S${this.semaine}_${this.annee}.ics`;
+                    this.downloadBlob(blob, filename);
+                    this.notificationService.info('Export ICS', 'Fichier .ics téléchargé. Importez-le dans Google Calendar ou Outlook.');
+                },
+                error: () => this.notificationService.error('Erreur', 'Export ICS impossible')
+            });
+    }
+
     openCreateEntryDialog() {
         if (this.requiresTarget() && !this.selectedEdt?.id) {
             this.notificationService.warn('Validation', 'Aucun EDT cible selectionne');

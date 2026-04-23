@@ -18,6 +18,7 @@ import { NotificationsPage } from './admin/notifications';
 import { ProfilPage } from './admin/profil';
 import { DisponibilitesPage } from './enseignant/disponibilites';
 import { HistoriqueDisponibilitesPage } from './enseignant/historique-disponibilites';
+import { CalendrierEdtPage } from './admin/calendrier-edt';
 import { authGuard } from '../core/guards/auth.guard';
 import { roleGuard } from '../core/guards/role.guard';
 
@@ -38,6 +39,7 @@ export default [
     { path: 'admin/ressources', component: RessourcesPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
     { path: 'admin/enseignants', component: EnseignantsPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
     { path: 'admin/emploi-du-temps', component: EmploiDuTempsPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
+    { path: 'admin/calendrier', component: CalendrierEdtPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
     { path: 'admin/rapports', component: RapportsPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
     { path: 'admin/evenements', component: EvenementsPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
     { path: 'admin/examens', component: ExamensPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },

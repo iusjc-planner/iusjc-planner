@@ -293,4 +293,41 @@ public class EDTController {
 
     private record ExportConfig(ExportFormat format, MediaType mediaType, String extension) {
     }
+
+    // ===== Export ICS (Google Calendar / Outlook) =====
+
+    @GetMapping("/{id}/export/ics")
+    public ResponseEntity<byte[]> exportIcsById(@PathVariable Long id) {
+        byte[] content = edtService.exportIcsById(id);
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType("text/calendar"))
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=EDT_" + id + ".ics")
+            .body(content);
+    }
+
+    @GetMapping("/groupe/{groupeId}/export/ics")
+    public ResponseEntity<byte[]> exportIcsGroupe(
+            @PathVariable Long groupeId,
+            @RequestParam Integer semaine,
+            @RequestParam Integer annee,
+            @RequestHeader(value = "X-User-Id", required = false) Long creePar) {
+        byte[] content = edtService.exportIcsForView(EDT.VueType.GROUPE, groupeId, semaine, annee, creePar);
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType("text/calendar"))
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=EDT_GROUPE_" + groupeId + ".ics")
+            .body(content);
+    }
+
+    @GetMapping("/enseignant/{teacherId}/export/ics")
+    public ResponseEntity<byte[]> exportIcsEnseignant(
+            @PathVariable Long teacherId,
+            @RequestParam Integer semaine,
+            @RequestParam Integer annee,
+            @RequestHeader(value = "X-User-Id", required = false) Long creePar) {
+        byte[] content = edtService.exportIcsForView(EDT.VueType.ENSEIGNANT, teacherId, semaine, annee, creePar);
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType("text/calendar"))
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=EDT_ENSEIGNANT_" + teacherId + ".ics")
+            .body(content);
+    }
 }

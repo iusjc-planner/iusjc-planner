@@ -56,7 +56,7 @@ import { AuthService } from '../../core/services/auth.service';
                                     <p-checkbox [(ngModel)]="checked" id="rememberme1" binary class="mr-2"></p-checkbox>
                                     <label for="rememberme1">Remember me</label>
                                 </div>
-                                <span class="font-medium no-underline ml-2 text-right cursor-pointer text-primary">Forgot password?</span>
+                                <span class="font-medium no-underline ml-2 text-right cursor-pointer text-primary" routerLink="/auth/forgot-password">Forgot password?</span>
                             </div>
                             <small *ngIf="errorMessage" class="text-red-500 block mb-4">{{ errorMessage }}</small>
                             <p-button label="Sign In" styleClass="w-full" [loading]="loading" (onClick)="onSignIn()"></p-button>

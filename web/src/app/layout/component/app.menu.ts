@@ -50,7 +50,8 @@ export class AppMenu {
                     label: 'Planification',
                     items: [
                         { label: 'Emplois du temps', icon: 'pi pi-fw pi-calendar', routerLink: ['/pages/admin/emploi-du-temps'] },
-                        { label: 'Événements', icon: 'pi pi-fw pi-calendar-plus', routerLink: ['/pages/admin/evenements'] },
+                        { label: 'Calendrier visuel', icon: 'pi pi-fw pi-calendar-times', routerLink: ['/pages/admin/calendrier'] },
+                        { label: 'Evenements', icon: 'pi pi-fw pi-calendar-plus', routerLink: ['/pages/admin/evenements'] },
                         { label: 'Examens', icon: 'pi pi-fw pi-check-square', routerLink: ['/pages/admin/examens'] }
                     ]
                 },

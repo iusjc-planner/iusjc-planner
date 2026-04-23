@@ -28,8 +28,8 @@ public class AuthController {
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         try {
-            String token = authService.generateResetToken(request.getEmail());
-            return ResponseEntity.ok(new ForgotPasswordResponse("Token de reinitialisation genere", token));
+            authService.sendPasswordResetEmail(request.getEmail());
+            return ResponseEntity.ok(new ForgotPasswordResponse("Email de reinitialisation envoye", null));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

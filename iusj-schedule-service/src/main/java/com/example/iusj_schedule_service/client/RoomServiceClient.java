@@ -62,6 +62,46 @@ public class RoomServiceClient {
         }
     }
 
+    /**
+     * Retourne les salles filtrées par type et capacité minimale.
+     * courseType : CM -> AUDITORIUM, TD -> CLASSROOM, TP -> LAB
+     */
+    public List<RoomSummary> getRoomsByCourseType(String courseType, Integer minCapacity) {
+        String roomType = mapCourseTypeToRoomType(courseType);
+        try {
+            StringBuilder url = new StringBuilder("http://iusj-room-service/api/rooms?");
+            if (roomType != null) url.append("type=").append(roomType).append("&");
+            if (minCapacity != null) url.append("minCapacity=").append(minCapacity).append("&");
+            url.append("status=ACTIVE");
+
+            Object[] rooms = restTemplate.getForObject(url.toString(), Object[].class);
+            if (rooms == null) return List.of();
+
+            List<RoomSummary> result = new ArrayList<>();
+            for (Object room : rooms) {
+                if (room instanceof Map<?, ?> map) {
+                    RoomSummary summary = toRoomSummary(map);
+                    if (summary != null) result.add(summary);
+                }
+            }
+            result.sort(Comparator.comparing(RoomSummary::capacity, Comparator.nullsLast(Integer::compareTo)));
+            return result;
+        } catch (Exception ex) {
+            // Fallback: retourner toutes les salles avec capacité minimale
+            return getRoomsByMinCapacity(minCapacity);
+        }
+    }
+
+    private String mapCourseTypeToRoomType(String courseType) {
+        if (courseType == null) return null;
+        return switch (courseType.toUpperCase()) {
+            case "CM", "COURS_MAGISTRAL", "CONFERENCE" -> "AUDITORIUM";
+            case "TP", "TRAVAUX_PRATIQUES", "LABO" -> "LAB";
+            case "TD", "TRAVAUX_DIRIGES" -> "CLASSROOM";
+            default -> null;
+        };
+    }
+
     private RoomSummary toRoomSummary(Map<?, ?> room) {
         Long id = asLong(room.get("id"));
         if (id == null) {

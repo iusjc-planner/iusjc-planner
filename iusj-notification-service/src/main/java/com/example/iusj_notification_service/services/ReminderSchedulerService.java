@@ -96,7 +96,7 @@ public class ReminderSchedulerService {
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> fetchScheduleEntries(LocalDateTime from, LocalDateTime to) {
         try {
-            String url = scheduleServiceUrl + "/api/schedules?startFrom=" + from.format(DT_FMT)
+            String url = scheduleServiceUrl + "/api/schedule?startFrom=" + from.format(DT_FMT)
                     + "&endTo=" + to.format(DT_FMT) + "&status=SCHEDULED";
             Map<String, Object>[] result = restTemplate.getForObject(url, Map[].class);
             if (result == null) return List.of();

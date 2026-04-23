@@ -4,11 +4,30 @@ x-backend-common: &backend-common
   build:
     context: .
     dockerfile: Dockerfile.backend
+  env_file:
+    - .env
   environment:
     - DB_HOST=mysql-db
     - DB_PORT=3306
+    - DB_NAME=bd_tutore
+    - DB_USER=${DB_USERNAME:-root}
+    - DB_USERNAME=${DB_USERNAME:-root}
+    - DB_PASSWORD=${DB_PASSWORD:-tenzo}
+    - DB_PASS=${DB_PASSWORD:-tenzo}
     - EUREKA_HOST=iusj-eureka-service
     - EUREKA_PORT=8761
+    - MAIL_ENABLED=${MAIL_ENABLED:-false}
+    - MAIL_HOST=${MAIL_HOST:-smtp.gmail.com}
+    - MAIL_PORT=${MAIL_PORT:-587}
+    - MAIL_USERNAME=${MAIL_USERNAME:-}
+    - MAIL_PASSWORD=${MAIL_PASSWORD:-}
+    - MAIL_FROM=${MAIL_FROM:-noreply@iusj-planner.cd}
+    - MAIL_RESET_URL=${MAIL_RESET_URL:-http://localhost:4200/auth/reset-password}
+    - SMS_ENABLED=${SMS_ENABLED:-false}
+    - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID:-}
+    - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN:-}
+    - TWILIO_FROM_NUMBER=${TWILIO_FROM_NUMBER:-}
+    - REMINDERS_ENABLED=${REMINDERS_ENABLED:-true}
   depends_on:
     mysql-db:
       condition: service_healthy
@@ -24,7 +43,7 @@ services:
     restart: always
     environment:
       MYSQL_DATABASE: bd_tutore
-      MYSQL_ROOT_PASSWORD: tenzo
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-tenzo}
     ports:
       - "3306:3306"
     volumes:
@@ -102,8 +121,20 @@ services:
     environment:
       - DB_HOST=mysql-db
       - DB_PORT=3306
+      - DB_NAME=bd_tutore
+      - DB_USER=${DB_USERNAME:-root}
+      - DB_USERNAME=${DB_USERNAME:-root}
+      - DB_PASSWORD=${DB_PASSWORD:-tenzo}
+      - DB_PASS=${DB_PASSWORD:-tenzo}
       - EUREKA_HOST=iusj-eureka-service
+      - EUREKA_PORT=8761
       - REPORT_STORAGE_PATH=/tmp/reports
+      - MAIL_ENABLED=${MAIL_ENABLED:-false}
+      - MAIL_HOST=${MAIL_HOST:-smtp.gmail.com}
+      - MAIL_PORT=${MAIL_PORT:-587}
+      - MAIL_USERNAME=${MAIL_USERNAME:-}
+      - MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - MAIL_FROM=${MAIL_FROM:-noreply@iusj-planner.cd}
     volumes:
       - iusj_reports:/tmp/reports
 
