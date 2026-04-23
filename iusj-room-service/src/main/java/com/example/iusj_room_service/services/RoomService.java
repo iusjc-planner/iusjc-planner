@@ -139,7 +139,7 @@ public class RoomService {
                 || !request.getEndTime().isAfter(request.getStartTime())) {
             throw new IllegalArgumentException("Invalid time range");
         }
-        boolean conflict = reservationRepository.existsByRoomIdAndStatusInAndStartTimeLessThanAndEndTimeGreaterThan(
+        boolean conflict = reservationRepository.existsConflict(
                 roomId,
                 List.of(RoomReservation.Status.RESERVED, RoomReservation.Status.CONFIRMED),
                 request.getStartTime(),

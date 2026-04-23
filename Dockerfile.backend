@@ -1,0 +1,30 @@
+# Stage 1: Build the Microservice
+FROM maven:3.9.4-eclipse-temurin-17 AS builder
+WORKDIR /app
+
+# Define which service to build via an argument
+ARG SERVICE_NAME
+ENV SERVICE_NAME=${SERVICE_NAME}
+
+# Copy the pom.xml of the specific service
+COPY ${SERVICE_NAME}/pom.xml ./${SERVICE_NAME}/
+
+# Copy the source code
+COPY ${SERVICE_NAME}/src ./${SERVICE_NAME}/src
+
+# Package the application (skip tests for faster build)
+RUN mvn -f ./${SERVICE_NAME}/pom.xml clean package -DskipTests
+
+# Stage 2: Runtime
+FROM eclipse-temurin:17-jre
+WORKDIR /app
+
+ARG SERVICE_NAME
+ENV SERVICE_NAME=${SERVICE_NAME}
+
+# Copy the generated JAR into the runtime image
+COPY --from=builder /app/${SERVICE_NAME}/target/*.jar app.jar
+
+# Add entrypoint waiting for db/eureka if needed
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]

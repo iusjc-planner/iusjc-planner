@@ -9,6 +9,7 @@ import { MatieresPage } from './admin/matieres';
 import { CoursPage } from './admin/cours';
 import { SallesPage } from './admin/salles';
 import { RessourcesPage } from './admin/ressources';
+import { EnseignantsPage } from './admin/enseignants';
 import { EmploiDuTempsPage } from './admin/emploi-du-temps';
 import { RapportsPage } from './admin/rapports';
 import { EvenementsPage } from './admin/evenements';
@@ -35,6 +36,7 @@ export default [
     { path: 'admin/cours', component: CoursPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
     { path: 'admin/salles', component: SallesPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
     { path: 'admin/ressources', component: RessourcesPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
+    { path: 'admin/enseignants', component: EnseignantsPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
     { path: 'admin/emploi-du-temps', component: EmploiDuTempsPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
     { path: 'admin/rapports', component: RapportsPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },
     { path: 'admin/evenements', component: EvenementsPage, canActivate: [authGuard, roleGuard], data: { roles: ['ADMIN'] } },

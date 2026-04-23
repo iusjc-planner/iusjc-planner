@@ -93,7 +93,9 @@ Start-IusjService -ServiceName "iusj-school-service" -ServicePath "iusj-school-s
 Start-IusjService -ServiceName "iusj-group-service" -ServicePath "iusj-group-service" -Port 8088
 Start-IusjService -ServiceName "iusj-student-service" -ServicePath "iusj-student-service" -Port 8089
 Start-IusjService -ServiceName "iusj-resource-service" -ServicePath "iusj-resource-service" -Port 8090
+Start-IusjService -ServiceName "iusj-report-service" -ServicePath "iusj-report-service" -Port 8091
 Start-IusjService -ServiceName "iusj-notification-service" -ServicePath "iusj-notification-service" -Port 8092
+Start-IusjService -ServiceName "iusj-event-service" -ServicePath "iusj-event-service" -Port 8093
 Start-IusjService -ServiceName "iusj-gateway-service" -ServicePath "iusj-gateway-service" -Port 8080
 
 if ($UseLegacyFrontend) {

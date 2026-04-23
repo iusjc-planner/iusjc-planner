@@ -1,4 +1,5 @@
-import { Component, inject } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { CardModule } from 'primeng/card';
 import { ScheduleService } from '../../core/services/schedule.service';
@@ -84,6 +85,7 @@ export class Dashboard {
     private readonly roomService = inject(RoomService);
     private readonly notificationApiService = inject(NotificationApiService);
     private readonly authService = inject(AuthService);
+    private readonly destroyRef = inject(DestroyRef);
 
     planning: Array<{ cours: string; jour: string; heure: string; salle: string }> = [];
     recentNotifications: AppNotification[] = [];
@@ -103,7 +105,7 @@ export class Dashboard {
 
         this.teacherService
             .getAll()
-            .pipe(catchError(() => of([] as Teacher[])))
+            .pipe(catchError(() => of([] as Teacher[])), takeUntilDestroyed(this.destroyRef))
             .subscribe((teachers) => {
                 const teacher = teachers.find((item) => item.login?.toLowerCase() === username || item.email?.toLowerCase() === username);
                 this.loadPlanningAndNotifications(teacher?.id);
@@ -116,7 +118,7 @@ export class Dashboard {
             this.courseService.getAll().pipe(catchError(() => of([] as Course[]))),
             this.roomService.getAll().pipe(catchError(() => of([] as Room[]))),
             this.notificationApiService.getAll().pipe(catchError(() => of([] as AppNotification[])))
-        ]).subscribe(([entries, courses, rooms, notifications]) => {
+        ]).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(([entries, courses, rooms, notifications]) => {
             const courseById = new Map(courses.filter((course) => course.id !== undefined).map((course) => [course.id as number, course.nom]));
             const roomById = new Map(rooms.filter((room) => room.id !== undefined).map((room) => [room.id as number, room.nom]));
 

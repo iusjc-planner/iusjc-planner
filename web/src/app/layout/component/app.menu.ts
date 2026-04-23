@@ -42,7 +42,8 @@ export class AppMenu {
                         { label: 'Matieres', icon: 'pi pi-fw pi-bookmark', routerLink: ['/pages/admin/matieres'] },
                         { label: 'Cours', icon: 'pi pi-fw pi-book', routerLink: ['/pages/admin/cours'] },
                         { label: 'Salles', icon: 'pi pi-fw pi-building', routerLink: ['/pages/admin/salles'] },
-                        { label: 'Ressources', icon: 'pi pi-fw pi-server', routerLink: ['/pages/admin/ressources'] }
+                        { label: 'Ressources', icon: 'pi pi-fw pi-server', routerLink: ['/pages/admin/ressources'] },
+                        { label: 'Enseignants', icon: 'pi pi-fw pi-graduation-cap', routerLink: ['/pages/admin/enseignants'] }
                     ]
                 },
                 {

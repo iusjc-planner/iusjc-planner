@@ -18,6 +18,11 @@ public interface RoomReservationRepository extends JpaRepository<RoomReservation
                                    @Param("startTime") LocalDateTime startTime,
                                    @Param("endTime") LocalDateTime endTime);
 
-    boolean existsByRoomIdAndStatusInAndStartTimeLessThanAndEndTimeGreaterThan(
-            Long roomId, List<RoomReservation.Status> statuses, LocalDateTime startTime, LocalDateTime endTime);
+        @Query("SELECT (COUNT(r) > 0) FROM RoomReservation r " +
+            "WHERE r.roomId = :roomId AND r.status IN :statuses " +
+            "AND r.startTime < :endTime AND r.endTime > :startTime")
+        boolean existsConflict(@Param("roomId") Long roomId,
+                      @Param("statuses") List<RoomReservation.Status> statuses,
+                      @Param("startTime") LocalDateTime startTime,
+                      @Param("endTime") LocalDateTime endTime);
 }

@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -108,6 +109,7 @@ export class SallesPage {
     } = this.getEmptyCreateForm();
 
     private allSalles: Salle[] = [];
+    private readonly destroyRef = inject(DestroyRef);
 
     constructor(
         private messageService: MessageService,
@@ -137,7 +139,7 @@ export class SallesPage {
             statut: 'ACTIVE'
         };
 
-        this.roomService.create(payload).subscribe({
+        this.roomService.create(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: () => {
                 this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Salle creee avec succes' });
                 this.displayCreateDialog = false;
@@ -165,7 +167,7 @@ export class SallesPage {
     }
 
     private loadRooms() {
-        this.roomService.getAll().subscribe({
+        this.roomService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (rooms) => {
                 this.allSalles = rooms.map((room) => this.fromApiRoom(room));
             },
@@ -180,7 +182,7 @@ export class SallesPage {
             return;
         }
 
-        this.roomService.delete(salle.id).subscribe({
+        this.roomService.delete(salle.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: () => {
                 this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Salle supprimee avec succes' });
                 this.loadRooms();

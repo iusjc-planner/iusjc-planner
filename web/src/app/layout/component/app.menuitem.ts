@@ -1,7 +1,8 @@
-import { Component, HostBinding, Input } from '@angular/core';
+import { Component, HostBinding, Input, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { animate, state, style, transition, trigger } from '@angular/animations';
-import { Subscription } from 'rxjs';
+
 import { filter } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { RippleModule } from 'primeng/ripple';
@@ -80,17 +81,14 @@ export class AppMenuitem {
 
     active = false;
 
-    menuSourceSubscription: Subscription;
-
-    menuResetSubscription: Subscription;
-
     key: string = '';
+    private readonly destroyRef = inject(DestroyRef);
 
     constructor(
         public router: Router,
         private layoutService: LayoutService
     ) {
-        this.menuSourceSubscription = this.layoutService.menuSource$.subscribe((value) => {
+        this.layoutService.menuSource$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((value) => {
             Promise.resolve(null).then(() => {
                 if (value.routeEvent) {
                     this.active = value.key === this.key || value.key.startsWith(this.key + '-') ? true : false;
@@ -102,11 +100,11 @@ export class AppMenuitem {
             });
         });
 
-        this.menuResetSubscription = this.layoutService.resetSource$.subscribe(() => {
+        this.layoutService.resetSource$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
             this.active = false;
         });
 
-        this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe((params) => {
+        this.router.events.pipe(filter((event) => event instanceof NavigationEnd), takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
             if (this.item.routerLink) {
                 this.updateActiveStateFromRoute();
             }
@@ -158,13 +156,5 @@ export class AppMenuitem {
         return this.active && !this.root;
     }
 
-    ngOnDestroy() {
-        if (this.menuSourceSubscription) {
-            this.menuSourceSubscription.unsubscribe();
-        }
 
-        if (this.menuResetSubscription) {
-            this.menuResetSubscription.unsubscribe();
-        }
-    }
 }

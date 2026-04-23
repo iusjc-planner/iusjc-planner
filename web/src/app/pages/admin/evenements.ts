@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
@@ -146,6 +147,7 @@ export class EvenementsPage implements OnInit {
 
     // Temporarily mock an organizer ID till Auth is fully integrated
     private readonly currentUserId = 1;
+    private readonly destroyRef = inject(DestroyRef);
 
     constructor(
         private fb: FormBuilder,
@@ -187,14 +189,14 @@ export class EvenementsPage implements OnInit {
     }
 
     private loadEvenements() {
-        this.eventService.getAll().subscribe({
+        this.eventService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (data) => this.allEvents = data,
             error: () => this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Chargement des événements impossible' })
         });
     }
 
     private loadRooms() {
-        this.roomService.getAll().subscribe({
+        this.roomService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (data) => this.rooms = data,
             error: () => this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Chargement des salles impossible' })
         });
@@ -257,7 +259,7 @@ export class EvenementsPage implements OnInit {
         }
 
         if (payload.id) {
-            this.eventService.update(payload.id, payload).subscribe({
+            this.eventService.update(payload.id, payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
                 next: () => {
                     this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Événement mis à jour' });
                     this.loadEvenements();
@@ -266,7 +268,7 @@ export class EvenementsPage implements OnInit {
                 error: () => this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Échec de la mise à jour' })
             });
         } else {
-            this.eventService.create(payload).subscribe({
+            this.eventService.create(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
                 next: () => {
                     this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Événement créé' });
                     this.loadEvenements();
@@ -281,7 +283,7 @@ export class EvenementsPage implements OnInit {
         if (!event.id) return;
         
         if (confirm('Êtes-vous sûr de vouloir supprimer cet événement ?')) {
-            this.eventService.delete(event.id).subscribe({
+            this.eventService.delete(event.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
                 next: () => {
                     this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Événement supprimé' });
                     this.loadEvenements();

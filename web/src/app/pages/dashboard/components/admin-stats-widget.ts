@@ -1,4 +1,5 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { catchError, finalize, forkJoin, of } from 'rxjs';
@@ -6,6 +7,8 @@ import { TeacherService } from '../../../core/services/teacher.service';
 import { ScheduleService } from '../../../core/services/schedule.service';
 import { SchoolService } from '../../../core/services/school.service';
 import { RoomService } from '../../../core/services/room.service';
+import { GroupService } from '../../../core/services/group.service';
+import { EventService } from '../../../core/services/event.service';
 
 @Component({
     standalone: true,
@@ -108,15 +111,30 @@ import { RoomService } from '../../../core/services/room.service';
             <div class="card mb-0">
                 <div class="flex justify-between mb-4">
                     <div>
-                        <span class="block text-muted-color font-medium mb-4">Conflits détectés</span>
-                        <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">2</div>
+                        <span class="block text-muted-color font-medium mb-4">Groupes d'étudiants</span>
+                        <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{ stats.groups }}</div>
                     </div>
-                    <div class="flex items-center justify-center bg-red-100 dark:bg-red-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-                        <i class="pi pi-exclamation-circle text-red-500 text-xl!"></i>
+                    <div class="flex items-center justify-center bg-teal-100 dark:bg-teal-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
+                        <i class="pi pi-sitemap text-teal-500 text-xl!"></i>
                     </div>
                 </div>
-                <span class="text-primary font-medium">À résoudre </span>
-                <span class="text-muted-color">urgence</span>
+                <span class="text-primary font-medium">Groupes actifs </span>
+                <span class="text-muted-color">dans le système</span>
+            </div>
+        </div>
+        <div class="col-span-12 lg:col-span-6 xl:col-span-3">
+            <div class="card mb-0">
+                <div class="flex justify-between mb-4">
+                    <div>
+                        <span class="block text-muted-color font-medium mb-4">Événements à venir</span>
+                        <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">{{ stats.upcomingEvents }}</div>
+                    </div>
+                    <div class="flex items-center justify-center bg-yellow-100 dark:bg-yellow-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
+                        <i class="pi pi-calendar-plus text-yellow-500 text-xl!"></i>
+                    </div>
+                </div>
+                <span class="text-primary font-medium">Planifiés </span>
+                <span class="text-muted-color">ou confirmés</span>
             </div>
         </div>
         <div class="col-span-12" *ngIf="loading">
@@ -128,6 +146,9 @@ export class AdminStatsWidget implements OnInit {
     private readonly scheduleService = inject(ScheduleService);
     private readonly schoolService = inject(SchoolService);
     private readonly roomService = inject(RoomService);
+    private readonly groupService = inject(GroupService);
+    private readonly eventService = inject(EventService);
+    private readonly destroyRef = inject(DestroyRef);
 
     loading = true;
     stats = {
@@ -139,7 +160,9 @@ export class AdminStatsWidget implements OnInit {
         availableRooms: 0,
         maintenanceRooms: 0,
         occupancyRate: 0,
-        conflicts: 0
+        conflicts: 0,
+        groups: 0,
+        upcomingEvents: 0
     };
 
     ngOnInit(): void {
@@ -147,16 +170,20 @@ export class AdminStatsWidget implements OnInit {
             teachers: this.teacherService.getAll().pipe(catchError(() => of([]))),
             schedule: this.scheduleService.getAll().pipe(catchError(() => of([]))),
             schools: this.schoolService.getAll().pipe(catchError(() => of([]))),
-            rooms: this.roomService.getAll().pipe(catchError(() => of([])))
+            rooms: this.roomService.getAll().pipe(catchError(() => of([]))),
+            groups: this.groupService.getAll().pipe(catchError(() => of([]))),
+            events: this.eventService.getAll().pipe(catchError(() => of([])))
         })
-            .pipe(finalize(() => (this.loading = false)))
-            .subscribe(({ teachers, schedule, schools, rooms }) => {
+            .pipe(finalize(() => (this.loading = false)), takeUntilDestroyed(this.destroyRef))
+            .subscribe(({ teachers, schedule, schools, rooms, groups, events }) => {
                 const activeTeachers = teachers.filter((teacher) => this.isActive(teacher.statut)).length;
                 const pendingReservations = schedule.filter((entry) => this.isPending(entry.statut)).length;
                 const conflicts = schedule.filter((entry) => this.isConflict(entry.statut)).length;
                 const maintenanceRooms = rooms.filter((room) => this.isMaintenance(room.statut)).length;
                 const availableRooms = Math.max(rooms.length - maintenanceRooms, 0);
                 const occupancyRate = rooms.length === 0 ? 0 : Math.round((schedule.length / (rooms.length * 5)) * 100);
+                const today = new Date().toISOString().split('T')[0];
+                const upcomingEvents = events.filter((e) => e.date >= today && e.status !== 'ANNULE' && e.status !== 'TERMINE').length;
 
                 this.stats = {
                     teachers: teachers.length,
@@ -167,13 +194,16 @@ export class AdminStatsWidget implements OnInit {
                     availableRooms,
                     maintenanceRooms,
                     occupancyRate: Math.min(100, occupancyRate),
-                    conflicts
+                    conflicts,
+                    groups: groups.length,
+                    upcomingEvents
                 };
             });
     }
 
     private isActive(status?: string): boolean {
-        return status?.toLowerCase() === 'actif';
+        const s = status?.toUpperCase();
+        return s === 'ACTIVE' || s === 'ACTIF';
     }
 
     private isPending(status?: string): boolean {

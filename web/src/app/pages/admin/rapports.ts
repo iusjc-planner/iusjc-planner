@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -82,6 +83,8 @@ import { NotificationService } from '../../core/services/notification.service';
     `
 })
 export class RapportsPage {
+    private readonly destroyRef = inject(DestroyRef);
+
     constructor(
         private reportService: ReportService,
         private notifications: NotificationService
@@ -127,14 +130,14 @@ export class RapportsPage {
     }
 
     generateReport(type: string): void {
-        this.reportService.generate({ type, format: 'pdf' }).subscribe({
+        this.reportService.generate({ type, format: 'pdf' }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (report) => {
                 if (!report.id) {
                     this.notifications.warn('Rapport genere', 'Le rapport a ete genere mais aucun identifiant de telechargement n a ete renvoye.');
                     return;
                 }
 
-                this.reportService.download(report.id).subscribe({
+                this.reportService.download(report.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
                     next: (file) => {
                         const blobUrl = URL.createObjectURL(file);
                         const anchor = document.createElement('a');

@@ -1,0 +1,203 @@
+version: '3.8'
+
+x-backend-common: &backend-common
+  build:
+    context: .
+    dockerfile: Dockerfile.backend
+  environment:
+    - DB_HOST=mysql-db
+    - DB_PORT=3306
+    - EUREKA_HOST=iusj-eureka-service
+    - EUREKA_PORT=8761
+  depends_on:
+    mysql-db:
+      condition: service_healthy
+    iusj-eureka-service:
+      condition: service_started
+  networks:
+    - iusj-network
+
+services:
+  mysql-db:
+    image: mysql:8.0
+    container_name: iusj-mysql
+    restart: always
+    environment:
+      MYSQL_DATABASE: bd_tutore
+      MYSQL_ROOT_PASSWORD: tenzo
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - iusj-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 10s
+      retries: 5
+
+  # Registry
+  iusj-eureka-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-eureka-service
+    container_name: iusj-eureka-service
+    ports:
+      - "8761:8761"
+    environment:
+      - EUREKA_HOST=iusj-eureka-service
+    networks:
+      - iusj-network
+
+  # Core Services
+  iusj-auth-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-auth-service
+
+  iusj-course-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-course-service
+
+  iusj-event-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-event-service
+
+  iusj-group-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-group-service
+
+  iusj-notification-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-notification-service
+
+  iusj-report-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-report-service
+    environment:
+      - DB_HOST=mysql-db
+      - DB_PORT=3306
+      - EUREKA_HOST=iusj-eureka-service
+      - REPORT_STORAGE_PATH=/tmp/reports
+    volumes:
+      - iusj_reports:/tmp/reports
+
+  iusj-resource-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-resource-service
+
+  iusj-room-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-room-service
+
+  iusj-schedule-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-schedule-service
+
+  iusj-school-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-school-service
+
+  iusj-student-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-student-service
+
+  iusj-teacher-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-teacher-service
+
+  iusj-user-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-user-service
+
+  # Gateway (Needs to be started after Eureka)
+  iusj-gateway-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-gateway-service
+    container_name: iusj-gateway-service
+    ports:
+      - "8080:8080"
+    depends_on:
+      iusj-auth-service:
+        condition: service_started
+      iusj-user-service:
+        condition: service_started
+    # (other services are accessed via LB, so just need eureka to route)
+
+  # Frontend Angular
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: iusj-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - iusj-gateway-service
+    networks:
+      - iusj-network
+
+networks:
+  iusj-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  iusj_reports:

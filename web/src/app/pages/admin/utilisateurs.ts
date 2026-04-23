@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
@@ -243,6 +244,7 @@ export class UtilisateursPage {
 
     selectedUtilisateur: Utilisateur = this.getEmptyUtilisateur();
     private allUtilisateurs: Utilisateur[] = [];
+    private readonly destroyRef = inject(DestroyRef);
 
     get utilisateurs(): Utilisateur[] {
         const term = this.searchValue.trim().toLowerCase();
@@ -330,6 +332,7 @@ export class UtilisateursPage {
 
         request$
             .pipe(
+                takeUntilDestroyed(this.destroyRef),
                 switchMap((savedUser) =>
                     this.syncTeacherProfileIfNeeded(savedUser, utilisateur.role).pipe(
                         catchError((error: unknown) => {
@@ -369,7 +372,7 @@ export class UtilisateursPage {
             return;
         }
 
-        this.userService.delete(this.selectedUtilisateur.id).subscribe({
+        this.userService.delete(this.selectedUtilisateur.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: () => {
                 this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Utilisateur supprime avec succes' });
                 this.displayDeleteDialog = false;
@@ -382,7 +385,7 @@ export class UtilisateursPage {
     }
 
     private loadSchools() {
-        this.schoolService.getAll().subscribe({
+        this.schoolService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (schools) => {
                 this.schoolOptions = schools
                     .map((school) => school.nom?.trim())
@@ -396,7 +399,7 @@ export class UtilisateursPage {
     }
 
     private loadUsers() {
-        this.userService.getAll().subscribe({
+        this.userService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (users) => {
                 this.allUtilisateurs = users.map((user) => this.fromApiUser(user));
             },

@@ -1,6 +1,25 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { TableModule } from 'primeng/table';
+import { catchError, forkJoin, of } from 'rxjs';
+import { ScheduleService } from '../../../core/services/schedule.service';
+import { CourseService } from '../../../core/services/course.service';
+import { TeacherService } from '../../../core/services/teacher.service';
+import { GroupService } from '../../../core/services/group.service';
+import { ScheduleEntry } from '../../../core/models/schedule.model';
+import { Course } from '../../../core/models/course.model';
+import { Teacher } from '../../../core/models/teacher.model';
+import { Group } from '../../../core/models/group.model';
+
+interface ActivityRow {
+    courseLabel: string;
+    teacherLabel: string;
+    groupLabel: string;
+    day: string;
+    startTime: string;
+    endTime: string;
+}
 
 @Component({
     standalone: true,
@@ -8,73 +27,73 @@ import { TableModule } from 'primeng/table';
     imports: [CommonModule, TableModule],
     template: `<div class="card">
         <h5 class="text-xl font-bold mb-4">Activités récentes</h5>
-        <p-table [value]="activities" [rows]="5" [paginator]="true" responsiveLayout="scroll">
+        <div *ngIf="loading" class="text-muted-color text-center py-3">Chargement des activités...</div>
+        <p-table *ngIf="!loading" [value]="activities" [rows]="5" [paginator]="activities.length > 5" responsiveLayout="scroll">
             <ng-template pTemplate="header">
                 <tr>
-                    <th pSortableColumn="type">Type <p-sortIcon field="type"></p-sortIcon></th>
-                    <th pSortableColumn="description">Description <p-sortIcon field="description"></p-sortIcon></th>
-                    <th pSortableColumn="date">Date <p-sortIcon field="date"></p-sortIcon></th>
-                    <th>Utilisateur</th>
+                    <th>Cours</th>
+                    <th>Enseignant</th>
+                    <th>Groupe</th>
+                    <th>Jour</th>
+                    <th>Horaire</th>
                 </tr>
             </ng-template>
             <ng-template pTemplate="body" let-activity>
                 <tr>
-                    <td>
-                        <span class="inline-flex items-center gap-2">
-                            <i [ngClass]="getActivityIcon(activity.type)" class="text-lg"></i>
-                            {{ activity.type }}
-                        </span>
-                    </td>
-                    <td>{{ activity.description }}</td>
-                    <td>{{ activity.date | date: 'dd/MM/yyyy HH:mm' }}</td>
-                    <td>{{ activity.user }}</td>
+                    <td>{{ activity.courseLabel }}</td>
+                    <td>{{ activity.teacherLabel }}</td>
+                    <td>{{ activity.groupLabel }}</td>
+                    <td>{{ activity.day }}</td>
+                    <td>{{ activity.startTime }} – {{ activity.endTime }}</td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td colspan="5" class="text-center text-muted-color py-4">Aucune activité récente</td>
                 </tr>
             </ng-template>
         </p-table>
     </div>`
 })
-export class RecentActivitiesWidget {
-    activities = [
-        {
-            type: 'Création',
-            description: 'Nouveau cours créé: Mathématiques L1',
-            date: new Date(2025, 1, 5, 14, 30),
-            user: 'Admin'
-        },
-        {
-            type: 'Modification',
-            description: 'Emploi du temps modifié pour M. Dupont',
-            date: new Date(2025, 1, 5, 13, 15),
-            user: 'Admin'
-        },
-        {
-            type: 'Réservation',
-            description: 'Salle A101 réservée pour TP Informatique',
-            date: new Date(2025, 1, 5, 11, 45),
-            user: 'Enseignant'
-        },
-        {
-            type: 'Alerte',
-            description: 'Conflit d\'horaire détecté',
-            date: new Date(2025, 1, 5, 10, 20),
-            user: 'Système'
-        },
-        {
-            type: 'Suppression',
-            description: 'Cours annulé: Physique L2',
-            date: new Date(2025, 1, 4, 16, 0),
-            user: 'Admin'
-        }
-    ];
+export class RecentActivitiesWidget implements OnInit {
+    private readonly scheduleService = inject(ScheduleService);
+    private readonly courseService = inject(CourseService);
+    private readonly teacherService = inject(TeacherService);
+    private readonly groupService = inject(GroupService);
+    private readonly destroyRef = inject(DestroyRef);
 
-    getActivityIcon(type: string): string {
-        const icons: { [key: string]: string } = {
-            'Création': 'pi pi-plus-circle text-green-500',
-            'Modification': 'pi pi-pencil text-blue-500',
-            'Réservation': 'pi pi-calendar text-orange-500',
-            'Alerte': 'pi pi-exclamation-circle text-red-500',
-            'Suppression': 'pi pi-trash text-red-600'
-        };
-        return icons[type] || 'pi pi-circle';
+    loading = true;
+    activities: ActivityRow[] = [];
+
+    ngOnInit(): void {
+        forkJoin({
+            schedule: this.scheduleService.getAll().pipe(catchError(() => of<ScheduleEntry[]>([]))),
+            courses: this.courseService.getAll().pipe(catchError(() => of<Course[]>([]))),
+            teachers: this.teacherService.getAll().pipe(catchError(() => of<Teacher[]>([]))),
+            groups: this.groupService.getAll().pipe(catchError(() => of<Group[]>([])))
+        })
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(({ schedule, courses, teachers, groups }) => {
+                const courseMap = new Map<number, string>(
+                    courses.map((c) => [c.id!, c.nom || c.title || `Cours #${c.id}`])
+                );
+                const teacherMap = new Map<number, string>(
+                    teachers.map((t) => [t.id!, [t.prenom, t.nom].filter(Boolean).join(' ') || `Enseignant #${t.id}`])
+                );
+                const groupMap = new Map<number, string>(
+                    groups.map((g) => [g.id!, g.nom || `Groupe #${g.id}`])
+                );
+
+                this.activities = schedule.slice(0, 5).map((entry) => ({
+                    courseLabel: entry.courseId ? (courseMap.get(entry.courseId) ?? `Cours #${entry.courseId}`) : '—',
+                    teacherLabel: entry.teacherId ? (teacherMap.get(entry.teacherId) ?? `Enseignant #${entry.teacherId}`) : '—',
+                    groupLabel: entry.groupId ? (groupMap.get(entry.groupId) ?? `Groupe #${entry.groupId}`) : '—',
+                    day: entry.day,
+                    startTime: entry.startTime,
+                    endTime: entry.endTime
+                }));
+
+                this.loading = false;
+            });
     }
 }

@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { FormsModule } from '@angular/forms';
@@ -158,6 +159,7 @@ export class NotificationsPage {
 
     notificationsList: AppNotification[] = [];
     loading = false;
+    private readonly destroyRef = inject(DestroyRef);
 
     constructor(
         private notificationApiService: NotificationApiService,
@@ -170,7 +172,7 @@ export class NotificationsPage {
 
     private loadNotifications() {
         this.loading = true;
-        this.notificationApiService.getAll().subscribe({
+        this.notificationApiService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (notifications) => {
                 this.notificationsList = notifications;
                 this.loading = false;
@@ -187,7 +189,7 @@ export class NotificationsPage {
             return;
         }
 
-        this.notificationApiService.markAsRead(notification.id).subscribe({
+        this.notificationApiService.markAsRead(notification.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: () => {
                 notification.lu = true;
                 this.notificationService.info('Succes', 'Notification marquee comme lue');
@@ -199,7 +201,7 @@ export class NotificationsPage {
     }
 
     markAllAsRead() {
-        this.notificationApiService.markAllAsRead().subscribe({
+        this.notificationApiService.markAllAsRead().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: () => {
                 this.notificationsList = this.notificationsList.map((item) => ({ ...item, lu: true }));
                 this.notificationService.info('Succes', 'Toutes les notifications sont marquees comme lues');
@@ -215,7 +217,7 @@ export class NotificationsPage {
             return;
         }
 
-        this.notificationApiService.delete(notification.id).subscribe({
+        this.notificationApiService.delete(notification.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: () => {
                 this.notificationsList = this.notificationsList.filter((item) => item.id !== notification.id);
                 this.notificationService.info('Succes', 'Notification supprimee');
