@@ -72,7 +72,7 @@ services:
       - "8080:8080"
     depends_on:
       eureka:
-        condition: service_healthy
+        condition: service_started
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka/
@@ -104,7 +104,7 @@ services:
       mysql:
         condition: service_healthy
       eureka:
-        condition: service_healthy
+        condition: service_started
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${DB_NAME}
