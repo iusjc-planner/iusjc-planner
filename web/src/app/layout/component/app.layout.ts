@@ -1,7 +1,8 @@
-import { Component, Renderer2, ViewChild } from '@angular/core';
+import { Component, Renderer2, ViewChild, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
-import { filter, Subscription } from 'rxjs';
+import { filter } from 'rxjs';
 import { AppTopbar } from './app.topbar';
 import { AppSidebar } from './app.sidebar';
 import { AppFooter } from './app.footer';
@@ -24,8 +25,7 @@ import { LayoutService } from '../service/layout.service';
     </div> `
 })
 export class AppLayout {
-    overlayMenuOpenSubscription: Subscription;
-
+    private readonly destroyRef = inject(DestroyRef);
     menuOutsideClickListener: any;
 
     @ViewChild(AppSidebar) appSidebar!: AppSidebar;
@@ -37,7 +37,7 @@ export class AppLayout {
         public renderer: Renderer2,
         public router: Router
     ) {
-        this.overlayMenuOpenSubscription = this.layoutService.overlayOpen$.subscribe(() => {
+        this.layoutService.overlayOpen$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
             if (!this.menuOutsideClickListener) {
                 this.menuOutsideClickListener = this.renderer.listen('document', 'click', (event) => {
                     if (this.isOutsideClicked(event)) {
@@ -51,7 +51,7 @@ export class AppLayout {
             }
         });
 
-        this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe(() => {
+        this.router.events.pipe(filter((event) => event instanceof NavigationEnd), takeUntilDestroyed(this.destroyRef)).subscribe(() => {
             this.hideMenu();
         });
     }
@@ -100,10 +100,6 @@ export class AppLayout {
     }
 
     ngOnDestroy() {
-        if (this.overlayMenuOpenSubscription) {
-            this.overlayMenuOpenSubscription.unsubscribe();
-        }
-
         if (this.menuOutsideClickListener) {
             this.menuOutsideClickListener();
         }

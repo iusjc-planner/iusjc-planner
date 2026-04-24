@@ -42,13 +42,14 @@ class ResourceReservationServiceTest {
     void setUp() {
         resource = new Resource();
         resource.setId(10L);
-        resource.setStatus(Resource.Status.ACTIVE);
-        resource.setQuantityTotal(5);
+        resource.setNom("Projecteur");
+        resource.setStatut(Resource.StatutRessource.DISPONIBLE);
+        resource.setQuantite(5);
 
         request = new ReservationRequest();
         request.setDate(LocalDate.of(2026, 3, 25));
         request.setHeureDebut(LocalTime.of(14, 0));
-        request.setDuree(120);
+        request.setHeureFin(LocalTime.of(16, 0));
         request.setQuantite(2);
         request.setMotif("Cours");
     }
@@ -56,10 +57,10 @@ class ResourceReservationServiceTest {
     @Test
     void reserve_ShouldCreateReservation_WhenQuantityAvailable() {
         when(resourceRepository.findById(10L)).thenReturn(Optional.of(resource));
-        when(reservationRepository.findActiveReservations(10L, List.of(ResourceReservation.ReservationStatus.CONFIRMED, ResourceReservation.ReservationStatus.PENDING)))
+        when(reservationRepository.findConflictingReservations(any(), any(), any(), any(), any()))
                 .thenReturn(List.of());
-        when(reservationRepository.findConflictingReservations(any(), any(), any(), any(), any())).thenReturn(List.of());
-        when(reservationRepository.save(any(ResourceReservation.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(reservationRepository.save(any(ResourceReservation.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         ResourceReservation reservation = service.reserve(10L, request, 99L);
 
@@ -82,10 +83,10 @@ class ResourceReservationServiceTest {
         ResourceReservation existing = new ResourceReservation();
         existing.setDate(request.getDate());
         existing.setHeureDebut(request.getHeureDebut());
-        existing.setDuree(120);
-        existing.setQuantite(4);
+        existing.setHeureFin(request.getHeureFin());
+        existing.setQuantite(4); // 4 déjà réservés sur 5 disponibles, on demande 2 -> insuffisant
 
-        when(reservationRepository.findActiveReservations(10L, List.of(ResourceReservation.ReservationStatus.CONFIRMED, ResourceReservation.ReservationStatus.PENDING)))
+        when(reservationRepository.findConflictingReservations(any(), any(), any(), any(), any()))
                 .thenReturn(List.of(existing));
 
         assertThrows(IllegalArgumentException.class, () -> service.reserve(10L, request, 1L));

@@ -42,14 +42,16 @@ export class AppMenu {
                         { label: 'Matieres', icon: 'pi pi-fw pi-bookmark', routerLink: ['/pages/admin/matieres'] },
                         { label: 'Cours', icon: 'pi pi-fw pi-book', routerLink: ['/pages/admin/cours'] },
                         { label: 'Salles', icon: 'pi pi-fw pi-building', routerLink: ['/pages/admin/salles'] },
-                        { label: 'Ressources', icon: 'pi pi-fw pi-server', routerLink: ['/pages/admin/ressources'] }
+                        { label: 'Ressources', icon: 'pi pi-fw pi-server', routerLink: ['/pages/admin/ressources'] },
+                        { label: 'Enseignants', icon: 'pi pi-fw pi-graduation-cap', routerLink: ['/pages/admin/enseignants'] }
                     ]
                 },
                 {
                     label: 'Planification',
                     items: [
                         { label: 'Emplois du temps', icon: 'pi pi-fw pi-calendar', routerLink: ['/pages/admin/emploi-du-temps'] },
-                        { label: 'Événements', icon: 'pi pi-fw pi-calendar-plus', routerLink: ['/pages/admin/evenements'] },
+                        { label: 'Calendrier visuel', icon: 'pi pi-fw pi-calendar-times', routerLink: ['/pages/admin/calendrier'] },
+                        { label: 'Evenements', icon: 'pi pi-fw pi-calendar-plus', routerLink: ['/pages/admin/evenements'] },
                         { label: 'Examens', icon: 'pi pi-fw pi-check-square', routerLink: ['/pages/admin/examens'] }
                     ]
                 },

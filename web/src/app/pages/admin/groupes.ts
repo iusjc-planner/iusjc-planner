@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -140,6 +141,7 @@ export class GroupesPage {
 
     private rawGroupes: Group[] = [];
     private allGroupes: GroupeItem[] = [];
+    private readonly destroyRef = inject(DestroyRef);
 
     constructor(
         private readonly messageService: MessageService,
@@ -191,7 +193,7 @@ export class GroupesPage {
             schoolId: this.createForm.schoolId
         };
 
-        this.groupService.create(payload).subscribe({
+        this.groupService.create(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: () => {
                 this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Groupe cree avec succes' });
                 this.displayCreateDialog = false;
@@ -224,7 +226,7 @@ export class GroupesPage {
             return;
         }
 
-        this.groupService.delete(groupe.id).subscribe({
+        this.groupService.delete(groupe.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: () => {
                 this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Groupe supprime avec succes' });
                 this.loadGroupes();
@@ -236,7 +238,7 @@ export class GroupesPage {
     }
 
     private loadSchools() {
-        this.schoolService.getAll().subscribe({
+        this.schoolService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (schools) => {
                 this.schools = schools;
                 this.schoolSelectOptions = schools
@@ -251,7 +253,7 @@ export class GroupesPage {
     }
 
     private loadGroupes() {
-        this.groupService.getAll().subscribe({
+        this.groupService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (groupes) => {
                 this.rawGroupes = groupes;
                 this.remapGroups();

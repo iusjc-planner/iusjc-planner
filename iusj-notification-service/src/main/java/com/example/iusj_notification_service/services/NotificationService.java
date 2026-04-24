@@ -2,6 +2,7 @@ package com.example.iusj_notification_service.services;
 
 import com.example.iusj_notification_service.dto.UserSummary;
 import com.example.iusj_notification_service.entities.Notification;
+import com.example.iusj_notification_service.entities.NotificationType;
 import com.example.iusj_notification_service.repositories.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,8 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final RestTemplate restTemplate;
+    private final EmailService emailService;
+    private final SmsService smsService;
 
     @Transactional(readOnly = true)
     public List<Notification> getAll(Long userId) {
@@ -95,6 +98,43 @@ public class NotificationService {
         }
 
         return notificationRepository.saveAll(notifications);
+    }
+
+    /**
+     * Envoie une notification de changement d'EDT avec email + SMS.
+     */
+    public void notifyScheduleChange(Long userId, String details) {
+        Notification notif = new Notification();
+        notif.setType(NotificationType.SCHEDULE_CHANGE);
+        notif.setContenu("Votre emploi du temps a ete modifie. " + details);
+        notif.setUserId(userId);
+        notif.setSourceType("EDT");
+        create(notif);
+
+        // Email + SMS
+        UserSummary user = fetchUserSummary(userId);
+        if (user != null) {
+            String name = (user.getPrenom() != null ? user.getPrenom() : "") + " " + (user.getNom() != null ? user.getNom() : "");
+            if (user.getEmail() != null && !user.getEmail().isBlank()) {
+                emailService.sendScheduleChangeNotification(user.getEmail(), name.trim(), details);
+            }
+            if (user.getTelephone() != null && !user.getTelephone().isBlank()) {
+                smsService.sendScheduleChange(user.getTelephone(), details);
+            }
+        }
+    }
+
+    private UserSummary fetchUserSummary(Long userId) {
+        try {
+            UserSummary[] users = restTemplate.getForObject("http://iusj-user-service/api/users", UserSummary[].class);
+            if (users == null) return null;
+            for (UserSummary u : users) {
+                if (u != null && userId.equals(u.getId())) return u;
+            }
+        } catch (Exception e) {
+            // service indisponible
+        }
+        return null;
     }
 
     private List<Long> resolveRecipients(List<Long> providedUserIds) {

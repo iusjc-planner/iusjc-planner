@@ -5,4 +5,8 @@ import lombok.Data;
 @Data
 public class UserSummary {
     private Long id;
+    private String nom;
+    private String prenom;
+    private String email;
+    private String telephone;
 }

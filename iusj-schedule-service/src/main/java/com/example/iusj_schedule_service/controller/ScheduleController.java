@@ -105,6 +105,25 @@ public class ScheduleController {
         }
     }
 
+    /**
+     * Suggère des salles adaptées au type de cours (CM -> AUDITORIUM, TD -> CLASSROOM, TP -> LAB).
+     */
+    @GetMapping("/suggest-rooms-by-type")
+    public ResponseEntity<?> suggestRoomsByCourseType(
+            @RequestParam(required = false) String courseType,
+            @RequestParam(required = false) Integer effectif,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime time,
+            @RequestParam Integer duration) {
+        try {
+            LocalDateTime start = LocalDateTime.of(date, time);
+            List<ScheduleService.SuggestedRoom> suggestions = service.getSuggestedRoomsByCourseType(courseType, effectif, start, duration);
+            return ResponseEntity.ok(suggestions);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+        }
+    }
+
     @GetMapping("/validate-capacity")
     public ResponseEntity<Map<String, Object>> validateCapacity(
             @RequestParam Long roomId,

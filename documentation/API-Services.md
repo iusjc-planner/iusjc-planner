@@ -1,6 +1,6 @@
 # API Services - Etat transversal
 
-Date de mise a jour: 25 Mars 2026  
+Date de mise a jour: 23 Avril 2026  
 Portee: APIs backend via Gateway
 
 ---
@@ -21,9 +21,9 @@ Portee: APIs backend via Gateway
 | Users | `/api/users/*` | Operationnel | CRUD + checks login/email |
 | Teachers | `/api/teachers/*` | Operationnel | CRUD + disponibilites + import ICS |
 | Schools | `/api/schools/*` | Operationnel | CRUD + stats + filieres |
-| Groups | `/api/groups/*` | Partiel | CRUD OK, relation filiere a completer |
+| Groups | `/api/groups/*` | Operationnel | CRUD + stats + split/subgroups + filiere |
 | Rooms | `/api/rooms/*` | Operationnel | CRUD + reservations |
-| Courses | `/api/courses/*` | Operationnel | CRUD + filtres |
+| Courses | `/api/courses/*` | Operationnel | CRUD + filtres + school + prerequisites |
 | Schedule | `/api/schedule/*` | Partiel | CRUD + conflits OK, publication/export a completer |
 | Students | `/api/students/*` | Operationnel | CRUD + lien groupes |
 | Resources | `/api/resources/*` | Partiel | CRUD OK, reservation equipements a completer |
@@ -79,6 +79,9 @@ Portee: APIs backend via Gateway
 - `PUT /api/groups/{id}`
 - `DELETE /api/groups/{id}`
 - `GET /api/groups/stats`
+- `POST /api/groups/{id}/split`
+- `GET /api/groups/{id}/subgroups`
+- `GET /api/groups/filiere/{filiereId}`
 
 ## 3.6 Rooms
 
@@ -99,7 +102,49 @@ Portee: APIs backend via Gateway
 - `POST /api/courses`
 - `PUT /api/courses/{id}`
 - `DELETE /api/courses/{id}`
+- `GET /api/courses/matiere/{matiereId}`
+- `GET /api/courses/school/{schoolId}`
+- `GET /api/courses/school/{schoolId}/filiere/{filiereId}`
+- `GET /api/courses/date/{date}`
+- `GET /api/courses/date-range?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD`
+- `GET /api/courses/teacher/{teacherId}/date/{date}`
+- `GET /api/courses/room/{roomId}/date/{date}`
+- `GET /api/courses/{id}/prerequisites`
+- `PUT /api/courses/{id}/prerequisites`
 - `GET /api/courses/stats`
+
+Exemple request creation:
+
+```json
+{
+	"matiereId": 17,
+	"date": "2026-05-10",
+	"startTime": "09:00",
+	"endTime": "11:00",
+	"type": "CM",
+	"roomId": 7,
+	"teacherId": 5,
+	"groupId": 9
+}
+```
+
+Exemple request mise a jour des prerequis:
+
+```json
+[12, 18, 24]
+```
+
+Exemple lecture affectation ecole/filiere:
+
+`GET /api/courses/school/3/filiere/4`
+
+Codes de reponse usuels (Courses):
+
+- `200 OK`: lecture/creation/mise a jour reussie
+- `204 No Content`: suppression reussie
+- `400 Bad Request`: charge invalide (ex: cours auto-reference en prerequis)
+- `404 Not Found`: ressource absente (cours ou prerequis introuvable)
+- `500 Internal Server Error`: erreur technique non geree
 
 ## 3.8 Schedule
 
@@ -109,6 +154,9 @@ Portee: APIs backend via Gateway
 - `PUT /api/schedule/{id}`
 - `DELETE /api/schedule/{id}`
 - `GET /api/schedule/stats`
+- `POST /api/schedule/validate`
+- `GET /api/schedule/suggest-rooms`
+- `GET /api/schedule/validate-capacity`
 - `POST /api/schedule/generate` (selon implementation)
 
 ## 3.9 Students

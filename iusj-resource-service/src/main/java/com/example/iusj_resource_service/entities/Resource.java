@@ -1,14 +1,6 @@
 package com.example.iusj_resource_service.entities;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -17,19 +9,21 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
-@Table(name = "resources", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_resource_name", columnNames = "name")
-})
+@Table(name = "ressources")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Resource {
 
-    public enum Status {
-        ACTIVE,
-        INACTIVE,
-        MAINTENANCE
+    public enum TypeRessource {
+        PROJECTEUR, ORDINATEUR, MATERIEL, AUTRE
+    }
+
+    public enum StatutRessource {
+        DISPONIBLE, RESERVE, MAINTENANCE
     }
 
     @Id
@@ -37,30 +31,39 @@ public class Resource {
     private Long id;
 
     @NotBlank
-    @Size(max = 150)
-    private String name;
-
-    @NotBlank
-    @Size(max = 100)
-    private String type;
-
-    @NotNull
-    @Min(0)
-    @Column(name = "quantity_total")
-    private Integer quantityTotal;
-
-    @NotNull
-    @Min(0)
-    @Column(name = "quantity_available")
-    private Integer quantityAvailable;
-
     @Size(max = 255)
-    private String location;
-
-    @Size(max = 500)
-    private String description;
+    private String nom;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20)
-    private Status status = Status.ACTIVE;
+    private TypeRessource type;
+
+    @NotNull
+    @Min(1)
+    private Integer quantite;
+
+    @Size(max = 255)
+    private String localisation;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private StatutRessource statut = StatutRessource.DISPONIBLE;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    public void prePersist() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+        if (statut == null) statut = StatutRessource.DISPONIBLE;
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

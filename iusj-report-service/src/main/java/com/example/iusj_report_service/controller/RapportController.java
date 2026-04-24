@@ -150,6 +150,18 @@ public class RapportController {
         return Map.of("deleted", deleted);
     }
 
+    /**
+     * Stats rapides pour le dashboard (sans génération de fichier).
+     */
+    @GetMapping("/dashboard-stats")
+    public Map<String, Object> dashboardStats(
+            @RequestHeader("X-User-Role") String role) {
+        assertAdmin(role);
+        LocalDate from = LocalDate.now().minusDays(30);
+        LocalDate to = LocalDate.now();
+        return rapportService.getDashboardStats(from, to);
+    }
+
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<String> handleNotFound(EntityNotFoundException ex) {
         return ResponseEntity.status(404).body(ex.getMessage());

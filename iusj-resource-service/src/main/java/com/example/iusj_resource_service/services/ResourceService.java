@@ -1,17 +1,14 @@
 package com.example.iusj_resource_service.services;
 
-import java.util.Optional;
-import java.util.List;
-
+import com.example.iusj_resource_service.entities.Resource;
+import com.example.iusj_resource_service.repositories.ResourceRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.iusj_resource_service.entities.Resource;
-import com.example.iusj_resource_service.repositories.ResourceRepository;
-
-import jakarta.persistence.EntityNotFoundException;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -23,9 +20,11 @@ public class ResourceService {
         this.repository = repository;
     }
 
-    public List<Resource> getAll(String name, String type, Resource.Status status) {
-        Specification<Resource> spec = ResourceSpecifications.withFilters(name, type, status);
-        return repository.findAll(spec, Sort.by(Sort.Direction.ASC, "name"));
+    public List<Resource> getAll(String nom, Resource.TypeRessource type, Resource.StatutRessource statut) {
+        return repository.findAll(
+                ResourceSpecifications.withFilters(nom, type, statut),
+                Sort.by(Sort.Direction.ASC, "nom")
+        );
     }
 
     public Optional<Resource> getById(Long id) {
@@ -33,8 +32,8 @@ public class ResourceService {
     }
 
     public Resource create(Resource resource) {
-        if (resource.getQuantityAvailable() == null) {
-            resource.setQuantityAvailable(resource.getQuantityTotal());
+        if (resource.getStatut() == null) {
+            resource.setStatut(Resource.StatutRessource.DISPONIBLE);
         }
         return repository.save(resource);
     }
@@ -42,9 +41,7 @@ public class ResourceService {
     public Optional<Resource> update(Long id, Resource resource) {
         return repository.findById(id).map(existing -> {
             resource.setId(id);
-            if (resource.getQuantityAvailable() == null) {
-                resource.setQuantityAvailable(resource.getQuantityTotal());
-            }
+            resource.setCreatedAt(existing.getCreatedAt());
             return repository.save(resource);
         });
     }
@@ -56,12 +53,13 @@ public class ResourceService {
         repository.deleteById(id);
     }
 
-    public ResourceStats stats() {
+    public ResourceStats getStats() {
         long total = repository.count();
-        long active = repository.countByStatus(Resource.Status.ACTIVE);
-        long inactive = repository.countByStatus(Resource.Status.INACTIVE);
-        return new ResourceStats(total, active, inactive);
+        long disponible = repository.countByStatut(Resource.StatutRessource.DISPONIBLE);
+        long reserve = repository.countByStatut(Resource.StatutRessource.RESERVE);
+        long maintenance = repository.countByStatut(Resource.StatutRessource.MAINTENANCE);
+        return new ResourceStats(total, disponible, reserve, maintenance);
     }
 
-    public record ResourceStats(long total, long active, long inactive) {}
+    public record ResourceStats(long total, long disponible, long reserve, long maintenance) {}
 }

@@ -33,32 +33,31 @@ class ResourceServiceTest {
     void setUp() {
         resource = new Resource();
         resource.setId(1L);
-        resource.setName("Projecteur");
-        resource.setType("VIDEO");
-        resource.setQuantityTotal(5);
-        resource.setQuantityAvailable(null);
-        resource.setStatus(Resource.Status.ACTIVE);
+        resource.setNom("Projecteur");
+        resource.setType(Resource.TypeRessource.PROJECTEUR);
+        resource.setQuantite(5);
+        resource.setStatut(Resource.StatutRessource.DISPONIBLE);
     }
 
     @Test
-    void create_ShouldDefaultQuantityAvailableToQuantityTotal_WhenNull() {
+    void create_ShouldDefaultStatutToDisponible_WhenNull() {
+        resource.setStatut(null);
         when(repository.save(any(Resource.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Resource created = service.create(resource);
 
-        assertEquals(5, created.getQuantityAvailable());
+        assertEquals(Resource.StatutRessource.DISPONIBLE, created.getStatut());
         verify(repository).save(resource);
     }
 
     @Test
-    void update_ShouldSetIdAndDefaultQuantityAvailable_WhenFound() {
+    void update_ShouldSetIdAndSave_WhenFound() {
         when(repository.findById(1L)).thenReturn(Optional.of(new Resource()));
         when(repository.save(any(Resource.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Resource updated = service.update(1L, resource).orElseThrow();
 
         assertEquals(1L, updated.getId());
-        assertEquals(5, updated.getQuantityAvailable());
     }
 
     @Test

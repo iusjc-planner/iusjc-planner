@@ -26,6 +26,10 @@ export class ReportService {
         return this.http.get(`${this.endpoint}/${reportId}/download`, { responseType: 'blob' });
     }
 
+    getDashboardStats(): Observable<Record<string, unknown>> {
+        return this.http.get<Record<string, unknown>>(`${this.endpoint}/dashboard-stats`);
+    }
+
     private validatePayload(payload: ReportRequest): string | null {
         if (!payload.type?.trim()) {
             return 'Le type de rapport est obligatoire';

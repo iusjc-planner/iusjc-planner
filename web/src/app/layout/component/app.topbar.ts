@@ -1,4 +1,5 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MenuItem } from 'primeng/api';
 import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -92,6 +93,7 @@ export class AppTopbar implements OnInit, OnDestroy {
     items!: MenuItem[];
     unreadCount = 0;
     private refreshHandle: ReturnType<typeof setInterval> | null = null;
+    private readonly destroyRef = inject(DestroyRef);
 
     constructor(
         public layoutService: LayoutService,
@@ -129,7 +131,7 @@ export class AppTopbar implements OnInit, OnDestroy {
     }
 
     private loadUnreadCount() {
-        this.notificationApiService.getAll().subscribe({
+        this.notificationApiService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (notifications) => {
                 this.unreadCount = notifications.filter((item) => !item.lu).length;
             },

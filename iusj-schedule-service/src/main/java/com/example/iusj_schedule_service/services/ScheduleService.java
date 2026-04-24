@@ -214,6 +214,33 @@ public class ScheduleService {
         return suggestions;
     }
 
+    /**
+     * Suggère des salles adaptées au type de cours (CM -> AUDITORIUM, TD -> CLASSROOM, TP -> LAB).
+     */
+    public List<SuggestedRoom> getSuggestedRoomsByCourseType(String courseType, Integer effectif, LocalDateTime startTime, Integer durationMinutes) {
+        if (startTime == null) throw new IllegalArgumentException("date/time are required");
+        if (durationMinutes == null || durationMinutes < 15) throw new IllegalArgumentException("duration must be at least 15 minutes");
+
+        LocalDateTime endTime = startTime.plusMinutes(durationMinutes);
+        List<RoomServiceClient.RoomSummary> rooms = roomServiceClient.getRoomsByCourseType(courseType, effectif);
+        List<SuggestedRoom> suggestions = new ArrayList<>();
+
+        for (RoomServiceClient.RoomSummary room : rooms) {
+            if (room.status() != null && !"ACTIVE".equalsIgnoreCase(room.status())) continue;
+
+            boolean occupied = repository.existsByRoomIdAndStatusNotAndStartTimeLessThanAndEndTimeGreaterThan(
+                    room.id(), ScheduleEntry.Status.CANCELLED, startTime, endTime);
+
+            suggestions.add(new SuggestedRoom(
+                    room.id(), room.name(), room.capacity(), !occupied,
+                    occupied ? "Occupee sur ce creneau" : "Disponible"
+            ));
+        }
+
+        suggestions.sort(Comparator.comparing(SuggestedRoom::capacity, Comparator.nullsLast(Integer::compareTo)));
+        return suggestions;
+    }
+
     private void validateTimeRange(LocalDateTime start, LocalDateTime end) {
         if (start == null || end == null || !end.isAfter(start)) {
             throw new IllegalArgumentException("Invalid time range");

@@ -1,8 +1,12 @@
 package com.example.iusj_course_service.services;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -41,6 +45,43 @@ public class CourseService {
         return courseRepository.findByMatiereId(matiereId);
     }
 
+    public List<Course> getBySchool(Long schoolId) {
+        List<Long> matiereIds = matiereRepository.findBySchoolId(schoolId).stream()
+                .map(Matiere::getId)
+                .filter(id -> id != null)
+                .collect(Collectors.toList());
+        if (matiereIds.isEmpty()) {
+            return List.of();
+        }
+        return courseRepository.findByMatiereIdInOrderByDateAscStartTimeAsc(matiereIds);
+    }
+
+    public List<Course> getBySchoolAndFiliere(Long schoolId, Long filiereId) {
+        Set<Long> schoolMatiereIds = matiereRepository.findBySchoolId(schoolId).stream()
+                .map(Matiere::getId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+        if (schoolMatiereIds.isEmpty()) {
+            return List.of();
+        }
+
+        Set<Long> filiereMatiereIds = matiereRepository.findByFiliereId(filiereId).stream()
+                .map(Matiere::getId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+        if (filiereMatiereIds.isEmpty()) {
+            return List.of();
+        }
+
+        Set<Long> intersection = new HashSet<>(schoolMatiereIds);
+        intersection.retainAll(filiereMatiereIds);
+        if (intersection.isEmpty()) {
+            return List.of();
+        }
+
+        return courseRepository.findByMatiereIdInOrderByDateAscStartTimeAsc(intersection.stream().toList());
+    }
+
     public List<Course> getByDate(LocalDate date) {
         return courseRepository.findByDate(date);
     }
@@ -59,6 +100,39 @@ public class CourseService {
 
     public Optional<Course> getById(Long id) {
         return courseRepository.findById(id);
+    }
+
+    public List<Course> getPrerequisites(Long courseId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new EntityNotFoundException("Séance non trouvée avec l'id " + courseId));
+        Set<Long> prerequisiteIds = course.getPrerequisiteCourseIds();
+        if (prerequisiteIds == null || prerequisiteIds.isEmpty()) {
+            return List.of();
+        }
+        return courseRepository.findAllById(prerequisiteIds).stream()
+                .sorted((a, b) -> a.getId().compareTo(b.getId()))
+                .collect(Collectors.toList());
+    }
+
+    public Course updatePrerequisites(Long courseId, List<Long> prerequisiteIds) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new EntityNotFoundException("Séance non trouvée avec l'id " + courseId));
+
+        Set<Long> requestedIds = (prerequisiteIds == null ? List.<Long>of() : prerequisiteIds).stream()
+                .filter(id -> id != null)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        if (requestedIds.contains(courseId)) {
+            throw new IllegalArgumentException("Un cours ne peut pas être son propre prérequis");
+        }
+
+        List<Course> prerequisites = courseRepository.findAllById(requestedIds);
+        if (prerequisites.size() != requestedIds.size()) {
+            throw new EntityNotFoundException("Un ou plusieurs cours prérequis sont introuvables");
+        }
+
+        course.setPrerequisiteCourseIds(requestedIds);
+        return courseRepository.save(course);
     }
 
     public Course create(Course course) {
