@@ -1,0 +1,445 @@
+
+services:
+  # ============================================
+  # DATABASE
+  # ============================================
+  mysql:
+    image: mysql:8.0
+    container_name: iusj-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: iusj_user
+      MYSQL_PASSWORD: iusj_password
+    ports:
+      - "${DB_PORT}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./documentation/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iusj-network
+
+  # ============================================
+  # SERVICE DISCOVERY (EUREKA)
+  # ============================================
+  eureka:
+    build:
+      context: ./iusj-eureka-service
+      dockerfile: Dockerfile
+    container_name: iusj-eureka
+    ports:
+      - "${EUREKA_PORT}:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_INSTANCE_HOSTNAME=eureka
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=false
+      - EUREKA_CLIENT_FETCH_REGISTRY=false
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - iusj-network
+
+  # ============================================
+  # API GATEWAY
+  # ============================================
+  gateway:
+    build:
+      context: ./iusj-gateway-service
+      dockerfile: Dockerfile
+    container_name: iusj-gateway
+    ports:
+      - "${GATEWAY_PORT}:8080"
+    depends_on:
+      eureka:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_INSTANCE_HOSTNAME=gateway
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - iusj-network
+
+  # ============================================
+  # AUTHENTICATION SERVICE
+  # ============================================
+  auth-service:
+    build:
+      context: ./iusj-auth-service
+      dockerfile: Dockerfile
+    container_name: iusj-auth-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_INSTANCE_HOSTNAME=auth-service
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION}
+    ports:
+      - "${AUTH_SERVICE_PORT}:8082"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - iusj-network
+
+  # ============================================
+  # USER SERVICE
+  # ============================================
+  user-service:
+    build:
+      context: ./iusj-user-service
+      dockerfile: Dockerfile
+    container_name: iusj-user-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_INSTANCE_HOSTNAME=user-service
+    ports:
+      - "${USER_SERVICE_PORT}:8081"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - iusj-network
+
+  # ============================================
+  # TEACHER SERVICE
+  # ============================================
+  teacher-service:
+    build:
+      context: ./iusj-teacher-service
+      dockerfile: Dockerfile
+    container_name: iusj-teacher-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_INSTANCE_HOSTNAME=teacher-service
+    ports:
+      - "${TEACHER_SERVICE_PORT}:8083"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - iusj-network
+
+  # ============================================
+  # ROOM SERVICE
+  # ============================================
+  room-service:
+    build:
+      context: ./iusj-room-service
+      dockerfile: Dockerfile
+    container_name: iusj-room-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_INSTANCE_HOSTNAME=room-service
+    ports:
+      - "${ROOM_SERVICE_PORT}:8084"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - iusj-network
+
+  # ============================================
+  # COURSE SERVICE
+  # ============================================
+  course-service:
+    build:
+      context: ./iusj-course-service
+      dockerfile: Dockerfile
+    container_name: iusj-course-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_INSTANCE_HOSTNAME=course-service
+    ports:
+      - "${COURSE_SERVICE_PORT}:8085"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - iusj-network
+
+  # ============================================
+  # SCHEDULE SERVICE
+  # ============================================
+  schedule-service:
+    build:
+      context: ./iusj-schedule-service
+      dockerfile: Dockerfile
+    container_name: iusj-schedule-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_INSTANCE_HOSTNAME=schedule-service
+    ports:
+      - "${SCHEDULE_SERVICE_PORT}:8086"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - iusj-network
+
+  # ============================================
+  # SCHOOL SERVICE
+  # ============================================
+  school-service:
+    build:
+      context: ./iusj-school-service
+      dockerfile: Dockerfile
+    container_name: iusj-school-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_INSTANCE_HOSTNAME=school-service
+    ports:
+      - "${SCHOOL_SERVICE_PORT}:8087"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8087/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - iusj-network
+
+  # ============================================
+  # GROUP SERVICE
+  # ============================================
+  group-service:
+    build:
+      context: ./iusj-group-service
+      dockerfile: Dockerfile
+    container_name: iusj-group-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_INSTANCE_HOSTNAME=group-service
+    ports:
+      - "${GROUP_SERVICE_PORT}:8088"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - iusj-network
+
+  # ============================================
+  # STUDENT SERVICE
+  # ============================================
+  student-service:
+    build:
+      context: ./iusj-student-service
+      dockerfile: Dockerfile
+    container_name: iusj-student-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_INSTANCE_HOSTNAME=student-service
+    ports:
+      - "8089:8089"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8089/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - iusj-network
+
+  # ============================================
+  # RESOURCE SERVICE
+  # ============================================
+  resource-service:
+    build:
+      context: ./iusj-resource-service
+      dockerfile: Dockerfile
+    container_name: iusj-resource-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_INSTANCE_HOSTNAME=resource-service
+    ports:
+      - "8090:8090"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - iusj-network
+
+  # ============================================
+  # NOTIFICATION SERVICE
+  # ============================================
+  notification-service:
+    build:
+      context: ./iusj-notification-service
+      dockerfile: Dockerfile
+    container_name: iusj-notification-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka/
+      - EUREKA_INSTANCE_HOSTNAME=notification-service
+      - MAIL_HOST=${MAIL_HOST}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+    ports:
+      - "8091:8091"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8091/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - iusj-network
+
+  # ============================================
+  # FRONTEND (ANGULAR + NGINX)
+  # ============================================
+  frontend:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: iusj-frontend
+    ports:
+      - "${FRONTEND_PORT}:80"
+    depends_on:
+      - gateway
+    environment:
+      - API_URL=http://gateway:8080
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - iusj-network
+
+# ============================================
+# VOLUMES
+# ============================================
+volumes:
+  mysql_data:
+    driver: local
+
+# ============================================
+# NETWORKS
+# ============================================
+networks:
+  iusj-network:
+    driver: bridge
