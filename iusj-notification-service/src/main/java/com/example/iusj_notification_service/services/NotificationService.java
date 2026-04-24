@@ -2,6 +2,7 @@ package com.example.iusj_notification_service.services;
 
 import com.example.iusj_notification_service.dto.UserSummary;
 import com.example.iusj_notification_service.entities.Notification;
+import com.example.iusj_notification_service.entities.NotificationType;
 import com.example.iusj_notification_service.repositories.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

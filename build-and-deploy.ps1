@@ -1,11 +1,16 @@
 #!/usr/bin/env pwsh
 # ============================================================
 # build-and-deploy.ps1
-# Build tous les microservices Maven localement,
+# Arrête les services locaux, build tous les JARs Maven,
 # puis lance docker-compose.
 # ============================================================
 
 $ErrorActionPreference = "Stop"
+
+# 1. Arrêter les services Java locaux pour libérer les JARs
+Write-Host "=== Arret des services Java locaux ===" -ForegroundColor Cyan
+& .\stop-services.ps1
+Start-Sleep -Seconds 3
 
 $services = @(
     "iusj-eureka-service",
