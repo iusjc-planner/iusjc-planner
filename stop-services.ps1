@@ -48,6 +48,28 @@ function Stop-FrontendNodeProcesses {
     Write-Host "  $killed processus Node arretes" -ForegroundColor Green
 }
 
+function Close-PowerShellWindows {
+    Write-Host "Fermeture des fenetres PowerShell des services..." -ForegroundColor Yellow
+
+    $closed = 0
+    $psProcesses = Get-CimInstance Win32_Process -Filter "name = 'powershell.exe' OR name = 'pwsh.exe'"
+    foreach ($proc in $psProcesses) {
+        $cmd = ($proc.CommandLine | Out-String)
+        # Ferme les fenêtres qui exécutent start-services.ps1 ou les services
+        if ($cmd -match "start-services|iusj-.*-service|ng serve" -and $proc.ProcessId -ne $currentPid) {
+            try {
+                Stop-Process -Id $proc.ProcessId -Force -ErrorAction SilentlyContinue
+                Write-Host "  Fenetre PowerShell fermee (PID=$($proc.ProcessId))" -ForegroundColor Gray
+                $closed++
+            } catch {
+                # ignorer
+            }
+        }
+    }
+
+    Write-Host "  $closed fenetre(s) PowerShell fermee(s)" -ForegroundColor Green
+}
+
 function Clear-IusjPorts {
     Write-Host "Liberation des ports IUSJ..." -ForegroundColor Yellow
     $ports = @(8761, 8080, 8081, 8082, 8083, 8084, 8085, 8086, 8087, 8088, 8089, 8090, 8092, 4200, 4201)
@@ -73,6 +95,7 @@ function Clear-IusjPorts {
 
 Stop-IusjJavaProcesses
 Stop-FrontendNodeProcesses
+Close-PowerShellWindows
 Clear-IusjPorts
 
 Write-Host ""

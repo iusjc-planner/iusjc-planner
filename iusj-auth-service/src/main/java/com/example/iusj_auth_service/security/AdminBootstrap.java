@@ -21,17 +21,21 @@ public class AdminBootstrap {
     @Bean
     ApplicationRunner ensureDefaultAdmin(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         return args -> {
-            User admin = userRepository.findByLogin(ADMIN_LOGIN).orElseGet(User::new);
+            try {
+                User admin = userRepository.findByLogin(ADMIN_LOGIN).orElseGet(User::new);
 
-            admin.setNom("Administrateur");
-            admin.setPrenom("IUSJ");
-            admin.setEmail(ADMIN_EMAIL);
-            admin.setLogin(ADMIN_LOGIN);
-            admin.setPassword(passwordEncoder.encode(ADMIN_PASSWORD));
-            admin.setRole(User.Role.ADMIN);
+                admin.setNom("Administrateur");
+                admin.setPrenom("IUSJ");
+                admin.setEmail(ADMIN_EMAIL);
+                admin.setLogin(ADMIN_LOGIN);
+                admin.setPassword(passwordEncoder.encode(ADMIN_PASSWORD));
+                admin.setRole(User.Role.ADMIN);
 
-            userRepository.save(admin);
-            LOGGER.info("Compte admin initialise/mis a jour: login={}, email={}", ADMIN_LOGIN, ADMIN_EMAIL);
+                userRepository.save(admin);
+                LOGGER.info("Compte admin initialise/mis a jour: login={}, email={}", ADMIN_LOGIN, ADMIN_EMAIL);
+            } catch (Exception e) {
+                LOGGER.warn("Impossible de creer/mettre a jour le compte admin au demarrage. Les tables seront creees par Hibernate. Erreur: {}", e.getMessage());
+            }
         };
     }
 }

@@ -1,0 +1,55 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+dist
+build
+
+# Maven
+target
+.m2
+*.jar
+*.war
+
+# Documentation
+documentation
+README.md
+*.md
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+
+# Docker
+Dockerfile
+docker-compose.yml
+docker-compose.ci.yml
+.dockerignore
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Temporary
+*.tmp
+*.log
+*.bak
