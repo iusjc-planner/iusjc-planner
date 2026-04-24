@@ -5,8 +5,8 @@ documentation
 # FICHIERS TECHNIQUES GITHUB
 ###############################
 .env
-*.env
-.env.*
+.env.local
+.env.*.local
 *.secret
 *.key
 *.pem
@@ -19,6 +19,9 @@ documentation
 *.ipr
 *.iws
 .vscode/
+*.swp
+*.swo
+*~
 
 ###############################
 # MAVEN / JAVA
@@ -28,6 +31,20 @@ out/
 *.class
 *.jar
 *.war
+*.ear
+*.zip
+build/
+.gradle/
+*.gradle
+
+###############################
+# NODE / FRONTEND
+###############################
+node_modules/
+npm-debug.log
+yarn-error.log
+dist/
+.angular/
 
 ###############################
 # LOGS & TEMP
@@ -37,12 +54,16 @@ out/
 *.cache
 *.DS_Store
 Thumbs.db
+*.pid
+*.seed
+*.pid.lock
 
 ###############################
 # DOCKER
 ###############################
 *.bak
 *~backup.yml
+docker-compose.override.yml
 
 ###############################
 # OS SPECIFIC
@@ -50,3 +71,43 @@ Thumbs.db
 .DS_Store
 Thumbs.db
 ehthumbs.db
+.AppleDouble
+.LSOverride
+._*
+
+###############################
+# SCRIPTS WINDOWS (Dev only)
+###############################
+*.ps1
+start-services.ps1
+stop-services.ps1
+create-test-users.ps1
+
+###############################
+# FICHIERS TEMPORAIRES
+###############################
+*.swp
+*.swo
+*~
+.#*
+.*.swp
+.*.swo
+
+###############################
+# FICHIERS DE BUILD
+###############################
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+
+###############################
+# FICHIERS DE CONFIGURATION LOCALE
+###############################
+.env.production.local
+.env.development.local
+.env.test.local
+local.properties
+gradle.properties
