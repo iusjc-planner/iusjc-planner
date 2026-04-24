@@ -2,8 +2,10 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { ChartModule } from 'primeng/chart';
 import { FluidModule } from 'primeng/fluid';
-import { debounceTime, Subscription } from 'rxjs';
+import { debounceTime } from 'rxjs';
 import { LayoutService } from '../../layout/service/layout.service';
+import { DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
     selector: 'app-chart-demo',
@@ -71,9 +73,9 @@ export class ChartDemo {
 
     radarOptions: any;
 
-    subscription: Subscription;
+    private readonly destroyRef = inject(DestroyRef);
     constructor(private layoutService: LayoutService) {
-        this.subscription = this.layoutService.configUpdate$.pipe(debounceTime(25)).subscribe(() => {
+        this.layoutService.configUpdate$.pipe(debounceTime(25), takeUntilDestroyed(this.destroyRef)).subscribe(() => {
             this.initCharts();
         });
     }
@@ -294,9 +296,5 @@ export class ChartDemo {
         };
     }
 
-    ngOnDestroy() {
-        if (this.subscription) {
-            this.subscription.unsubscribe();
-        }
-    }
+
 }

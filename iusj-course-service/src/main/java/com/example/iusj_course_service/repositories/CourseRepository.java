@@ -12,6 +12,8 @@ public interface CourseRepository extends JpaRepository<Course, Long>, JpaSpecif
 
     List<Course> findByMatiereId(Long matiereId);
 
+    List<Course> findByMatiereIdInOrderByDateAscStartTimeAsc(List<Long> matiereIds);
+
     List<Course> findByDate(LocalDate date);
 
     List<Course> findByDateBetween(LocalDate startDate, LocalDate endDate);

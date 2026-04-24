@@ -53,3 +53,17 @@ Thumbs.db
 *.tmp
 *.log
 *.bak
+# Node modules - très volumineux, reconstruits dans le container
+web/node_modules
+web/.angular
+web/dist
+web/coverage
+
+# Fichiers de dev
+**/.git
+**/.idea
+**/.vscode
+**/*.log
+
+# Targets Maven déjà buildées (on les copie explicitement dans Dockerfile.backend)
+# Ne pas ignorer les target/ car le Dockerfile.backend en a besoin

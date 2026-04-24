@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -184,6 +185,7 @@ export class MatieresPage {
 
     form = this.getEmptyForm();
     private allMatieres: Matiere[] = [];
+    private readonly destroyRef = inject(DestroyRef);
 
     constructor(
         private readonly matiereService: MatiereService,
@@ -285,7 +287,7 @@ export class MatieresPage {
         };
 
         if (this.isEditMode && this.editingId) {
-            this.matiereService.update(this.editingId, payload).subscribe({
+            this.matiereService.update(this.editingId, payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
                 next: () => {
                     this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Matiere mise a jour avec succes' });
                     this.displayDialog = false;
@@ -298,7 +300,7 @@ export class MatieresPage {
             return;
         }
 
-        this.matiereService.create(payload).subscribe({
+        this.matiereService.create(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: () => {
                 this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Matiere creee avec succes' });
                 this.displayDialog = false;
@@ -315,7 +317,7 @@ export class MatieresPage {
             return;
         }
 
-        this.matiereService.delete(this.selectedMatiere.id).subscribe({
+        this.matiereService.delete(this.selectedMatiere.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: () => {
                 this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Matiere supprimee avec succes' });
                 this.displayDeleteDialog = false;
@@ -376,7 +378,7 @@ export class MatieresPage {
     }
 
     private loadMatieres() {
-        this.matiereService.getAll().subscribe({
+        this.matiereService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (matieres) => {
                 this.allMatieres = matieres;
             },
@@ -387,7 +389,7 @@ export class MatieresPage {
     }
 
     private loadSchools() {
-        this.schoolService.getAll().subscribe({
+        this.schoolService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (schools) => {
                 this.schools = schools;
                 this.schoolSelectOptions = schools
@@ -404,7 +406,7 @@ export class MatieresPage {
         forkJoin({
             teachers: this.teacherService.getAll(),
             users: this.userService.getAll()
-        }).subscribe({
+        }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: ({ teachers, users }) => {
                 this.teachers = teachers;
                 this.usersById = new Map(users.filter((user) => user.id !== undefined).map((user) => [user.id as number, user]));

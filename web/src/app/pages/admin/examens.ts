@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
@@ -75,6 +76,7 @@ export class ExamensPage {
     private allExamens: ExamenItem[] = [];
     private courses: Course[] = [];
     private rooms: Room[] = [];
+    private readonly destroyRef = inject(DestroyRef);
 
     constructor(
         private messageService: MessageService,
@@ -99,7 +101,7 @@ export class ExamensPage {
     }
 
     private loadDependencies() {
-        this.courseService.getAll().subscribe({
+        this.courseService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (courses) => {
                 this.courses = courses;
                 this.loadRoomsAndSchedule();
@@ -111,7 +113,7 @@ export class ExamensPage {
     }
 
     private loadRoomsAndSchedule() {
-        this.roomService.getAll().subscribe({
+        this.roomService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (rooms) => {
                 this.rooms = rooms;
                 this.loadExamens();
@@ -123,7 +125,7 @@ export class ExamensPage {
     }
 
     private loadExamens() {
-        this.scheduleService.getAll().subscribe({
+        this.scheduleService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (entries) => {
                 this.allExamens = entries.map((entry) => this.fromScheduleEntry(entry));
             },
@@ -138,7 +140,7 @@ export class ExamensPage {
             return;
         }
 
-        this.scheduleService.delete(exam.id).subscribe({
+        this.scheduleService.delete(exam.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: () => {
                 this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Examen supprime avec succes' });
                 this.loadExamens();

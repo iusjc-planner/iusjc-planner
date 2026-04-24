@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -248,6 +249,7 @@ export class CoursPage {
     private teachersById = new Map<number, Teacher>();
     private usersById = new Map<number, User>();
     private allCours: CoursItem[] = [];
+    private readonly destroyRef = inject(DestroyRef);
 
     constructor(
         private readonly messageService: MessageService,
@@ -329,7 +331,7 @@ export class CoursPage {
         };
 
         if (this.isEditMode && this.editingId) {
-            this.courseService.update(this.editingId, payload).subscribe({
+            this.courseService.update(this.editingId, payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
                 next: () => {
                     this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Cours mis a jour avec succes' });
                     this.displayDialog = false;
@@ -342,7 +344,7 @@ export class CoursPage {
             return;
         }
 
-        this.courseService.create(payload).subscribe({
+        this.courseService.create(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: () => {
                 this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Cours cree avec succes' });
                 this.displayDialog = false;
@@ -359,7 +361,7 @@ export class CoursPage {
             return;
         }
 
-        this.courseService.delete(this.selectedCours.id).subscribe({
+        this.courseService.delete(this.selectedCours.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: () => {
                 this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Cours supprime avec succes' });
                 this.displayDeleteDialog = false;
@@ -412,7 +414,7 @@ export class CoursPage {
     }
 
     private loadMatiereOptions() {
-        this.matiereService.getAll().subscribe({
+        this.matiereService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (matieres) => {
                 this.matieresById = new Map(matieres.filter((matiere) => matiere.id !== undefined).map((matiere) => [matiere.id as number, matiere]));
                 this.matiereOptions = matieres
@@ -427,7 +429,7 @@ export class CoursPage {
     }
 
     private loadRoomOptions() {
-        this.roomService.getAll().subscribe({
+        this.roomService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (rooms) => {
                 this.roomsById = new Map(rooms.filter((room) => room.id !== undefined).map((room) => [room.id as number, room]));
                 this.roomOptions = rooms
@@ -442,7 +444,7 @@ export class CoursPage {
     }
 
     private loadGroupOptions() {
-        this.groupService.getAll().subscribe({
+        this.groupService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (groups) => {
                 this.groupsById = new Map(groups.filter((group) => group.id !== undefined).map((group) => [group.id as number, group]));
                 this.groupOptions = groups
@@ -460,7 +462,7 @@ export class CoursPage {
         forkJoin({
             teachers: this.teacherService.getAll(),
             users: this.userService.getAll()
-        }).subscribe({
+        }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: ({ teachers, users }) => {
                 this.teachersById = new Map(teachers.filter((teacher) => teacher.id !== undefined).map((teacher) => [teacher.id as number, teacher]));
                 this.usersById = new Map(users.filter((user) => user.id !== undefined).map((user) => [user.id as number, user]));
@@ -476,7 +478,7 @@ export class CoursPage {
     }
 
     private loadCourses() {
-        this.courseService.getAll().subscribe({
+        this.courseService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (courses) => {
                 this.allCours = courses.map((course) => this.fromApiCourse(course));
             },

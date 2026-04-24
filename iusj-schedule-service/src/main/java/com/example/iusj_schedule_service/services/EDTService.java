@@ -11,6 +11,7 @@ import com.example.iusj_schedule_service.entities.ScheduleEntry;
 import com.example.iusj_schedule_service.repositories.EDTRepository;
 import com.example.iusj_schedule_service.repositories.ScheduleEntryRepository;
 import com.example.iusj_schedule_service.services.export.ExcelExportService;
+import com.example.iusj_schedule_service.services.export.IcsExportService;
 import com.example.iusj_schedule_service.services.export.PdfExportService;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
@@ -42,6 +43,7 @@ public class EDTService {
     private final RestTemplate restTemplate;
     private final PdfExportService pdfExportService;
     private final ExcelExportService excelExportService;
+    private final IcsExportService icsExportService;
     private final CourseCatalogClient courseCatalogClient;
     private final IdentityDirectoryClient identityDirectoryClient;
     private final RoomServiceClient roomServiceClient;
@@ -55,6 +57,7 @@ public class EDTService {
             RestTemplate restTemplate,
             PdfExportService pdfExportService,
             ExcelExportService excelExportService,
+            IcsExportService icsExportService,
             CourseCatalogClient courseCatalogClient,
             IdentityDirectoryClient identityDirectoryClient,
             RoomServiceClient roomServiceClient,
@@ -66,6 +69,7 @@ public class EDTService {
         this.restTemplate = restTemplate;
         this.pdfExportService = pdfExportService;
         this.excelExportService = excelExportService;
+        this.icsExportService = icsExportService;
         this.courseCatalogClient = courseCatalogClient;
         this.identityDirectoryClient = identityDirectoryClient;
         this.roomServiceClient = roomServiceClient;
@@ -297,6 +301,21 @@ public class EDTService {
         List<ScheduleEntry> entries = resolveEntriesForEdt(edt);
         EDTExportData exportData = toExportData(edt, entries);
         return excelExportService.exportWeeklyEdtExcel(exportData);
+    }
+
+    public byte[] exportIcsById(Long edtId) {
+        EDT edt = edtRepository.findById(edtId)
+            .orElseThrow(() -> new EntityNotFoundException("EDT introuvable: " + edtId));
+        List<ScheduleEntry> entries = resolveEntriesForEdt(edt);
+        EDTExportData exportData = toExportData(edt, entries);
+        return icsExportService.exportToIcs(edt, exportData);
+    }
+
+    public byte[] exportIcsForView(EDT.VueType vue, Long targetId, Integer semaine, Integer annee, Long creePar) {
+        EDT edt = getOrCreate(semaine, annee, vue, targetId, creePar);
+        List<ScheduleEntry> entries = resolveEntriesForEdt(edt);
+        EDTExportData exportData = toExportData(edt, entries);
+        return icsExportService.exportToIcs(edt, exportData);
     }
 
     public long clearEntriesForGroups(Integer annee, Integer semaine, Set<Long> groupIds) {

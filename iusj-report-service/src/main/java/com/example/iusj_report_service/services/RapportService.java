@@ -129,6 +129,32 @@ public class RapportService {
         return generate(request, userId);
     }
 
+    /**
+     * Retourne des statistiques agrégées pour le dashboard (sans générer de fichier).
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> getDashboardStats(LocalDate from, LocalDate to) {
+        List<Map<String, Object>> roomOccupation = dataAggregationService.aggregateRoomOccupation(from, to, null);
+        List<Map<String, Object>> teacherLoad = dataAggregationService.aggregateTeacherLoad(from, to, null);
+        List<Map<String, Object>> global = dataAggregationService.aggregateGlobal(from, to);
+
+        Map<String, Object> globalRow = global.isEmpty() ? Map.of() : global.get(0);
+
+        // Occupation par jour de la semaine (lundi-vendredi)
+        List<Map<String, Object>> scheduleEntries = dataAggregationService.aggregateGlobal(from, to);
+
+        Map<String, Object> stats = new java.util.LinkedHashMap<>();
+        stats.put("totalRooms", globalRow.getOrDefault("rooms", 0));
+        stats.put("totalTeachers", globalRow.getOrDefault("teachers", 0));
+        stats.put("totalScheduleEntries", globalRow.getOrDefault("scheduleEntries", 0));
+        stats.put("totalEvents", globalRow.getOrDefault("events", 0));
+        stats.put("roomOccupation", roomOccupation);
+        stats.put("teacherLoad", teacherLoad);
+        stats.put("periodeDebut", from);
+        stats.put("periodeFin", to);
+        return stats;
+    }
+
     @Transactional(readOnly = true)
     public byte[] loadReportFile(Long id) {
         Rapport rapport = getById(id);

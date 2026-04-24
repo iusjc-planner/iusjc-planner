@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -125,6 +126,7 @@ export class EcolesPage {
     schoolForm;
 
     private allSchools: School[] = [];
+    private readonly destroyRef = inject(DestroyRef);
 
     constructor(
         private readonly formBuilder: FormBuilder,
@@ -225,7 +227,7 @@ export class EcolesPage {
         };
 
         if (this.isEditMode && this.editingId) {
-            this.schoolService.update(this.editingId, payload).subscribe({
+            this.schoolService.update(this.editingId, payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
                 next: () => {
                     this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Ecole mise a jour avec succes' });
                     this.displayDialog = false;
@@ -238,7 +240,7 @@ export class EcolesPage {
             return;
         }
 
-        this.schoolService.create(payload).subscribe({
+        this.schoolService.create(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: () => {
                 this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Ecole creee avec succes' });
                 this.displayDialog = false;
@@ -255,7 +257,7 @@ export class EcolesPage {
             return;
         }
 
-        this.schoolService.delete(this.selectedSchool.id).subscribe({
+        this.schoolService.delete(this.selectedSchool.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: () => {
                 this.messageService.add({ severity: 'success', summary: 'Succes', detail: 'Ecole supprimee avec succes' });
                 this.displayDeleteDialog = false;
@@ -268,7 +270,7 @@ export class EcolesPage {
     }
 
     private loadSchools() {
-        this.schoolService.getAll().subscribe({
+        this.schoolService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (schools) => {
                 this.allSchools = schools;
             },

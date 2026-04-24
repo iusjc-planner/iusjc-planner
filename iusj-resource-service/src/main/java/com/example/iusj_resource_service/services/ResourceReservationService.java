@@ -3,187 +3,124 @@ package com.example.iusj_resource_service.services;
 import com.example.iusj_resource_service.dto.ReservationRequest;
 import com.example.iusj_resource_service.entities.Resource;
 import com.example.iusj_resource_service.entities.ResourceReservation;
-import com.example.iusj_resource_service.entities.ResourceReservation.ReservationStatus;
-import com.example.iusj_resource_service.repositories.ResourceReservationRepository;
 import com.example.iusj_resource_service.repositories.ResourceRepository;
+import com.example.iusj_resource_service.repositories.ResourceReservationRepository;
 import jakarta.persistence.EntityNotFoundException;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @Transactional
-@Slf4j
 public class ResourceReservationService {
 
-    private final ResourceReservationRepository reservationRepository;
     private final ResourceRepository resourceRepository;
+    private final ResourceReservationRepository reservationRepository;
 
-    public ResourceReservationService(
-            ResourceReservationRepository reservationRepository,
-            ResourceRepository resourceRepository
-    ) {
-        this.reservationRepository = reservationRepository;
+    public ResourceReservationService(ResourceRepository resourceRepository,
+                                       ResourceReservationRepository reservationRepository) {
         this.resourceRepository = resourceRepository;
+        this.reservationRepository = reservationRepository;
     }
 
     /**
-     * Reserve a resource
+     * Réserve une quantité d'une ressource pour un créneau donné.
      */
     public ResourceReservation reserve(Long resourceId, ReservationRequest request, Long userId) {
         Resource resource = resourceRepository.findById(resourceId)
-                .orElseThrow(() -> new EntityNotFoundException("Resource not found with id " + resourceId));
+                .orElseThrow(() -> new EntityNotFoundException("Ressource introuvable: " + resourceId));
 
-        if (resource.getStatus() != Resource.Status.ACTIVE) {
-            throw new IllegalArgumentException("Resource is not available for reservation");
+        if (request.getHeureFin().isBefore(request.getHeureDebut()) ||
+            request.getHeureFin().equals(request.getHeureDebut())) {
+            throw new IllegalArgumentException("L'heure de fin doit être après l'heure de début");
         }
 
-        // Check quantity
-        int availableQuantity = getAvailableQuantity(resourceId, request.getDate(), request.getHeureDebut());
-        if (availableQuantity < request.getQuantite()) {
-            throw new IllegalArgumentException("Not enough quantity available. Only " + availableQuantity + " available");
-        }
-
-        // Check for conflicts
+        // Calculer la quantité déjà réservée sur ce créneau
         List<ResourceReservation> conflicts = reservationRepository.findConflictingReservations(
                 resourceId,
+                List.of(ResourceReservation.ReservationStatus.CONFIRMED, ResourceReservation.ReservationStatus.PENDING),
                 request.getDate(),
                 request.getHeureDebut(),
-                request.getHeureDebut().plusMinutes(request.getDuree()),
-                Arrays.asList(ReservationStatus.PENDING, ReservationStatus.CONFIRMED)
+                request.getHeureFin()
         );
 
-        if (!conflicts.isEmpty()) {
-            // Sum up conflicting quantities
-            int conflictingQuantity = conflicts.stream()
-                    .mapToInt(ResourceReservation::getQuantite)
-                    .sum();
-            int canReserve = resource.getQuantityTotal() - conflictingQuantity;
-            if (canReserve < request.getQuantite()) {
-                throw new IllegalArgumentException("Time slot conflict. Cannot reserve " + request.getQuantite() + " units");
-            }
+        int alreadyReserved = conflicts.stream().mapToInt(ResourceReservation::getQuantite).sum();
+        int available = resource.getQuantite() - alreadyReserved;
+
+        if (request.getQuantite() > available) {
+            throw new IllegalArgumentException(
+                String.format("Quantite insuffisante : %d disponible(s), %d demande(s)",
+                    available, request.getQuantite()));
         }
 
         ResourceReservation reservation = new ResourceReservation();
-        reservation.setResource(resource);
+        reservation.setResourceId(resourceId);
         reservation.setDate(request.getDate());
         reservation.setHeureDebut(request.getHeureDebut());
-        reservation.setDuree(request.getDuree());
-        reservation.setReservePar(userId);
+        reservation.setHeureFin(request.getHeureFin());
         reservation.setQuantite(request.getQuantite());
+        reservation.setReservePar(userId);
         reservation.setMotif(request.getMotif());
-        reservation.setDateRetourPrevue(request.getDateRetourPrevue());
-        reservation.setStatus(ReservationStatus.CONFIRMED);
+        reservation.setStatus(ResourceReservation.ReservationStatus.CONFIRMED);
 
-        ResourceReservation saved = reservationRepository.save(reservation);
-        log.info("Reservation created: {} for resource: {} by user: {}", saved.getId(), resourceId, userId);
-
-        return saved;
-    }
-
-    /**
-     * Cancel a reservation
-     */
-    public void cancel(Long reservationId) {
-        ResourceReservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new EntityNotFoundException("Reservation not found with id " + reservationId));
-
-        if (reservation.getStatus() == ReservationStatus.RETURNED || 
-            reservation.getStatus() == ReservationStatus.CANCELLED) {
-            throw new IllegalArgumentException("Cannot cancel a " + reservation.getStatus() + " reservation");
+        // Mettre à jour le statut de la ressource si tout est réservé
+        if (available - request.getQuantite() == 0) {
+            resource.setStatut(Resource.StatutRessource.RESERVE);
+            resourceRepository.save(resource);
         }
 
-        reservation.setStatus(ReservationStatus.CANCELLED);
-        reservationRepository.save(reservation);
-        log.info("Reservation cancelled: {}", reservationId);
+        return reservationRepository.save(reservation);
     }
 
     /**
-     * Mark a reservation as returned
+     * Annule une réservation.
      */
-    public void markReturned(Long reservationId) {
+    public void cancel(Long reservationId, Long userId) {
         ResourceReservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new EntityNotFoundException("Reservation not found with id " + reservationId));
+                .orElseThrow(() -> new EntityNotFoundException("Reservation introuvable: " + reservationId));
 
-        if (reservation.getStatus() == ReservationStatus.CANCELLED) {
-            throw new IllegalArgumentException("Cannot mark as returned a cancelled reservation");
-        }
-
-        reservation.setStatus(ReservationStatus.RETURNED);
-        reservation.setDateRetourEffective(LocalDateTime.now());
+        reservation.setStatus(ResourceReservation.ReservationStatus.CANCELLED);
         reservationRepository.save(reservation);
-        log.info("Reservation marked as returned: {}", reservationId);
-    }
 
-    /**
-     * Get available quantity for a resource at a specific date and time
-     */
-    public int getAvailableQuantity(Long resourceId, LocalDate date, LocalTime time) {
-        Resource resource = resourceRepository.findById(resourceId)
-                .orElseThrow(() -> new EntityNotFoundException("Resource not found with id " + resourceId));
-
-        List<ResourceReservation> activeReservations = reservationRepository.findActiveReservations(
-                resourceId,
-                Arrays.asList(ReservationStatus.CONFIRMED, ReservationStatus.PENDING)
+        // Remettre la ressource disponible si plus aucune réservation active
+        List<ResourceReservation> active = reservationRepository.findActiveReservations(
+                reservation.getResourceId(),
+                List.of(ResourceReservation.ReservationStatus.CONFIRMED, ResourceReservation.ReservationStatus.PENDING)
         );
-
-        // Filter for overlapping reservations
-        int reservedQuantity = activeReservations.stream()
-                .filter(r -> r.getDate().equals(date))
-                .filter(r -> isTimeOverlap(time, time.plusMinutes(1), r.getHeureDebut(), 
-                        r.getHeureDebut().plusMinutes(r.getDuree())))
-                .mapToInt(ResourceReservation::getQuantite)
-                .sum();
-
-        return resource.getQuantityTotal() - reservedQuantity;
+        if (active.isEmpty()) {
+            resourceRepository.findById(reservation.getResourceId()).ifPresent(r -> {
+                r.setStatut(Resource.StatutRessource.DISPONIBLE);
+                resourceRepository.save(r);
+            });
+        }
     }
 
     /**
-     * Check availability for a resource at a specific date and time
+     * Liste les réservations d'une ressource.
      */
-    public boolean isAvailable(Long resourceId, LocalDate date, LocalTime time, int requestedQuantity) {
-        return getAvailableQuantity(resourceId, date, time) >= requestedQuantity;
-    }
-
-    /**
-     * Get all reservations for a resource
-     */
-    public List<ResourceReservation> getReservationsByResource(Long resourceId) {
+    @Transactional(readOnly = true)
+    public List<ResourceReservation> getByResource(Long resourceId) {
         return reservationRepository.findByResourceId(resourceId);
     }
 
     /**
-     * Get all reservations by user
+     * Vérifie la disponibilité d'une ressource pour un créneau.
      */
-    public List<ResourceReservation> getReservationsByUser(Long userId) {
-        return reservationRepository.findByReservePar(userId);
-    }
+    @Transactional(readOnly = true)
+    public int getAvailableQuantity(Long resourceId, ReservationRequest request) {
+        Resource resource = resourceRepository.findById(resourceId)
+                .orElseThrow(() -> new EntityNotFoundException("Ressource introuvable: " + resourceId));
 
-    /**
-     * Get reservation by ID
-     */
-    public Optional<ResourceReservation> getReservationById(Long reservationId) {
-        return reservationRepository.findById(reservationId);
-    }
+        List<ResourceReservation> conflicts = reservationRepository.findConflictingReservations(
+                resourceId,
+                List.of(ResourceReservation.ReservationStatus.CONFIRMED, ResourceReservation.ReservationStatus.PENDING),
+                request.getDate(),
+                request.getHeureDebut(),
+                request.getHeureFin()
+        );
 
-    /**
-     * Helper method to check time overlap
-     */
-    private boolean isTimeOverlap(LocalTime start1, LocalTime end1, LocalTime start2, LocalTime end2) {
-        return !end1.isBefore(start2) && !start1.isAfter(end2);
-    }
-
-    /**
-     * Get reservations for a resource on a specific date
-     */
-    public List<ResourceReservation> getReservationsByResourceAndDate(Long resourceId, LocalDate date) {
-        return reservationRepository.findByResourceIdAndDate(resourceId, date);
+        int alreadyReserved = conflicts.stream().mapToInt(ResourceReservation::getQuantite).sum();
+        return Math.max(0, resource.getQuantite() - alreadyReserved);
     }
 }

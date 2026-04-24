@@ -22,18 +22,21 @@ public class AuthService {
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public AuthService(
             UserRepository userRepository,
             PasswordResetTokenRepository passwordResetTokenRepository,
             JwtUtil jwtUtil,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            EmailService emailService
     ) {
         this.userRepository = userRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.jwtUtil = jwtUtil;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -74,6 +77,14 @@ public class AuthService {
         resetToken.setUsed(false);
 
         return passwordResetTokenRepository.save(resetToken).getToken();
+    }
+
+    public void sendPasswordResetEmail(String email) {
+        String token = generateResetToken(email);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Aucun compte associe a cet email"));
+        String name = (user.getPrenom() != null ? user.getPrenom() : "") + " " + (user.getNom() != null ? user.getNom() : "");
+        emailService.sendPasswordResetEmail(email, name.trim(), token);
     }
 
     public void resetPassword(String token, String newPassword) {

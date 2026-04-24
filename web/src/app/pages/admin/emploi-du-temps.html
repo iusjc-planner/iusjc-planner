@@ -66,6 +66,7 @@
         <button pButton type="button" label="Rapport validation" icon="pi pi-file" class="p-button-text" [disabled]="!selectedEdt?.id" (click)="loadValidationReport()"></button>
         <button pButton type="button" label="Export PDF" icon="pi pi-file-pdf" class="p-button-text" [disabled]="!canExport()" (click)="exportEdt('pdf')"></button>
         <button pButton type="button" label="Export Excel" icon="pi pi-file-excel" class="p-button-text" [disabled]="!canExport()" (click)="exportEdt('excel')"></button>
+        <button pButton type="button" label="Export ICS" icon="pi pi-calendar" class="p-button-text" [disabled]="!canExport()" (click)="exportIcs()" pTooltip="Synchroniser avec Google Calendar / Outlook" tooltipPosition="top"></button>
     </div>
 
     <div class="grid grid-cols-12 gap-4 mb-6">

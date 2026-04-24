@@ -364,27 +364,28 @@ schedule_entries (id, course_id, teacher_id, room_id, group_id, start_time, end_
 
 ---
 
-## 🚧 PHASE 4 : Modules Métier Backend (EN COURS - 30%)
+## 🚧 PHASE 4 : Modules Métier Backend (EN COURS - 72%)
 
-### 4.1 Teachers Service (Enseignants) ❌
-**État** : Non démarré  
+### 4.1 Teachers Service (Enseignants) 🟡
+**État** : Backend livré (CRUD + disponibilités + import ICS), consolidation tests/documentation en cours  
 **Priorité** : HAUTE  
 **Estimation** : 3-5 jours
 
-#### À Réaliser
-- [ ] Créer le microservice Spring Boot
-- [ ] Configurer le port 8083
-- [ ] Créer la table `enseignants` en BDD
-- [ ] Implémenter l'entité Enseignant
-- [ ] Créer le repository JPA
-- [ ] Implémenter le service métier
-- [ ] Créer le controller REST
-- [ ] Enregistrer dans Eureka
-- [ ] Configurer le routing dans Gateway
-- [ ] Ajouter validation des données
-- [ ] Créer les DTOs
-- [ ] Tests unitaires
-- [ ] Documentation API
+#### Réalisations
+- [x] Microservice Spring Boot `iusj-teacher-service`
+- [x] Port 8083 + enregistrement Eureka
+- [x] Entité `Teacher` + repository JPA
+- [x] Service métier (`TeacherService`, `DisponibiliteService`, import ICS)
+- [x] Controllers REST (`/api/teachers`, disponibilités)
+- [x] Routing Gateway `/api/teachers/**`
+- [x] DTOs et validation d'entrée
+- [x] Tests unitaires initiaux (service + controller)
+- [x] Documentation API de base
+
+#### Prochaines étapes
+- [ ] Étendre la couverture tests (repository + cas d'erreur avancés)
+- [ ] Harmoniser logs/erreurs (retirer sorties debug console)
+- [ ] Finaliser documentation contractuelle (payloads d'erreur, exemples)
 
 **API Endpoints Prévus** :
 ```
@@ -435,24 +436,25 @@ POST   /api/teachers/{id}/unavailability  # Signaler indisponibilité
 
 ---
 
-### 4.3 Rooms Service (Salles) ❌
-**État** : Non démarré (branche `rooms` créée)  
+### 4.3 Rooms Service (Salles) 🟡
+**État** : Backend livré (CRUD + disponibilités + réservations + équipements), couverture tests en progression  
 **Priorité** : HAUTE  
 **Estimation** : 3-4 jours
 
-#### À Réaliser
-- [ ] Créer le microservice Spring Boot
-- [ ] Configurer le port 8084
-- [ ] Créer la table `salles` en BDD
-- [ ] Implémenter l'entité Salle
-- [ ] Créer le repository JPA
-- [ ] Implémenter le service métier
-- [ ] Créer le controller REST
-- [ ] Enregistrer dans Eureka
-- [ ] Configurer le routing dans Gateway
-- [ ] Logique de vérification de disponibilité
-- [ ] Gestion des équipements
-- [ ] Tests et documentation
+#### Réalisations
+- [x] Microservice Spring Boot `iusj-room-service`
+- [x] Modèle salle + réservations + équipements
+- [x] Service métier (filtres, disponibilité, réservation, annulation)
+- [x] API `/api/rooms/**` (CRUD, `available`, `reserve`, équipements)
+- [x] Tests unitaires initiaux (service + controller)
+- [x] Tests d'intégration repository sur conflits temporels/statuts de réservation
+- [x] Correctif de la logique de conflit (`existsConflict`) pour gérer tout chevauchement
+
+#### Prochaines étapes
+- [x] Étendre les tests d'intégration aux scénarios multi-salles et volumes élevés
+- [ ] Ajouter des cas limites sur grands intervalles (journée complète, chevauchements partiels en rafale)
+- [ ] Documenter les statuts de réservation et codes HTTP associés
+- [ ] Vérifier règles d'autorisation fines via rôle (gateway + service)
 
 **API Endpoints Prévus** :
 ```
@@ -483,24 +485,26 @@ GET    /api/rooms/{id}/schedule        # Planning d'une salle
 
 ---
 
-### 4.4 Courses Service (Cours) ❌
-**État** : Non démarré  
+### 4.4 Courses Service (Cours) 🟡
+**État** : Backend existant, campagne test-first en progression (service + controller + repository validés)  
 **Priorité** : MOYENNE  
 **Estimation** : 3-4 jours
 
-#### À Réaliser
-- [ ] Créer le microservice Spring Boot
-- [ ] Configurer le port 8085
-- [ ] Créer la table `cours` en BDD
-- [ ] Implémenter l'entité Cours
-- [ ] Créer le repository JPA
-- [ ] Implémenter le service métier
-- [ ] Créer le controller REST
-- [ ] Enregistrer dans Eureka
-- [ ] Configurer le routing dans Gateway
-- [ ] Gestion des prérequis
-- [ ] Affectation aux écoles
-- [ ] Tests et documentation
+#### Réalisations
+- [x] Microservice `iusj-course-service` opérationnel (port 8085)
+- [x] Entité/repository/service/controller pour `Course`
+- [x] Filtrage des séances (matière, statut, type, enseignant, salle, groupe, période)
+- [x] Endpoints ciblés (`/api/courses`, `/stats`, filtres date/salle/enseignant)
+- [x] Endpoint `/api/courses/school/{schoolId}` (cours par école)
+- [x] Gestion des prérequis (stockage `course_prerequisites` + endpoints dédiés)
+- [x] Clarification affectation école/filière (endpoint `/api/courses/school/{schoolId}/filiere/{filiereId}`)
+- [x] Tests unitaires `CourseServiceTest` (12 cas)
+- [x] Tests controller `CourseControllerTest` (13 cas)
+- [x] Tests d'intégration repository `CourseRepositoryIntegrationTest` (filtres date/plages)
+
+#### Prochaines étapes
+- [x] Compléter la documentation API (erreurs et exemples de payload)
+- [x] Mettre à jour le modèle documentaire "Modèle Cours" pour refléter l'entité réelle (séances)
 
 **API Endpoints Prévus** :
 ```
@@ -511,26 +515,34 @@ PUT    /api/courses/{id}       # Modifier
 DELETE /api/courses/{id}       # Supprimer
 GET    /api/courses/{id}/prerequisites    # Prérequis
 GET    /api/courses/school/{schoolId}     # Cours par école
+GET    /api/courses/school/{schoolId}/filiere/{filiereId}   # Cours par école + filière
 ```
 
 **Modèle Cours** :
 ```java
 {
   "id": Long,
-  "code": String (unique),
-  "nom": String,
-  "credits": Integer (1-10),
+  "matiereId": Long,
+  "type": Enum (CM, TD, TP, EXAM),
+  "title": String,
   "description": String,
-  "ecoleId": Long,
-  "enseignantId": Long,
-  "status": Enum (ACTIVE, INACTIVE)
+  "date": LocalDate,
+  "startTime": LocalTime,
+  "endTime": LocalTime,
+  "roomId": Long,
+  "groupId": Long,
+  "teacherId": Long,
+  "status": Enum (SCHEDULED, COMPLETED, CANCELLED, POSTPONED),
+  "sequenceNumber": Integer,
+  "notes": String,
+  "prerequisiteCourseIds": Set<Long>
 }
 ```
 
 ---
 
 ### 4.5 Groups Service (Groupes) ✅
-**État** : Backend livré (CRUD + stats), en attente d'intégration frontend  
+**État** : Backend livré (CRUD + stats) + tests unitaires/contrats API validés, en attente d'intégration frontend  
 **Priorité** : MOYENNE  
 **Estimation** : Livré (2-3 jours réalisés)
 
@@ -539,6 +551,9 @@ GET    /api/courses/school/{schoolId}     # Cours par école
 - [x] Entité `Group` + repository JPA avec `countByStatus`
 - [x] Service métier + controller `/api/groups`
 - [x] Endpoint `/api/groups/stats` (total/active/inactive)
+- [x] Tests unitaires `GroupServiceTest`
+- [x] Tests controller `GroupControllerTest`
+- [x] Tests d'intégration repository `GroupRepositoryIntegrationTest` (filière/tri, sous-groupes, agrégats)
 - [x] Enregistrement Eureka + routage Gateway
 - [x] Scripts start/stop mis à jour
 - [x] Collection Postman mise à jour
@@ -546,13 +561,12 @@ GET    /api/courses/school/{schoolId}     # Cours par école
 
 #### Prochaines étapes
 - [ ] Endpoints `/api/groups/{id}/students` (optionnel)
-- [ ] Tests unitaires + contrats API
 - [ ] Intégration frontend (module Groups)
 
 ---
 
 ### 4.6 Schedule Service (Emplois du Temps) 🟡
-**État** : Backend en cours (CRUD + stats + validation basique + exports/génération stub)  
+**État** : Backend en cours (CRUD + stats + validation basique + exports/génération stub) avec socle de tests service/controller validé  
 **Priorité** : TRÈS HAUTE (Cœur métier)  
 **Estimation** : 5-7 jours (backend initial livré)
 
@@ -562,6 +576,8 @@ GET    /api/courses/school/{schoolId}     # Cours par école
 - [x] CRUD `/api/schedule`
 - [x] Endpoint `/api/schedule/stats` (total/scheduled/completed/cancelled)
 - [x] Vérification de conflits (salle, enseignant, groupe)
+- [x] Tests service (`ScheduleServiceTest`, `EDTServiceTest`)
+- [x] Tests controller `ScheduleControllerTest` (CRUD, validation, stats, suggestion salles, capacité)
 - [x] Gateway + Eureka + scripts de démarrage mis à jour
 - [x] Collection Postman mise à jour
 - [x] Documentation API [documentation/API-Services.md](documentation/API-Services.md)
@@ -571,7 +587,7 @@ GET    /api/courses/school/{schoolId}     # Cours par école
 - [ ] Remplacer les stubs d'export par génération réelle (PDF/Excel)
 - [ ] Génération automatique et validation avancée
 - [ ] Notifications
-- [ ] Tests de charge + unitaires
+- [ ] Tests de charge
 
 ---
 

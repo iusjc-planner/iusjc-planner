@@ -6,29 +6,24 @@ import org.springframework.util.StringUtils;
 
 public class ResourceSpecifications {
 
-    public static Specification<Resource> withFilters(String name, String type, Resource.Status status) {
-        return Specification.where(hasName(name))
+    public static Specification<Resource> withFilters(String nom, Resource.TypeRessource type, Resource.StatutRessource statut) {
+        return Specification.where(hasNom(nom))
                 .and(hasType(type))
-                .and(hasStatus(status));
+                .and(hasStatut(statut));
     }
 
-    private static Specification<Resource> hasName(String name) {
+    private static Specification<Resource> hasNom(String nom) {
         return (root, query, cb) -> {
-            if (!StringUtils.hasText(name)) return cb.conjunction();
-            String pattern = "%" + name.toLowerCase() + "%";
-            return cb.like(cb.lower(root.get("name")), pattern);
+            if (!StringUtils.hasText(nom)) return cb.conjunction();
+            return cb.like(cb.lower(root.get("nom")), "%" + nom.toLowerCase() + "%");
         };
     }
 
-    private static Specification<Resource> hasType(String type) {
-        return (root, query, cb) -> {
-            if (!StringUtils.hasText(type)) return cb.conjunction();
-            String pattern = "%" + type.toLowerCase() + "%";
-            return cb.like(cb.lower(root.get("type")), pattern);
-        };
+    private static Specification<Resource> hasType(Resource.TypeRessource type) {
+        return (root, query, cb) -> type == null ? cb.conjunction() : cb.equal(root.get("type"), type);
     }
 
-    private static Specification<Resource> hasStatus(Resource.Status status) {
-        return (root, query, cb) -> status == null ? cb.conjunction() : cb.equal(root.get("status"), status);
+    private static Specification<Resource> hasStatut(Resource.StatutRessource statut) {
+        return (root, query, cb) -> statut == null ? cb.conjunction() : cb.equal(root.get("statut"), statut);
     }
 }

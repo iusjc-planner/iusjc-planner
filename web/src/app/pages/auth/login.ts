@@ -1,4 +1,5 @@
-import { Component, inject } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -55,7 +56,7 @@ import { AuthService } from '../../core/services/auth.service';
                                     <p-checkbox [(ngModel)]="checked" id="rememberme1" binary class="mr-2"></p-checkbox>
                                     <label for="rememberme1">Remember me</label>
                                 </div>
-                                <span class="font-medium no-underline ml-2 text-right cursor-pointer text-primary">Forgot password?</span>
+                                <span class="font-medium no-underline ml-2 text-right cursor-pointer text-primary" routerLink="/auth/forgot-password">Forgot password?</span>
                             </div>
                             <small *ngIf="errorMessage" class="text-red-500 block mb-4">{{ errorMessage }}</small>
                             <p-button label="Sign In" styleClass="w-full" [loading]="loading" (onClick)="onSignIn()"></p-button>
@@ -69,6 +70,7 @@ import { AuthService } from '../../core/services/auth.service';
 export class Login {
     private readonly authService = inject(AuthService);
     private readonly router = inject(Router);
+    private readonly destroyRef = inject(DestroyRef);
 
     login: string = '';
 
@@ -95,7 +97,9 @@ export class Login {
         this.errorMessage = '';
         this.loading = true;
 
-        this.authService.login({ login: this.login, password: this.password }).subscribe((session) => {
+        this.authService.login({ login: this.login, password: this.password })
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe((session) => {
             this.loading = false;
             if (!session) {
                 this.errorMessage = 'Connexion echouee. Verifiez vos identifiants.';

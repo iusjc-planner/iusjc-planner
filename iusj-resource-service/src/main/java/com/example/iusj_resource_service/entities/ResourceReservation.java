@@ -1,20 +1,8 @@
 package com.example.iusj_resource_service.entities;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -26,14 +14,10 @@ import java.time.LocalTime;
 @Table(name = "resource_reservations")
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class ResourceReservation {
 
     public enum ReservationStatus {
-        PENDING,
-        CONFIRMED,
-        CANCELLED,
-        RETURNED
+        PENDING, CONFIRMED, CANCELLED
     }
 
     @Id
@@ -41,60 +25,40 @@ public class ResourceReservation {
     private Long id;
 
     @NotNull
-    @ManyToOne
-    @JoinColumn(name = "resource_id", referencedColumnName = "id", nullable = false)
-    private Resource resource;
+    @Column(nullable = false)
+    private Long resourceId;
 
     @NotNull
-    @Column(name = "reservation_date")
+    @Column(nullable = false)
     private LocalDate date;
 
     @NotNull
-    @Column(name = "start_time")
+    @Column(nullable = false)
     private LocalTime heureDebut;
 
     @NotNull
-    @Min(15)
-    @Column(name = "duration_minutes")
-    private Integer duree;
-
-    @NotNull
-    @Column(name = "reserved_by")
-    private Long reservePar;
+    @Column(nullable = false)
+    private LocalTime heureFin;
 
     @NotNull
     @Min(1)
+    @Column(nullable = false)
     private Integer quantite;
 
-    @Enumerated(EnumType.STRING)
-    @Column(length = 20)
-    private ReservationStatus status = ReservationStatus.PENDING;
+    private Long reservePar;
 
-    @Size(max = 500)
     private String motif;
 
-    @Column(name = "expected_return_date")
-    private LocalDateTime dateRetourPrevue;
-
-    @Column(name = "actual_return_date")
-    private LocalDateTime dateRetourEffective;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private ReservationStatus status = ReservationStatus.CONFIRMED;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
     @PrePersist
     public void prePersist() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
-        if (updatedAt == null) {
-            updatedAt = LocalDateTime.now();
-        }
-        if (status == null) {
-            status = ReservationStatus.PENDING;
-        }
+        createdAt = LocalDateTime.now();
+        if (status == null) status = ReservationStatus.CONFIRMED;
     }
 }

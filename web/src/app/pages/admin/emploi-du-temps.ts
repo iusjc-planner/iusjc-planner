@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin, of } from 'rxjs';
@@ -127,6 +128,7 @@ export class EmploiDuTempsPage {
     private teachersById = new Map<number, Teacher>();
     private coursesById = new Map<number, Course>();
     private usersById = new Map<number, User>();
+    private readonly destroyRef = inject(DestroyRef);
 
     constructor(
         private readonly edtService: EdtService,
@@ -199,7 +201,7 @@ export class EmploiDuTempsPage {
             dryRun: this.generationForm.dryRun,
             algorithmType: this.generationForm.algorithmType
         };
-        this.edtService.generate(payload).subscribe({
+        this.edtService.generate(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (result) => {
                 this.generationResult = result;
                 this.displayGenerateDialog = false;
@@ -212,7 +214,7 @@ export class EmploiDuTempsPage {
 
     generateFromAvailabilities() {
         this.loading = true;
-        this.courseService.getAll().subscribe({
+        this.courseService.getAll().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (allCourses) => {
                 const scheduled = allCourses.filter(c => (c.status || 'SCHEDULED') === 'SCHEDULED' && c.teacherId && c.groupId && c.date && c.startTime && c.endTime);
                 if (scheduled.length === 0) {
@@ -234,7 +236,7 @@ export class EmploiDuTempsPage {
                     return this.edtService.createEdt(payload).pipe(catchError(() => of(null)));
                 });
 
-                forkJoin(edtCreations).subscribe({
+                forkJoin(edtCreations).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
                     next: (edts) => {
                         const edtByGroup = new Map<number, number>();
                         edts.forEach((edt, idx) => {
@@ -264,7 +266,7 @@ export class EmploiDuTempsPage {
                             return;
                         }
 
-                        forkJoin(entryCreations).subscribe({
+                        forkJoin(entryCreations).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
                             next: (results) => {
                                 const success = results.filter(r => r !== null).length;
                                 this.loading = false;
@@ -303,7 +305,7 @@ export class EmploiDuTempsPage {
             targetId: this.selectedTargetId as number,
             status: 'DRAFT'
         };
-        this.edtService.createEdt(payload).subscribe({
+        this.edtService.createEdt(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (edt) => {
                 this.selectedEdt = edt;
                 this.noTargetEdt = false;
@@ -316,7 +318,7 @@ export class EmploiDuTempsPage {
 
     validateSelectedEdt() {
         if (!this.selectedEdt?.id) return;
-        this.edtService.validateEdt(this.selectedEdt.id).subscribe({
+        this.edtService.validateEdt(this.selectedEdt.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (report) => {
                 this.lastValidationReport = report;
                 this.notificationService.info('Validation', `Status ${report.status}`);
@@ -328,7 +330,7 @@ export class EmploiDuTempsPage {
 
     publishSelectedEdt() {
         if (!this.selectedEdt?.id) return;
-        this.edtService.publishEdt(this.selectedEdt.id).subscribe({
+        this.edtService.publishEdt(this.selectedEdt.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (edt) => {
                 this.selectedEdt = edt;
                 this.notificationService.info('Publication', 'EDT publie');
@@ -339,7 +341,7 @@ export class EmploiDuTempsPage {
 
     unpublishSelectedEdt() {
         if (!this.selectedEdt?.id) return;
-        this.edtService.unpublishEdt(this.selectedEdt.id).subscribe({
+        this.edtService.unpublishEdt(this.selectedEdt.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (edt) => {
                 this.selectedEdt = edt;
                 this.notificationService.info('Depublication', 'EDT depublie');
@@ -350,7 +352,7 @@ export class EmploiDuTempsPage {
 
     loadValidationReport() {
         if (!this.selectedEdt?.id) return;
-        this.edtService.validationReport(this.selectedEdt.id).subscribe({
+        this.edtService.validationReport(this.selectedEdt.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (report) => (this.lastValidationReport = report),
             error: () => this.notificationService.error('Erreur', 'Rapport de validation indisponible')
         });
@@ -361,7 +363,7 @@ export class EmploiDuTempsPage {
             this.notificationService.warn('Export', 'Selectionnez une vue cible pour exporter');
             return;
         }
-        this.edtService.exportByView(this.toEdtVue(this.viewMode), this.selectedTargetId as number, this.semaine, this.annee, format).subscribe({
+        this.edtService.exportByView(this.toEdtVue(this.viewMode), this.selectedTargetId as number, this.semaine, this.annee, format).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (blob) => {
                 const target = this.selectedTargetId as number;
                 const ext = format === 'excel' ? 'xlsx' : 'pdf';
@@ -371,6 +373,23 @@ export class EmploiDuTempsPage {
             },
             error: () => this.notificationService.error('Erreur', 'Export EDT impossible')
         });
+    }
+
+    exportIcs() {
+        if (!this.canExport()) {
+            this.notificationService.warn('Export ICS', 'Selectionnez une vue cible pour exporter');
+            return;
+        }
+        this.edtService.exportIcsByView(this.toEdtVue(this.viewMode), this.selectedTargetId as number, this.semaine, this.annee)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (blob) => {
+                    const filename = `EDT_${this.toEdtVue(this.viewMode)}_${this.selectedTargetId}_S${this.semaine}_${this.annee}.ics`;
+                    this.downloadBlob(blob, filename);
+                    this.notificationService.info('Export ICS', 'Fichier .ics téléchargé. Importez-le dans Google Calendar ou Outlook.');
+                },
+                error: () => this.notificationService.error('Erreur', 'Export ICS impossible')
+            });
     }
 
     openCreateEntryDialog() {
@@ -422,6 +441,7 @@ export class EmploiDuTempsPage {
                 matiereId: course?.matiereId,
                 effectif: group?.effectif
             })
+            .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (items) => {
                     this.suggestions = items;
@@ -460,6 +480,7 @@ export class EmploiDuTempsPage {
                 roomCapacity,
                 excludeEntryId
             })
+            .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (result) => {
                     this.entryValidationMessages = [...(result.conflicts || []), ...(result.warnings || [])];
@@ -468,7 +489,7 @@ export class EmploiDuTempsPage {
                         return;
                     }
                     if (this.isEditMode && this.editingEntryId) {
-                        this.edtService.updateEntry(this.editingEntryId, payload).subscribe({
+                        this.edtService.updateEntry(this.editingEntryId, payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
                             next: () => {
                                 this.displayEntryDialog = false;
                                 this.notificationService.info('Succes', 'Seance mise a jour');
@@ -482,7 +503,7 @@ export class EmploiDuTempsPage {
                         this.notificationService.warn('Validation', 'Aucun EDT selectionne pour ajout de seance');
                         return;
                     }
-                    this.edtService.addEntry(this.selectedEdt.id, payload).subscribe({
+                    this.edtService.addEntry(this.selectedEdt.id, payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
                         next: () => {
                             this.displayEntryDialog = false;
                             this.notificationService.info('Succes', 'Seance ajoutee');
@@ -497,7 +518,7 @@ export class EmploiDuTempsPage {
 
     deleteEntry(entry: ScheduleEntry) {
         if (!entry.id) return;
-        this.edtService.deleteEntry(entry.id).subscribe({
+        this.edtService.deleteEntry(entry.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: () => {
                 this.notificationService.info('Succes', 'Seance supprimee');
                 this.refreshView();
@@ -535,6 +556,7 @@ export class EmploiDuTempsPage {
                 roomCapacity,
                 excludeEntryId: current.id
             })
+            .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (result) => {
                     this.entryValidationMessages = [...(result.conflicts || []), ...(result.warnings || [])];
@@ -542,7 +564,7 @@ export class EmploiDuTempsPage {
                         this.notificationService.error('Conflit', 'Deplacement bloque');
                         return;
                     }
-                    this.edtService.updateEntry(current.id as number, updated).subscribe({
+                    this.edtService.updateEntry(current.id as number, updated).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
                         next: () => {
                             this.draggedEntryId = undefined;
                             this.notificationService.info('Succes', 'Seance deplacee');
@@ -573,7 +595,7 @@ export class EmploiDuTempsPage {
             teachers: this.teacherService.getAll().pipe(catchError(() => of([] as Teacher[]))),
             rooms: this.roomService.getAll().pipe(catchError(() => of([] as Room[]))),
             users: this.userService.getAll().pipe(catchError(() => of([] as User[])))
-        }).subscribe({
+        }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: ({ courses, groups, teachers, rooms, users }) => {
                 this.courses = courses;
                 this.groups = groups;
@@ -601,7 +623,7 @@ export class EmploiDuTempsPage {
     private loadGlobalView() {
         this.selectedEdt = undefined;
         this.noTargetEdt = false;
-        this.edtService.listEdt({ semaine: this.semaine, annee: this.annee }).subscribe({
+        this.edtService.listEdt({ semaine: this.semaine, annee: this.annee }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (edts) => {
                 this.availableEdts = edts.filter((item) => item.vue === 'GROUPE');
                 const ids = this.availableEdts.map((item) => item.id).filter((id): id is number => id !== undefined);
@@ -614,7 +636,7 @@ export class EmploiDuTempsPage {
                     return;
                 }
                 const requests = ids.map((id) => this.edtService.getEntries(id).pipe(catchError(() => of([] as ScheduleEntry[]))));
-                forkJoin(requests).subscribe({
+                forkJoin(requests).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
                     next: (resultSets) => {
                         this.entries = this.deduplicateEntries(resultSets.flat());
                         this.rebuildEntryRows();
@@ -649,7 +671,7 @@ export class EmploiDuTempsPage {
                 : this.viewMode === 'teacher'
                 ? this.edtService.getByEnseignant(this.selectedTargetId, this.semaine, this.annee)
                 : this.edtService.getBySalle(this.selectedTargetId, this.semaine, this.annee);
-        request.subscribe({
+        request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (edt) => {
                 this.selectedEdt = edt;
                 this.availableEdts = [edt];
@@ -676,7 +698,7 @@ export class EmploiDuTempsPage {
         forkJoin({
             entries: this.edtService.getEntries(edtId),
             weekly: this.edtService.weeklyView(edtId).pipe(catchError(() => of({} as Record<string, ScheduleEntry[]>)))
-        }).subscribe({
+        }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: ({ entries, weekly }) => {
                 this.entries = this.sortByStartTime(entries || []);
                 this.weeklyViewData = weekly || {};

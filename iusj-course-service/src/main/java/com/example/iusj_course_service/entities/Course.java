@@ -2,16 +2,21 @@ package com.example.iusj_course_service.entities;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -119,5 +124,10 @@ public class Course {
      */
     @Size(max = 1000)
     private String notes;
+
+    @ElementCollection
+    @CollectionTable(name = "course_prerequisites", joinColumns = @JoinColumn(name = "course_id"))
+    @Column(name = "prerequisite_course_id", nullable = false)
+    private Set<Long> prerequisiteCourseIds = new HashSet<>();
 }
 

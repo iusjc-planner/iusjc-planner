@@ -1,20 +1,59 @@
+x-backend-common: &backend-common
+  build:
+    context: .
+    dockerfile: Dockerfile.backend
+  env_file:
+    - .env
+  environment:
+    - DB_HOST=mysql-db
+    - DB_PORT=3306
+    - DB_NAME=bd_tutore
+    - DB_USER=${DB_USERNAME:-root}
+    - DB_USERNAME=${DB_USERNAME:-root}
+    - DB_PASSWORD=${DB_PASSWORD:-tenzo}
+    - DB_PASS=${DB_PASSWORD:-tenzo}
+    - EUREKA_HOST=iusj-eureka-service
+    - EUREKA_PORT=8761
+    - MAIL_ENABLED=${MAIL_ENABLED:-false}
+    - MAIL_HOST=${MAIL_HOST:-smtp.gmail.com}
+    - MAIL_PORT=${MAIL_PORT:-587}
+    - MAIL_USERNAME=${MAIL_USERNAME:-}
+    - MAIL_PASSWORD=${MAIL_PASSWORD:-}
+    - MAIL_FROM=${MAIL_FROM:-noreply@iusj-planner.cd}
+    - MAIL_RESET_URL=${MAIL_RESET_URL:-http://localhost:4200/auth/reset-password}
+    - SMS_ENABLED=${SMS_ENABLED:-false}
+    - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID:-}
+    - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN:-}
+    - TWILIO_FROM_NUMBER=${TWILIO_FROM_NUMBER:-}
+    - REMINDERS_ENABLED=${REMINDERS_ENABLED:-true}
+  depends_on:
+    mysql-db:
+      condition: service_healthy
+    iusj-eureka-service:
+      condition: service_started
+  networks:
+    - iusj-network
+
 services:
-  # ============================================
-  # DATABASE
-  # ============================================
-  mysql:
+  mysql-db:
     image: mysql:8.0
     container_name: iusj-mysql
     restart: always
     environment:
+<<<<<<< HEAD
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME}
       MYSQL_USER: iusj_user
       MYSQL_PASSWORD: iusj_password
+=======
+      MYSQL_DATABASE: bd_tutore
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-tenzo}
+>>>>>>> backend
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+<<<<<<< HEAD
       - ./documentation/migrations:/docker-entrypoint-initdb.d
     networks:
       - iusj-network
@@ -410,3 +449,189 @@ volumes:
 networks:
   iusj-network:
     driver: bridge
+=======
+    networks:
+      - iusj-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 10s
+      retries: 5
+
+  # Registry
+  iusj-eureka-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-eureka-service
+    container_name: iusj-eureka-service
+    ports:
+      - "8761:8761"
+    environment:
+      - EUREKA_HOST=iusj-eureka-service
+    networks:
+      - iusj-network
+
+  # Core Services
+  iusj-auth-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-auth-service
+
+  iusj-course-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-course-service
+
+  iusj-event-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-event-service
+
+  iusj-group-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-group-service
+
+  iusj-notification-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-notification-service
+
+  iusj-report-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-report-service
+    environment:
+      - DB_HOST=mysql-db
+      - DB_PORT=3306
+      - DB_NAME=bd_tutore
+      - DB_USER=${DB_USERNAME:-root}
+      - DB_USERNAME=${DB_USERNAME:-root}
+      - DB_PASSWORD=${DB_PASSWORD:-tenzo}
+      - DB_PASS=${DB_PASSWORD:-tenzo}
+      - EUREKA_HOST=iusj-eureka-service
+      - EUREKA_PORT=8761
+      - REPORT_STORAGE_PATH=/tmp/reports
+      - MAIL_ENABLED=${MAIL_ENABLED:-false}
+      - MAIL_HOST=${MAIL_HOST:-smtp.gmail.com}
+      - MAIL_PORT=${MAIL_PORT:-587}
+      - MAIL_USERNAME=${MAIL_USERNAME:-}
+      - MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - MAIL_FROM=${MAIL_FROM:-noreply@iusj-planner.cd}
+    volumes:
+      - iusj_reports:/tmp/reports
+
+  iusj-resource-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-resource-service
+
+  iusj-room-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-room-service
+
+  iusj-schedule-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-schedule-service
+
+  iusj-school-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-school-service
+
+  iusj-student-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-student-service
+
+  iusj-teacher-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-teacher-service
+
+  iusj-user-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-user-service
+
+  # Gateway (Needs to be started after Eureka)
+  iusj-gateway-service:
+    <<: *backend-common
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        SERVICE_NAME: iusj-gateway-service
+    container_name: iusj-gateway-service
+    ports:
+      - "8080:8080"
+    depends_on:
+      iusj-auth-service:
+        condition: service_started
+      iusj-user-service:
+        condition: service_started
+    # (other services are accessed via LB, so just need eureka to route)
+
+  # Frontend Angular
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: iusj-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - iusj-gateway-service
+    networks:
+      - iusj-network
+
+networks:
+  iusj-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  iusj_reports:
+>>>>>>> backend

@@ -1,7 +1,9 @@
 import { Component } from '@angular/core';
 import { ChartModule } from 'primeng/chart';
-import { debounceTime, Subscription } from 'rxjs';
+import { debounceTime } from 'rxjs';
 import { LayoutService } from '../../../layout/service/layout.service';
+import { DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
     standalone: true,
@@ -17,10 +19,10 @@ export class RevenueStreamWidget {
 
     chartOptions: any;
 
-    subscription!: Subscription;
+    private readonly destroyRef = inject(DestroyRef);
 
     constructor(public layoutService: LayoutService) {
-        this.subscription = this.layoutService.configUpdate$.pipe(debounceTime(25)).subscribe(() => {
+        this.layoutService.configUpdate$.pipe(debounceTime(25), takeUntilDestroyed(this.destroyRef)).subscribe(() => {
             this.initChart();
         });
     }
@@ -105,9 +107,5 @@ export class RevenueStreamWidget {
         };
     }
 
-    ngOnDestroy() {
-        if (this.subscription) {
-            this.subscription.unsubscribe();
-        }
-    }
+
 }

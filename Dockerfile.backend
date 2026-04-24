@@ -1,0 +1,15 @@
+# Stratégie : les JARs sont pré-buildés localement via build-and-deploy.ps1
+# Docker ne fait que les copier dans l'image runtime — aucun accès réseau requis.
+
+FROM eclipse-temurin:17-jre
+WORKDIR /app
+
+ARG SERVICE_NAME
+ENV SERVICE_NAME=${SERVICE_NAME}
+
+# Spring Boot génère app.jar (exécutable) et app-plain.jar (non exécutable)
+# On copie le JAR principal avec son nom exact, puis on le renomme
+COPY ${SERVICE_NAME}/target/${SERVICE_NAME}-0.0.1-SNAPSHOT.jar app.jar
+
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]

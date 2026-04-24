@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -88,6 +89,7 @@ export class HistoriqueDisponibilitesPage {
     private teacherId?: number;
     private matieresById = new Map<number, Matiere>();
     private groupsById = new Map<number, Group>();
+    private readonly destroyRef = inject(DestroyRef);
 
     constructor(
         private readonly messageService: MessageService,
@@ -121,7 +123,7 @@ export class HistoriqueDisponibilitesPage {
             matieres: this.matiereService.getAll().pipe(catchError(() => of([] as Matiere[]))),
             groups: this.groupService.getAll().pipe(catchError(() => of([] as Group[]))),
             courses: this.courseService.getAll().pipe(catchError(() => of([] as Course[])))
-        }).subscribe({
+        }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: ({ matieres, groups, courses }) => {
                 this.matieresById = new Map(matieres.filter(m => m.id !== undefined).map(m => [m.id as number, m]));
                 this.groupsById = new Map(groups.filter(g => g.id !== undefined).map(g => [g.id as number, g]));
@@ -178,7 +180,7 @@ export class HistoriqueDisponibilitesPage {
         const userId = payload?.['userId'] as number | undefined;
         if (!userId) return;
 
-        this.teacherService.getByUserId(userId).subscribe({
+        this.teacherService.getByUserId(userId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
             next: (teacher) => {
                 this.teacherId = teacher.id;
                 this.loadHistory();

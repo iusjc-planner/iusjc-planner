@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.iusj_course_service.entities.Course;
 import com.example.iusj_course_service.services.CourseService;
 
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 
 /**
@@ -62,6 +63,18 @@ public class CourseController {
         return courseService.getByMatiere(matiereId);
     }
 
+    @GetMapping("/school/{schoolId}")
+    public List<Course> getCoursesBySchool(@PathVariable Long schoolId) {
+        return courseService.getBySchool(schoolId);
+    }
+
+    @GetMapping("/school/{schoolId}/filiere/{filiereId}")
+    public List<Course> getCoursesBySchoolAndFiliere(
+            @PathVariable Long schoolId,
+            @PathVariable Long filiereId) {
+        return courseService.getBySchoolAndFiliere(schoolId, filiereId);
+    }
+
     @GetMapping("/date/{date}")
     public List<Course> getCoursesByDate(
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
@@ -87,6 +100,26 @@ public class CourseController {
             @PathVariable Long roomId,
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return courseService.getByRoomAndDate(roomId, date);
+    }
+
+    @GetMapping("/{id}/prerequisites")
+    public ResponseEntity<List<Course>> getPrerequisites(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(courseService.getPrerequisites(id));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PutMapping("/{id}/prerequisites")
+    public ResponseEntity<?> updatePrerequisites(@PathVariable Long id, @RequestBody List<Long> prerequisiteIds) {
+        try {
+            return ResponseEntity.ok(courseService.updatePrerequisites(id, prerequisiteIds));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Erreur: " + e.getMessage());
+        }
     }
 
     @PostMapping

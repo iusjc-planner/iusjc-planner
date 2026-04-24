@@ -148,6 +148,26 @@ export class EdtService {
         });
     }
 
+    exportIcsByView(vue: EdtVueType, targetId: number, semaine: number, annee: number): Observable<Blob> {
+        const path = this.icsExportPathForView(vue, targetId);
+        return this.http.get(path, {
+            params: this.weekParams(semaine, annee),
+            responseType: 'blob'
+        });
+    }
+
+    exportIcsById(edtId: number): Observable<Blob> {
+        return this.http.get(`${this.endpoint}/${edtId}/export/ics`, { responseType: 'blob' });
+    }
+
+    private icsExportPathForView(vue: EdtVueType, targetId: number): string {
+        switch (vue) {
+            case 'GROUPE': return `${this.endpoint}/groupe/${targetId}/export/ics`;
+            case 'ENSEIGNANT': return `${this.endpoint}/enseignant/${targetId}/export/ics`;
+            default: return `${this.endpoint}/groupe/${targetId}/export/ics`;
+        }
+    }
+
     private weekParams(semaine: number, annee: number): HttpParams {
         return new HttpParams().set('semaine', semaine).set('annee', annee);
     }
