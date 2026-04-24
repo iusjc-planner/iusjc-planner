@@ -1,6 +1,19 @@
 PurpleAdmin-Free-Angular-Admin-Template-master
 
-documentation
+###############################
+# DOCUMENTATION & TESTS
+###############################
+documentation/
+*.md
+!README.md
+!EC2-DEPLOYMENT-GUIDE.md
+
+###############################
+# POSTMAN & API TESTING
+###############################
+*.postman_collection.json
+*.postman_environment.json
+postman/
 ###############################
 # FICHIERS TECHNIQUES GITHUB
 ###############################
