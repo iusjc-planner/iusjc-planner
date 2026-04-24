@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # ============================================
   # DATABASE
@@ -18,11 +16,6 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       - ./documentation/migrations:/docker-entrypoint-initdb.d
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - iusj-network
     logging:
@@ -45,12 +38,6 @@ services:
       - EUREKA_INSTANCE_HOSTNAME=eureka
       - EUREKA_CLIENT_REGISTER_WITH_EUREKA=false
       - EUREKA_CLIENT_FETCH_REGISTRY=false
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 10
-      start_period: 60s
     networks:
       - iusj-network
     logging:
@@ -71,18 +58,11 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      eureka:
-        condition: service_started
+      - eureka
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka/
       - EUREKA_INSTANCE_HOSTNAME=gateway
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 10
-      start_period: 60s
     networks:
       - iusj-network
     logging:
@@ -101,10 +81,8 @@ services:
     container_name: iusj-auth-service
     restart: always
     depends_on:
-      mysql:
-        condition: service_healthy
-      eureka:
-        condition: service_started
+      - mysql
+      - eureka
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${DB_NAME}
@@ -114,11 +92,6 @@ services:
       - EUREKA_INSTANCE_HOSTNAME=auth-service
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION=${JWT_EXPIRATION}
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
     networks:
       - iusj-network
     logging:
@@ -137,10 +110,8 @@ services:
     container_name: iusj-user-service
     restart: always
     depends_on:
-      mysql:
-        condition: service_healthy
-      eureka:
-        condition: service_healthy
+      - mysql
+      - eureka
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${DB_NAME}
@@ -148,11 +119,6 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka/
       - EUREKA_INSTANCE_HOSTNAME=user-service
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
     networks:
       - iusj-network
     logging:
@@ -171,10 +137,8 @@ services:
     container_name: iusj-teacher-service
     restart: always
     depends_on:
-      mysql:
-        condition: service_healthy
-      eureka:
-        condition: service_healthy
+      - mysql
+      - eureka
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${DB_NAME}
@@ -182,11 +146,6 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka/
       - EUREKA_INSTANCE_HOSTNAME=teacher-service
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
     networks:
       - iusj-network
     logging:
@@ -205,10 +164,8 @@ services:
     container_name: iusj-room-service
     restart: always
     depends_on:
-      mysql:
-        condition: service_healthy
-      eureka:
-        condition: service_healthy
+      - mysql
+      - eureka
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${DB_NAME}
@@ -216,11 +173,6 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka/
       - EUREKA_INSTANCE_HOSTNAME=room-service
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
     networks:
       - iusj-network
     logging:
@@ -239,10 +191,8 @@ services:
     container_name: iusj-course-service
     restart: always
     depends_on:
-      mysql:
-        condition: service_healthy
-      eureka:
-        condition: service_healthy
+      - mysql
+      - eureka
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${DB_NAME}
@@ -250,11 +200,6 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka/
       - EUREKA_INSTANCE_HOSTNAME=course-service
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8085/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
     networks:
       - iusj-network
     logging:
@@ -273,10 +218,8 @@ services:
     container_name: iusj-schedule-service
     restart: always
     depends_on:
-      mysql:
-        condition: service_healthy
-      eureka:
-        condition: service_healthy
+      - mysql
+      - eureka
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${DB_NAME}
@@ -284,11 +227,6 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka/
       - EUREKA_INSTANCE_HOSTNAME=schedule-service
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8086/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
     networks:
       - iusj-network
     logging:
@@ -307,10 +245,8 @@ services:
     container_name: iusj-school-service
     restart: always
     depends_on:
-      mysql:
-        condition: service_healthy
-      eureka:
-        condition: service_healthy
+      - mysql
+      - eureka
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${DB_NAME}
@@ -318,11 +254,6 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka/
       - EUREKA_INSTANCE_HOSTNAME=school-service
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8087/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
     networks:
       - iusj-network
     logging:
@@ -341,10 +272,8 @@ services:
     container_name: iusj-group-service
     restart: always
     depends_on:
-      mysql:
-        condition: service_healthy
-      eureka:
-        condition: service_healthy
+      - mysql
+      - eureka
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${DB_NAME}
@@ -352,11 +281,6 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka/
       - EUREKA_INSTANCE_HOSTNAME=group-service
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8088/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
     networks:
       - iusj-network
     logging:
@@ -375,10 +299,8 @@ services:
     container_name: iusj-student-service
     restart: always
     depends_on:
-      mysql:
-        condition: service_healthy
-      eureka:
-        condition: service_healthy
+      - mysql
+      - eureka
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${DB_NAME}
@@ -386,11 +308,6 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka/
       - EUREKA_INSTANCE_HOSTNAME=student-service
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8089/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
     networks:
       - iusj-network
     logging:
@@ -409,10 +326,8 @@ services:
     container_name: iusj-resource-service
     restart: always
     depends_on:
-      mysql:
-        condition: service_healthy
-      eureka:
-        condition: service_healthy
+      - mysql
+      - eureka
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${DB_NAME}
@@ -420,11 +335,6 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka:8761/eureka/
       - EUREKA_INSTANCE_HOSTNAME=resource-service
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8090/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
     networks:
       - iusj-network
     logging:
@@ -443,10 +353,8 @@ services:
     container_name: iusj-notification-service
     restart: always
     depends_on:
-      mysql:
-        condition: service_healthy
-      eureka:
-        condition: service_healthy
+      - mysql
+      - eureka
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${DB_NAME}
@@ -458,11 +366,6 @@ services:
       - MAIL_PORT=${MAIL_PORT}
       - MAIL_USERNAME=${MAIL_USERNAME}
       - MAIL_PASSWORD=${MAIL_PASSWORD}
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8091/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
     networks:
       - iusj-network
     logging:
@@ -486,11 +389,6 @@ services:
       - gateway
     environment:
       - API_URL=http://gateway:8080
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
     networks:
       - iusj-network
     logging:
